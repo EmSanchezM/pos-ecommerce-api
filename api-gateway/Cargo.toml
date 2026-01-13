@@ -10,3 +10,6 @@ core = { path = "../modules/core" }
 inventory = { path = "../modules/inventory" }
 purchasing = { path = "../modules/purchasing" }
 sales = { path = "../modules/sales" }
+
+axum = { workspace = true }
+tokio = { workspace = true }
