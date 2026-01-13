@@ -5,3 +5,25 @@ edition = { workspace = true }
 
 [dependencies]
 common = { path = "../common" }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = "0.1"
+
+# Types and utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+
+# Password hashing
+argon2 = { workspace = true }
+
+[dev-dependencies]
+proptest = "1.6"
