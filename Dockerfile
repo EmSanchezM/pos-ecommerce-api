@@ -8,6 +8,6 @@ RUN cargo build --release
 #stage 2
 FROM debian:bookworm-slim
 WORKDIR /app
-COPY --from=builder /app/target/release/pos-ecommerce-api .
+COPY --from=builder /app/target/release/api-gateway .
 EXPOSE 8000
-CMD ["./pos-ecommerce-api"]
+CMD ["./api-gateway"]
