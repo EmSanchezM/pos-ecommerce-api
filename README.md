@@ -93,6 +93,8 @@ sqlx migrate revert
 
 ### Ejecutar Seed (Datos Iniciales)
 
+> ⚠️ **Importante:** El seed está diseñado únicamente para entornos de **desarrollo y pruebas**. En producción, los datos iniciales deben cargarse mediante scripts de migración controlados o procesos de despliegue específicos.
+
 El seed carga datos iniciales como permisos, roles y la tienda principal.
 
 1. **Asegurarse de que las migraciones estén ejecutadas**
