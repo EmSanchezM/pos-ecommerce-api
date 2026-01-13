@@ -45,6 +45,11 @@ pub use domain::repositories::{
 pub use domain::services::{PermissionCheckResult, UserContext};
 
 // -----------------------------------------------------------------------------
+// Domain Layer - Authentication
+// -----------------------------------------------------------------------------
+pub use domain::auth::{AuthError, LoginIdentifier, TokenClaims, TokenService};
+
+// -----------------------------------------------------------------------------
 // Application Layer - Use Cases
 // -----------------------------------------------------------------------------
 pub use application::use_cases::{
@@ -61,6 +66,8 @@ pub use application::use_cases::{
     SetStoreActiveUseCase, UpdateStoreUseCase,
     // UserContext use case
     BuildUserContextUseCase,
+    // Auth use cases
+    LoginUseCase, RefreshTokenUseCase, RegisterUserUseCase,
 };
 
 // -----------------------------------------------------------------------------
@@ -69,6 +76,20 @@ pub use application::use_cases::{
 pub use application::dtos::{
     AddUserToStoreCommand, AssignRoleCommand, CreatePermissionCommand, CreateRoleCommand,
     CreateStoreCommand, CreateUserCommand, UpdateStoreCommand, UpdateUserCommand,
+    // Auth commands
+    LoginCommand, RefreshCommand, RegisterEcommerceCommand, RegisterPosCommand,
+};
+
+// -----------------------------------------------------------------------------
+// Application Layer - DTOs (Responses)
+// -----------------------------------------------------------------------------
+pub use application::dtos::{ErrorResponse, LoginResponse, RegisterResponse};
+
+// -----------------------------------------------------------------------------
+// Application Layer - Validators
+// -----------------------------------------------------------------------------
+pub use application::validators::{
+    validate_name, validate_password, MAX_NAME_LENGTH, MIN_PASSWORD_LENGTH,
 };
 
 // -----------------------------------------------------------------------------
@@ -78,3 +99,8 @@ pub use infrastructure::persistence::{
     PgAuditRepository, PgPermissionRepository, PgRoleRepository, PgStoreRepository,
     PgUserRepository,
 };
+
+// -----------------------------------------------------------------------------
+// Infrastructure Layer - JWT Token Service
+// -----------------------------------------------------------------------------
+pub use infrastructure::JwtTokenService;

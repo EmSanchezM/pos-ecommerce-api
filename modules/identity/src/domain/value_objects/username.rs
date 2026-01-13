@@ -50,6 +50,18 @@ impl Username {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+
+    /// Creates a Username without validation.
+    /// 
+    /// This is used internally for cases where we need to represent
+    /// an invalid username that will fail authentication later.
+    /// 
+    /// # Warning
+    /// 
+    /// This method bypasses validation. Use `new()` for normal cases.
+    pub(crate) fn new_unchecked(username: &str) -> Self {
+        Self(username.to_string())
+    }
 }
 
 impl std::fmt::Display for Username {
