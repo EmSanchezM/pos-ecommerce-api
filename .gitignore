@@ -1,6 +1,9 @@
 /target
 
-//IDES
+#IDES
 .vscode/
 .cursor/
 .kiro/
+
+# Variables de entorno
+.env
