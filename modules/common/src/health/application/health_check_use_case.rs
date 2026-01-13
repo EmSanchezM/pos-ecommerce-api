@@ -1,6 +1,5 @@
 use crate::health::domain::HealthStatus;
 
-/// Caso de uso para verificar el estado de salud del servicio
 pub struct HealthCheckUseCase {
     service_name: String,
     version: String,

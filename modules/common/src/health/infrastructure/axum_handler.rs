@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use crate::health::{application::HealthCheckUseCase, domain::HealthStatus};
 
-/// Handler de Axum para el endpoint de health check
 pub async fn health_check_handler(
     State(use_case): State<Arc<HealthCheckUseCase>>,
 ) -> (StatusCode, Json<HealthStatus>) {
@@ -16,7 +15,6 @@ pub async fn health_check_handler(
     (http_status, Json(status))
 }
 
-/// Versión simplificada sin estado compartido
 pub async fn health_check_simple() -> (StatusCode, Json<HealthStatus>) {
     let status = HealthStatus::healthy("api-gateway", env!("CARGO_PKG_VERSION"));
     (StatusCode::OK, Json(status))
