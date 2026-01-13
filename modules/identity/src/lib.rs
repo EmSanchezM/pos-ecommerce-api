@@ -11,4 +11,70 @@ pub mod infrastructure;
 
 mod error;
 
+// =============================================================================
+// Public API - Re-exports for convenient access
+// =============================================================================
+
+// Error type
 pub use error::IdentityError;
+
+// -----------------------------------------------------------------------------
+// Domain Layer - Entities
+// -----------------------------------------------------------------------------
+pub use domain::entities::{
+    AuditAction, AuditEntry, Permission, Role, Store, User,
+};
+
+// -----------------------------------------------------------------------------
+// Domain Layer - Value Objects
+// -----------------------------------------------------------------------------
+pub use domain::value_objects::{
+    Email, PermissionCode, PermissionId, RoleId, StoreId, UserId, Username,
+};
+
+// -----------------------------------------------------------------------------
+// Domain Layer - Repository Traits
+// -----------------------------------------------------------------------------
+pub use domain::repositories::{
+    AuditRepository, PermissionRepository, RoleRepository, StoreRepository, UserRepository,
+};
+
+// -----------------------------------------------------------------------------
+// Domain Layer - Services (UserContext)
+// -----------------------------------------------------------------------------
+pub use domain::services::{PermissionCheckResult, UserContext};
+
+// -----------------------------------------------------------------------------
+// Application Layer - Use Cases
+// -----------------------------------------------------------------------------
+pub use application::use_cases::{
+    // Permission use cases
+    CreatePermissionUseCase, DeletePermissionUseCase, ListPermissionsUseCase,
+    // Role use cases
+    AddPermissionToRoleUseCase, CreateRoleUseCase, DeleteRoleUseCase,
+    RemovePermissionFromRoleUseCase,
+    // User use cases
+    AssignRoleUseCase, CreateUserUseCase, RemoveRoleUseCase, SetUserActiveUseCase,
+    UpdateUserUseCase,
+    // Store use cases
+    AddUserToStoreUseCase, CreateStoreUseCase, RemoveUserFromStoreUseCase,
+    SetStoreActiveUseCase, UpdateStoreUseCase,
+    // UserContext use case
+    BuildUserContextUseCase,
+};
+
+// -----------------------------------------------------------------------------
+// Application Layer - DTOs (Commands)
+// -----------------------------------------------------------------------------
+pub use application::dtos::{
+    AddUserToStoreCommand, AssignRoleCommand, CreatePermissionCommand, CreateRoleCommand,
+    CreateStoreCommand, CreateUserCommand, UpdateStoreCommand, UpdateUserCommand,
+};
+
+// -----------------------------------------------------------------------------
+// Infrastructure Layer - PostgreSQL Repositories
+// -----------------------------------------------------------------------------
+pub use infrastructure::persistence::{
+    PgAuditRepository, PgPermissionRepository, PgRoleRepository, PgStoreRepository,
+    PgUserRepository,
+};
