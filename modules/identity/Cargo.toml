@@ -25,5 +25,8 @@ thiserror = { workspace = true }
 # Password hashing
 argon2 = { workspace = true }
 
+# JWT
+jsonwebtoken = { workspace = true }
+
 [dev-dependencies]
 proptest = "1.6"

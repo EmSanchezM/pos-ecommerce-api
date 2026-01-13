@@ -11,5 +11,11 @@ inventory = { path = "../modules/inventory" }
 purchasing = { path = "../modules/purchasing" }
 sales = { path = "../modules/sales" }
 
-axum = { workspace = true }
+axum = { workspace = true, features = ["json"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
 tokio = { workspace = true }
+tracing = { workspace = true }
+dotenvy = { workspace = true }
+uuid = { workspace = true }
