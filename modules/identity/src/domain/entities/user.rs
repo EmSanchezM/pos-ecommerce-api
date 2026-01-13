@@ -27,6 +27,7 @@ impl User {
     ///
     /// The password should already be hashed before calling this constructor.
     /// Use `UserBuilder` for a more ergonomic construction experience.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: UserId,
         username: Username,

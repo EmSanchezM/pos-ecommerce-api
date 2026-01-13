@@ -62,6 +62,7 @@ pub struct AuditEntry {
 
 impl AuditEntry {
     /// Creates a new AuditEntry with all fields specified
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: Uuid,
         entity_type: String,
