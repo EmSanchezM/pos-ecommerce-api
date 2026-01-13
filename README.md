@@ -61,6 +61,55 @@ docker-compose -f compose.dev.yml down
 docker-compose -f compose.dev.yml down -v
 ```
 
+## 🗄️ Base de Datos
+
+### Ejecutar Migraciones
+
+Las migraciones se encuentran en la carpeta `migrations/` y se ejecutan usando SQLx CLI.
+
+1. **Instalar SQLx CLI** (si no lo tienes)
+```bash
+cargo install sqlx-cli --no-default-features --features postgres
+```
+
+2. **Configurar la variable de entorno**
+```bash
+# Copiar el archivo de ejemplo
+cp .env.example .env
+
+# Editar .env con tus credenciales de base de datos
+DATABASE_URL=postgres://user:password@localhost:5432/posecommerce
+```
+
+3. **Ejecutar las migraciones**
+```bash
+sqlx migrate run
+```
+
+4. **Revertir la última migración** (si es necesario)
+```bash
+sqlx migrate revert
+```
+
+### Ejecutar Seed (Datos Iniciales)
+
+El seed carga datos iniciales como permisos, roles y la tienda principal.
+
+1. **Asegurarse de que las migraciones estén ejecutadas**
+
+2. **Ejecutar el seed**
+```bash
+cargo run -p seed
+```
+
+El seed cargará:
+- Permisos del sistema
+- Roles predefinidos (Admin, Manager, Cashier, etc.)
+- Asignación de permisos a roles
+- Tienda principal
+
+> **Nota:** El seed es idempotente, puede ejecutarse múltiples veces sin duplicar datos.
+
 ## 🛠️ Tecnologías
 
 - **Rust** - Lenguaje de programación
