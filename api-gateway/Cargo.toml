@@ -1,0 +1,12 @@
+[package]
+name = "api-gateway"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+common = { path = "../modules/common" }
+identity = { path = "../modules/identity" }
+core = { path = "../modules/core" }
+inventory = { path = "../modules/inventory" }
+purchasing = { path = "../modules/purchasing" }
+sales = { path = "../modules/sales" }
