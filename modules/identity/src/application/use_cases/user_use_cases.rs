@@ -199,10 +199,10 @@ where
             // Check uniqueness only if email is actually changing
             if new_email.as_str() != user.email().as_str() {
                 // Check if new email is already in use by another user (Requirement 6.6)
-                if let Some(existing_user) = self.user_repo.find_by_email(&new_email).await? {
-                    if existing_user.id() != &user_id {
-                        return Err(IdentityError::DuplicateEmail(email_str));
-                    }
+                if let Some(existing_user) = self.user_repo.find_by_email(&new_email).await?
+                    && existing_user.id() != &user_id
+                {
+                    return Err(IdentityError::DuplicateEmail(email_str));
                 }
                 user.set_email(new_email);
             }
