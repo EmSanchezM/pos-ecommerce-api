@@ -20,11 +20,6 @@ use crate::domain::value_objects::UserId;
 /// - **Refresh Token**: Long-lived token (7 days) used to obtain new
 ///   access tokens without re-authentication.
 ///
-/// # Requirements Coverage
-///
-/// - Requirement 4.1: Generate JWT access token with user claims
-/// - Requirement 4.5: Refresh token generation and validation
-/// - Requirement 4.6: Handle expired/invalid tokens with appropriate errors
 pub trait TokenService: Send + Sync {
     /// Generates an access token for the given user.
     ///
@@ -40,9 +35,6 @@ pub trait TokenService: Send + Sync {
     /// * `Ok(String)` - The encoded JWT access token
     /// * `Err(AuthError)` - If token generation fails
     ///
-    /// # Requirements
-    ///
-    /// - Requirement 4.1: Token SHALL contain user_id, username, and email claims
     fn generate_access_token(&self, user: &User) -> Result<String, AuthError>;
 
     /// Generates a refresh token for the given user.
@@ -59,9 +51,6 @@ pub trait TokenService: Send + Sync {
     /// * `Ok(String)` - The encoded refresh token
     /// * `Err(AuthError)` - If token generation fails
     ///
-    /// # Requirements
-    ///
-    /// - Requirement 4.3: Refresh token SHALL have 7 day expiration
     fn generate_refresh_token(&self, user_id: UserId) -> Result<String, AuthError>;
 
     /// Validates and decodes an access token.
@@ -79,9 +68,6 @@ pub trait TokenService: Send + Sync {
     /// * `Err(AuthError::TokenExpired)` - If the token has expired
     /// * `Err(AuthError::InvalidToken)` - If the token is malformed or has invalid signature
     ///
-    /// # Requirements
-    ///
-    /// - Requirement 4.6: Return appropriate error for expired/invalid tokens
     fn validate_access_token(&self, token: &str) -> Result<TokenClaims, AuthError>;
 
     /// Validates a refresh token and extracts the user ID.
@@ -99,9 +85,5 @@ pub trait TokenService: Send + Sync {
     /// * `Err(AuthError::TokenExpired)` - If the token has expired
     /// * `Err(AuthError::InvalidToken)` - If the token is malformed or has invalid signature
     ///
-    /// # Requirements
-    ///
-    /// - Requirement 4.5: Valid refresh token SHALL allow new access token generation
-    /// - Requirement 4.6: Return appropriate error for expired/invalid tokens
     fn validate_refresh_token(&self, token: &str) -> Result<UserId, AuthError>;
 }
