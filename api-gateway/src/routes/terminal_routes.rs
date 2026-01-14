@@ -2,8 +2,6 @@
 //
 // This module defines the terminal router that groups all terminal endpoints
 // with authentication middleware.
-//
-// Requirements: 2.1, 2.2, 2.3, 2.6, 3.1, 3.4, 3.5, 4.3, 4.4
 
 use axum::{
     middleware,
