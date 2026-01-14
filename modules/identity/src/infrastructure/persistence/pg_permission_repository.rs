@@ -1,6 +1,5 @@
 // PostgreSQL PermissionRepository implementation
 //
-// Requirements: 1.3, 1.4, 1.5
 
 use async_trait::async_trait;
 use sqlx::PgPool;

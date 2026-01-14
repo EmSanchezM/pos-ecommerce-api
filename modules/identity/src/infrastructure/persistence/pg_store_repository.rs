@@ -1,6 +1,5 @@
 // PostgreSQL StoreRepository implementation
 //
-// Requirements: 7.1, 7.3, 7.4, 8.4, 8.5
 
 use async_trait::async_trait;
 use sqlx::PgPool;
