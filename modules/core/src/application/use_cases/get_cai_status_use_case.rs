@@ -1,6 +1,5 @@
 // GetCaiStatusUseCase - Gets the current CAI status for a terminal
 //
-// Requirements: 3.4, 3.5
 // - Return current CAI status
 // - Include warning if CAI expires within 30 days
 

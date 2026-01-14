@@ -1,6 +1,5 @@
 // SetTerminalActiveUseCase - Activates or deactivates a terminal
 //
-// Requirements: 2.6, 6.2
 // - Activate or deactivate terminal
 // - Preserve CAI history when deactivating
 // - Register audit entry

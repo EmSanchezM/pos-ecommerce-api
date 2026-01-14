@@ -1,6 +1,5 @@
 // GetNextInvoiceNumberUseCase - Gets the next invoice number for a terminal
 //
-// Requirements: 3.1, 3.2, 3.3
 // - Verify terminal is active with CAI assigned
 // - Validate CAI is not expired and not exhausted
 // - Atomically increment and return number

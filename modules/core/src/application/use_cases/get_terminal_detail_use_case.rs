@@ -1,6 +1,5 @@
 // GetTerminalDetailUseCase - Gets terminal details with complete CAI history
 //
-// Requirements: 4.4
 // - Get terminal with complete CAI history
 
 use std::sync::Arc;

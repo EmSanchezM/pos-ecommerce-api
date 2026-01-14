@@ -1,6 +1,5 @@
 // SetStoreActiveUseCaseExtended - Activates or deactivates a store with terminal cascade
 //
-// Requirements: 1.3, 1.4, 6.1
 // - When deactivating: cascade deactivation to all terminals
 // - When reactivating: do NOT cascade to terminals (they remain in their state)
 // - Register audit entry

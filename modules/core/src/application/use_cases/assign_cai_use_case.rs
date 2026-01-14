@@ -1,6 +1,5 @@
 // AssignCaiUseCase - Assigns a CAI range to a terminal
 //
-// Requirements: 2.2, 2.3, 6.3
 // - Validate terminal exists and is active
 // - Validate CAI format and range validity
 // - Verify no overlap with existing active ranges
