@@ -242,43 +242,31 @@ async fn seed_super_admin_store_assignment(
     store_id: Uuid,
     role_ids: &std::collections::HashMap<String, Uuid>,
 ) -> Result<()> {
-    // First, create user_stores relationship
-    let user_store_id = Uuid::now_v7();
-    
+    // First, create user_stores relationship (composite PK: user_id, store_id)
     sqlx::query(
         r#"
-        INSERT INTO user_stores (id, user_id, store_id)
-        VALUES ($1, $2, $3)
+        INSERT INTO user_stores (user_id, store_id)
+        VALUES ($1, $2)
         ON CONFLICT (user_id, store_id) DO NOTHING
         "#,
     )
-    .bind(user_store_id)
     .bind(user_id)
     .bind(store_id)
     .execute(&mut **tx)
     .await?;
 
-    // Get the actual user_store ID
-    let row: (Uuid,) = sqlx::query_as(
-        "SELECT id FROM user_stores WHERE user_id = $1 AND store_id = $2"
-    )
-    .bind(user_id)
-    .bind(store_id)
-    .fetch_one(&mut **tx)
-    .await?;
-    let user_store_id = row.0;
-
-    // Assign super_admin role
+    // Assign super_admin role (composite PK: user_id, store_id, role_id)
     let super_admin_role_id = role_ids.get("super_admin").expect("super_admin role not found");
     
     sqlx::query(
         r#"
-        INSERT INTO user_store_roles (user_store_id, role_id)
-        VALUES ($1, $2)
-        ON CONFLICT (user_store_id, role_id) DO NOTHING
+        INSERT INTO user_store_roles (user_id, store_id, role_id)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id, store_id, role_id) DO NOTHING
         "#,
     )
-    .bind(user_store_id)
+    .bind(user_id)
+    .bind(store_id)
     .bind(super_admin_role_id)
     .execute(&mut **tx)
     .await?;
