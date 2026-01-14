@@ -23,11 +23,6 @@ use crate::domain::value_objects::UserId;
 /// - `access_token_duration`: Duration for access tokens (default: 15 minutes)
 /// - `refresh_token_duration`: Duration for refresh tokens (default: 7 days)
 ///
-/// # Requirements Coverage
-///
-/// - Requirement 4.2: Access token expiration of 15 minutes
-/// - Requirement 4.3: Refresh token expiration of 7 days
-/// - Requirement 4.4: HS256 algorithm with configurable secret
 pub struct JwtTokenService {
     secret: String,
     access_token_duration: Duration,
@@ -109,11 +104,6 @@ impl TokenService for JwtTokenService {
     /// The token contains user claims (user_id, username, email) and expires
     /// after the configured access_token_duration (default: 15 minutes).
     ///
-    /// # Requirements
-    ///
-    /// - Requirement 4.1: Token contains user_id, username, and email claims
-    /// - Requirement 4.2: Access token expires in 15 minutes
-    /// - Requirement 4.4: Uses HS256 algorithm
     fn generate_access_token(&self, user: &User) -> Result<String, AuthError> {
         let now = Utc::now();
         let exp = now + self.access_token_duration;
@@ -139,10 +129,6 @@ impl TokenService for JwtTokenService {
     /// The refresh token contains only the user_id and expires after the
     /// configured refresh_token_duration (default: 7 days).
     ///
-    /// # Requirements
-    ///
-    /// - Requirement 4.3: Refresh token expires in 7 days
-    /// - Requirement 4.4: Uses HS256 algorithm
     fn generate_refresh_token(&self, user_id: UserId) -> Result<String, AuthError> {
         let now = Utc::now();
         let exp = now + self.refresh_token_duration;
@@ -166,10 +152,6 @@ impl TokenService for JwtTokenService {
     ///
     /// Verifies the token signature using HS256 and checks expiration.
     ///
-    /// # Requirements
-    ///
-    /// - Requirement 4.6: Returns TokenExpired for expired tokens
-    /// - Requirement 4.6: Returns InvalidToken for malformed/invalid signature
     fn validate_access_token(&self, token: &str) -> Result<TokenClaims, AuthError> {
         let validation = Validation::default();
 
@@ -189,12 +171,6 @@ impl TokenService for JwtTokenService {
     ///
     /// Verifies the token signature and expiration, then returns the user_id
     /// for generating a new access token.
-    ///
-    /// # Requirements
-    ///
-    /// - Requirement 4.5: Valid refresh token allows new access token generation
-    /// - Requirement 4.6: Returns TokenExpired for expired tokens
-    /// - Requirement 4.6: Returns InvalidToken for malformed/invalid signature
     fn validate_refresh_token(&self, token: &str) -> Result<UserId, AuthError> {
         let validation = Validation::default();
 
@@ -216,7 +192,6 @@ impl TokenService for JwtTokenService {
         Ok(UserId::from_uuid(token_data.claims.sub))
     }
 }
-
 
 #[cfg(test)]
 mod tests {

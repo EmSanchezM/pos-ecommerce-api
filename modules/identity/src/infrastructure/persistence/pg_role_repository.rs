@@ -1,6 +1,5 @@
 // PostgreSQL RoleRepository implementation
 //
-// Requirements: 2.1, 2.3, 2.4, 2.5
 
 use async_trait::async_trait;
 use sqlx::PgPool;
