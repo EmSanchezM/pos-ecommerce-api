@@ -78,6 +78,7 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     ("reports:financial", "Access financial reports"),
     
     // System permissions
+    ("system:admin", "Full system administration access (super_admin only)"),
     ("system:settings", "Manage system settings"),
     ("system:audit_log", "View audit logs"),
     ("system:backup", "Manage system backups"),
@@ -161,7 +162,7 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "purchases:create", "purchases:read", "purchases:update", "purchases:approve", "purchases:receive", "purchases:list",
             "suppliers:create", "suppliers:read", "suppliers:update", "suppliers:delete", "suppliers:list",
             "reports:sales", "reports:inventory", "reports:purchases", "reports:financial",
-            "system:settings", "system:audit_log", "system:backup",
+            "system:admin", "system:settings", "system:audit_log", "system:backup",
         ],
     ),
     // Store admin - full store access
