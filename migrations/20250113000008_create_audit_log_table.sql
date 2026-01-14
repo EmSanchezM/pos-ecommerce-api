@@ -1,5 +1,5 @@
 -- Migration: Create audit_log table
--- Requirements: 9.1 - Audit logging for all identity-related changes
+-- Audit logging for all identity-related changes
 
 CREATE TABLE IF NOT EXISTS audit_log (
     id UUID PRIMARY KEY,

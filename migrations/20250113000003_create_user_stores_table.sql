@@ -1,5 +1,5 @@
 -- Migration: Create user_stores table (many-to-many relationship)
--- Requirements: 8.1 - User-Store membership relationship
+-- User-Store membership relationship
 
 CREATE TABLE IF NOT EXISTS user_stores (
     user_id UUID NOT NULL,

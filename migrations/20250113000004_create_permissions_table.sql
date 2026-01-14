@@ -1,5 +1,5 @@
 -- Migration: Create permissions table
--- Requirements: 1.1 - Permission management with unique code format module:action
+-- Permission management with unique code format module:action
 
 CREATE TABLE IF NOT EXISTS permissions (
     id UUID PRIMARY KEY,

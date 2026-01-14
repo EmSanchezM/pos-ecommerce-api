@@ -1,5 +1,5 @@
 -- Migration: Create role_permissions table (many-to-many relationship)
--- Requirements: 2.3 - Assign permissions to roles
+-- Assign permissions to roles
 
 CREATE TABLE IF NOT EXISTS role_permissions (
     role_id UUID NOT NULL,

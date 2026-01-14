@@ -1,5 +1,5 @@
 -- Migration: Create roles table
--- Requirements: 2.1 - Role management with unique name and system protection
+-- Role management with unique name and system protection
 
 CREATE TABLE IF NOT EXISTS roles (
     id UUID PRIMARY KEY,

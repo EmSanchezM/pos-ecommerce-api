@@ -1,5 +1,5 @@
 -- Migration: Create stores table
--- Requirements: 7.1 - Store management with name, address, is_ecommerce flag
+-- Store management with name, address, is_ecommerce flag
 
 CREATE TABLE IF NOT EXISTS stores (
     id UUID PRIMARY KEY,

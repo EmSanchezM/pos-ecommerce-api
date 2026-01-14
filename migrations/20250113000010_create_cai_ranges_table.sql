@@ -1,5 +1,5 @@
 -- Migration: Create cai_ranges table
--- Requirements: 5.1 - CAI range entity for fiscal document authorization
+-- CAI range entity for fiscal document authorization
 
 CREATE TABLE IF NOT EXISTS cai_ranges (
     id UUID PRIMARY KEY,

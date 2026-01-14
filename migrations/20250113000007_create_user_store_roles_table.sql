@@ -1,5 +1,5 @@
 -- Migration: Create user_store_roles table (store-scoped role assignments)
--- Requirements: 3.1 - Assign roles to users scoped by store_id
+-- Assign roles to users scoped by store_id
 
 CREATE TABLE IF NOT EXISTS user_store_roles (
     user_id UUID NOT NULL,
