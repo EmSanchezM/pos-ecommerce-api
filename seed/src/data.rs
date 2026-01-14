@@ -268,3 +268,13 @@ pub const MAIN_STORE: (&str, &str, bool, bool) = (
     false,
     true,
 );
+
+/// Super admin user: (email, username, first_name, last_name, password)
+/// Password: SuperAdmin123!
+pub const SUPER_ADMIN_USER: (&str, &str, &str, &str, &str) = (
+    "admin@pos-ecommerce.com",
+    "super_admin",
+    "Super",
+    "Admin",
+    "SuperAdmin123!",
+);

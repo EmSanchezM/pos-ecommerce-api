@@ -1,7 +1,27 @@
 [package]
-name = "core"
+name = "pos_core"
 version = { workspace = true }
 edition = { workspace = true }
 
 [dependencies]
 common = { path = "../common" }
+identity = { path = "../identity" }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = "0.1"
+
+# Types and utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+proptest = "1.6"
