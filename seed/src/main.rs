@@ -1,4 +1,8 @@
 use anyhow::Result;
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    Argon2, PasswordHasher,
+};
 use sqlx::postgres::PgPoolOptions;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -45,7 +49,15 @@ async fn main() -> Result<()> {
 
     // Seed main store
     info!("Seeding main store...");
-    seed_main_store(&mut tx).await?;
+    let store_id = seed_main_store(&mut tx).await?;
+
+    // Seed super admin user
+    info!("Seeding super admin user...");
+    let super_admin_id = seed_super_admin_user(&mut tx).await?;
+
+    // Assign super admin to main store with super_admin role
+    info!("Assigning super admin to main store...");
+    seed_super_admin_store_assignment(&mut tx, super_admin_id, store_id, &role_ids).await?;
 
     tx.commit().await?;
 
@@ -155,7 +167,7 @@ async fn seed_role_permissions(
 
 async fn seed_main_store(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> Result<()> {
+) -> Result<Uuid> {
     let id = Uuid::now_v7();
 
     sqlx::query(
@@ -174,6 +186,104 @@ async fn seed_main_store(
     .await?;
 
     info!("  Store: {}", data::MAIN_STORE.0);
+
+    // Get the actual ID (in case it already existed)
+    let row: (Uuid,) = sqlx::query_as("SELECT id FROM stores WHERE name = $1")
+        .bind(data::MAIN_STORE.0)
+        .fetch_one(&mut **tx)
+        .await?;
+
+    Ok(row.0)
+}
+
+async fn seed_super_admin_user(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> Result<Uuid> {
+    let id = Uuid::now_v7();
+
+    // Hash the password using Argon2
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let password_hash = argon2
+        .hash_password(data::SUPER_ADMIN_USER.4.as_bytes(), &salt)
+        .expect("Failed to hash password")
+        .to_string();
+
+    sqlx::query(
+        r#"
+        INSERT INTO users (id, email, username, first_name, last_name, password_hash, is_active)
+        VALUES ($1, $2, $3, $4, $5, $6, true)
+        ON CONFLICT (email) DO NOTHING
+        "#,
+    )
+    .bind(id)
+    .bind(data::SUPER_ADMIN_USER.0) // email
+    .bind(data::SUPER_ADMIN_USER.1) // username
+    .bind(data::SUPER_ADMIN_USER.2) // first_name
+    .bind(data::SUPER_ADMIN_USER.3) // last_name
+    .bind(&password_hash)
+    .execute(&mut **tx)
+    .await?;
+
+    info!("  User: {} ({})", data::SUPER_ADMIN_USER.1, data::SUPER_ADMIN_USER.0);
+
+    // Get the actual ID (in case it already existed)
+    let row: (Uuid,) = sqlx::query_as("SELECT id FROM users WHERE email = $1")
+        .bind(data::SUPER_ADMIN_USER.0)
+        .fetch_one(&mut **tx)
+        .await?;
+
+    Ok(row.0)
+}
+
+async fn seed_super_admin_store_assignment(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    user_id: Uuid,
+    store_id: Uuid,
+    role_ids: &std::collections::HashMap<String, Uuid>,
+) -> Result<()> {
+    // First, create user_stores relationship
+    let user_store_id = Uuid::now_v7();
+    
+    sqlx::query(
+        r#"
+        INSERT INTO user_stores (id, user_id, store_id)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id, store_id) DO NOTHING
+        "#,
+    )
+    .bind(user_store_id)
+    .bind(user_id)
+    .bind(store_id)
+    .execute(&mut **tx)
+    .await?;
+
+    // Get the actual user_store ID
+    let row: (Uuid,) = sqlx::query_as(
+        "SELECT id FROM user_stores WHERE user_id = $1 AND store_id = $2"
+    )
+    .bind(user_id)
+    .bind(store_id)
+    .fetch_one(&mut **tx)
+    .await?;
+    let user_store_id = row.0;
+
+    // Assign super_admin role
+    let super_admin_role_id = role_ids.get("super_admin").expect("super_admin role not found");
+    
+    sqlx::query(
+        r#"
+        INSERT INTO user_store_roles (user_store_id, role_id)
+        VALUES ($1, $2)
+        ON CONFLICT (user_store_id, role_id) DO NOTHING
+        "#,
+    )
+    .bind(user_store_id)
+    .bind(super_admin_role_id)
+    .execute(&mut **tx)
+    .await?;
+
+    info!("  Assigned super_admin role to user in store");
 
     Ok(())
 }

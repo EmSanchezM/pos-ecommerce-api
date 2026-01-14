@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "pos-ecommerce-api-collection",
 		"name": "POS Ecommerce API",
-		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso",
+		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -18,6 +18,16 @@
 		},
 		{
 			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "store_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "terminal_id",
 			"value": "",
 			"type": "string"
 		}
@@ -86,70 +96,50 @@
 						},
 						"description": "Registra un nuevo usuario de ecommerce (cliente).\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| email | string | Sí | Email válido del usuario |\n| password | string | Sí | Contraseña (mínimo 8 caracteres) |\n| first_name | string | Sí | Nombre del usuario |\n| last_name | string | Sí | Apellido del usuario |\n\n## Respuestas\n\n- **201 Created**: Usuario registrado exitosamente\n- **400 Bad Request**: Error de validación\n- **409 Conflict**: Email ya registrado"
 					},
-					"response": [
+					"response": []
+				},
+				{
+					"name": "Login (Super Admin)",
+					"event": [
 						{
-							"name": "Success - User Created",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('access_token', jsonData.access_token);",
+									"    pm.collectionVariables.set('refresh_token', jsonData.refresh_token);",
+									"    pm.test('Login successful', function() {",
+									"        pm.expect(jsonData.access_token).to.not.be.empty;",
+									"        pm.expect(jsonData.refresh_token).to.not.be.empty;",
+									"        pm.expect(jsonData.token_type).to.equal('Bearer');",
+									"    });",
+									"}"
 								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"usuario@ejemplo.com\",\n    \"password\": \"Password123!\",\n    \"first_name\": \"Juan\",\n    \"last_name\": \"Pérez\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/v1/auth/register",
-									"host": ["{{base_url}}"],
-									"path": ["api", "v1", "auth", "register"]
-								}
-							},
-							"status": "Created",
-							"code": 201,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"body": "{\n    \"user_id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"email\": \"usuario@ejemplo.com\",\n    \"username\": \"usuario\"\n}"
-						},
-						{
-							"name": "Error - Email Already Exists",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"email\": \"usuario@ejemplo.com\",\n    \"password\": \"Password123!\",\n    \"first_name\": \"Juan\",\n    \"last_name\": \"Pérez\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/v1/auth/register",
-									"host": ["{{base_url}}"],
-									"path": ["api", "v1", "auth", "register"]
-								}
-							},
-							"status": "Conflict",
-							"code": 409,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"body": "{\n    \"error\": \"Email already registered\"\n}"
+								"type": "text/javascript"
+							}
 						}
-					]
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"identifier\": \"admin@pos-ecommerce.com\",\n    \"password\": \"SuperAdmin123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "Inicia sesión con el usuario super_admin.\n\n## Credenciales\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!"
+					},
+					"response": []
 				},
 				{
 					"name": "Login",
@@ -190,72 +180,9 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "auth", "login"]
 						},
-						"description": "Inicia sesión con email o username y contraseña.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| identifier | string | Sí | Email o username del usuario |\n| password | string | Sí | Contraseña del usuario |\n\n## Respuestas\n\n- **200 OK**: Login exitoso, retorna tokens JWT\n- **400 Bad Request**: Request malformado\n- **401 Unauthorized**: Credenciales inválidas o cuenta deshabilitada"
+						"description": "Inicia sesión con email o username y contraseña."
 					},
-					"response": [
-						{
-							"name": "Success - Login OK",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"identifier\": \"usuario@ejemplo.com\",\n    \"password\": \"Password123!\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/v1/auth/login",
-									"host": ["{{base_url}}"],
-									"path": ["api", "v1", "auth", "login"]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"body": "{\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"token_type\": \"Bearer\",\n    \"expires_in\": 900\n}"
-						},
-						{
-							"name": "Error - Invalid Credentials",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"identifier\": \"usuario@ejemplo.com\",\n    \"password\": \"wrongpassword\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/v1/auth/login",
-									"host": ["{{base_url}}"],
-									"path": ["api", "v1", "auth", "login"]
-								}
-							},
-							"status": "Unauthorized",
-							"code": 401,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"body": "{\n    \"error\": \"Invalid credentials\"\n}"
-						}
-					]
+					"response": []
 				},
 				{
 					"name": "Refresh Token",
@@ -294,75 +221,445 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "auth", "refresh"]
 						},
-						"description": "Refresca el access token usando un refresh token válido.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| refresh_token | string | Sí | Refresh token obtenido en el login |\n\n## Respuestas\n\n- **200 OK**: Token refrescado exitosamente\n- **400 Bad Request**: Request malformado\n- **401 Unauthorized**: Refresh token inválido o expirado"
+						"description": "Refresca el access token usando un refresh token válido."
 					},
-					"response": [
-						{
-							"name": "Success - Token Refreshed",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/v1/auth/refresh",
-									"host": ["{{base_url}}"],
-									"path": ["api", "v1", "auth", "refresh"]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"body": "{\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"token_type\": \"Bearer\",\n    \"expires_in\": 900\n}"
-						},
-						{
-							"name": "Error - Invalid Token",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n    \"refresh_token\": \"invalid-token\"\n}"
-								},
-								"url": {
-									"raw": "{{base_url}}/api/v1/auth/refresh",
-									"host": ["{{base_url}}"],
-									"path": ["api", "v1", "auth", "refresh"]
-								}
-							},
-							"status": "Unauthorized",
-							"code": 401,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"body": "{\n    \"error\": \"Invalid or expired refresh token\"\n}"
-						}
-					]
+					"response": []
 				}
 			],
 			"description": "Endpoints de autenticación de usuarios"
+		},
+		{
+			"name": "Stores",
+			"item": [
+				{
+					"name": "Create Store",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('store_id', jsonData.id);",
+									"    pm.test('Store created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.name).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Tienda Nueva\",\n    \"address\": \"Calle Principal #123, Ciudad\",\n    \"is_ecommerce\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/stores",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stores"]
+						},
+						"description": "Crea una nueva tienda. Requiere rol super_admin.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | Sí | Nombre de la tienda |\n| address | string | Sí | Dirección de la tienda |\n| is_ecommerce | boolean | Sí | Si es tienda de e-commerce |"
+					},
+					"response": []
+				},
+				{
+					"name": "List Stores",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/stores?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stores"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "is_ecommerce",
+									"value": "false",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista tiendas con paginación y filtros opcionales.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20, max: 100) |\n| is_active | boolean | Filtrar por estado activo |\n| is_ecommerce | boolean | Filtrar por tipo e-commerce |"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Store",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/stores/{{store_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stores", "{{store_id}}"]
+						},
+						"description": "Obtiene el detalle de una tienda incluyendo el conteo de terminales activas."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Store",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Tienda Actualizada\",\n    \"address\": \"Nueva Dirección #456\",\n    \"is_ecommerce\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/stores/{{store_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stores", "{{store_id}}"]
+						},
+						"description": "Actualiza los datos de una tienda. Todos los campos son opcionales."
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Store",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/activate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stores", "{{store_id}}", "activate"]
+						},
+						"description": "Activa una tienda. Requiere rol super_admin.\n\nNota: Reactivar una tienda NO reactiva automáticamente sus terminales."
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Store",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/deactivate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stores", "{{store_id}}", "deactivate"]
+						},
+						"description": "Desactiva una tienda. Requiere rol super_admin.\n\nCuando se desactiva una tienda, todas sus terminales también se desactivan."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de tiendas. Requieren autenticación."
+		},
+		{
+			"name": "Terminals",
+			"item": [
+				{
+					"name": "Create Terminal",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('terminal_id', jsonData.id);",
+									"    pm.test('Terminal created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.code).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"TERM-001\",\n    \"name\": \"Terminal Principal\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/terminals",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stores", "{{store_id}}", "terminals"]
+						},
+						"description": "Crea una nueva terminal para una tienda. Requiere rol super_admin.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| code | string | Sí | Código único de la terminal |\n| name | string | Sí | Nombre de la terminal |"
+					},
+					"response": []
+				},
+				{
+					"name": "List Terminals",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/terminals?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stores", "{{store_id}}", "terminals"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista terminales de una tienda con paginación y estado de CAI."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Terminal",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "terminals", "{{terminal_id}}"]
+						},
+						"description": "Obtiene el detalle de una terminal incluyendo historial completo de CAI."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Terminal",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Terminal Actualizada\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "terminals", "{{terminal_id}}"]
+						},
+						"description": "Actualiza los datos de una terminal."
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Terminal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/activate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "terminals", "{{terminal_id}}", "activate"]
+						},
+						"description": "Activa una terminal."
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Terminal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/deactivate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "terminals", "{{terminal_id}}", "deactivate"]
+						},
+						"description": "Desactiva una terminal. El historial de CAI se preserva."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de terminales. Requieren autenticación."
+		},
+		{
+			"name": "CAI Management",
+			"item": [
+				{
+					"name": "Assign CAI",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"cai_number\": \"ABC123-DEF456-GHI789\",\n    \"range_start\": 1,\n    \"range_end\": 1000,\n    \"expiration_date\": \"2026-12-31\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/cai",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "terminals", "{{terminal_id}}", "cai"]
+						},
+						"description": "Asigna un rango CAI a una terminal. Requiere rol super_admin.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| cai_number | string | Sí | Número de CAI |\n| range_start | number | Sí | Inicio del rango de facturas |\n| range_end | number | Sí | Fin del rango de facturas |\n| expiration_date | string | Sí | Fecha de expiración (YYYY-MM-DD) |"
+					},
+					"response": []
+				},
+				{
+					"name": "Get CAI Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/cai/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "terminals", "{{terminal_id}}", "cai", "status"]
+						},
+						"description": "Obtiene el estado actual del CAI de una terminal.\n\nIncluye advertencia si el CAI expira en los próximos 30 días."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Next Invoice Number",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/cai/next-number",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "terminals", "{{terminal_id}}", "cai", "next-number"]
+						},
+						"description": "Obtiene el siguiente número de factura de forma atómica.\n\nEsta operación incrementa el contador y retorna el número actual.\n\n## Errores posibles\n- Terminal inactiva\n- Sin CAI asignado\n- CAI expirado\n- Rango agotado"
+					},
+					"response": []
+				},
+				{
+					"name": "Get CAI History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/cai/history",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "terminals", "{{terminal_id}}", "cai", "history"]
+						},
+						"description": "Obtiene el historial completo de CAI de una terminal, ordenado por fecha de creación."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de CAI (Código de Autorización de Impresión). Requieren autenticación."
 		}
 	]
 }

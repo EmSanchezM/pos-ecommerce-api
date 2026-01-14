@@ -3,11 +3,13 @@ use common::health::infrastructure::health_check_simple;
 use std::env;
 
 pub mod error;
+pub mod extractors;
 mod handlers;
+pub mod middleware;
 mod routes;
 mod state;
 
-use routes::auth_router;
+use routes::{auth_router, store_router, store_terminals_router, terminals_router};
 use state::AppState;
 
 #[tokio::main]
@@ -37,6 +39,9 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(health_check_simple))
         .nest("/api/v1/auth", auth_router())
+        .nest("/api/v1/stores", store_router(app_state.clone()))
+        .nest("/api/v1/stores/{store_id}/terminals", store_terminals_router(app_state.clone()))
+        .nest("/api/v1/terminals", terminals_router(app_state.clone()))
         .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();

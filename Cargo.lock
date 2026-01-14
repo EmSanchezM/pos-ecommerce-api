@@ -27,12 +27,14 @@ checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 name = "api-gateway"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axum",
+ "chrono",
  "common",
- "core",
  "dotenvy",
  "identity",
  "inventory",
+ "pos_core",
  "purchasing",
  "sales",
  "serde",
@@ -276,13 +278,6 @@ name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
-
-[[package]]
-name = "core"
-version = "0.1.0"
-dependencies = [
- "common",
-]
 
 [[package]]
 name = "core-foundation-sys"
@@ -1215,6 +1210,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
+name = "pos_core"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "common",
+ "identity",
+ "proptest",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "potential_utf"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1509,6 +1521,7 @@ name = "seed"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "argon2",
  "chrono",
  "dotenvy",
  "sqlx",

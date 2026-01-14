@@ -11,6 +11,7 @@ use axum::{
     Json,
 };
 use identity::{AuthError, ErrorResponse, IdentityError};
+use pos_core::CoreError;
 
 // =============================================================================
 // AppError - Unified API Gateway Error Type
@@ -223,6 +224,84 @@ impl From<IdentityError> for AppError {
                 ErrorResponse::internal_error(),
             ),
             IdentityError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<CoreError> Implementation
+// =============================================================================
+
+impl From<CoreError> for AppError {
+    fn from(err: CoreError) -> Self {
+        let (status, response) = match &err {
+            // 404 Not Found
+            CoreError::StoreNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("STORE_NOT_FOUND", format!("Store not found: {}", id)),
+            ),
+            CoreError::TerminalNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("TERMINAL_NOT_FOUND", format!("Terminal not found: {}", id)),
+            ),
+
+            // 400 Bad Request - Business rule violations
+            CoreError::StoreInactive(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("STORE_INACTIVE", format!("Store is inactive: {}", id)),
+            ),
+            CoreError::TerminalInactive(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("TERMINAL_INACTIVE", format!("Terminal is inactive: {}", id)),
+            ),
+            CoreError::InvalidTerminalCode => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid terminal code format: must be alphanumeric with hyphens, 3-20 characters"),
+            ),
+            CoreError::InvalidCaiNumber => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid CAI number format"),
+            ),
+            CoreError::InvalidCaiRange => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid CAI range: start must be <= end"),
+            ),
+            CoreError::NoCaiAssigned(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("NO_CAI_ASSIGNED", format!("No CAI assigned to terminal: {}", id)),
+            ),
+            CoreError::CaiExpired(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("CAI_EXPIRED", format!("CAI has expired for terminal: {}", id)),
+            ),
+            CoreError::CaiRangeExhausted(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("CAI_RANGE_EXHAUSTED", format!("CAI range exhausted for terminal: {}", id)),
+            ),
+
+            // 409 Conflict - Duplicate resources
+            CoreError::TerminalCodeExists(code) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("TERMINAL_CODE_EXISTS", format!("Terminal code already exists: {}", code)),
+            ),
+            CoreError::CaiRangeOverlap => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CAI_RANGE_OVERLAP", "CAI range overlaps with existing active range"),
+            ),
+
+            // 403 Forbidden
+            CoreError::Unauthorized => (
+                StatusCode::FORBIDDEN,
+                ErrorResponse::new("FORBIDDEN", "Unauthorized: requires super_admin role"),
+            ),
+
+            // 500 Internal Server Error
+            CoreError::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
             ),
