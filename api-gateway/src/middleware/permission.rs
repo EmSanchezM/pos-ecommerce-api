@@ -3,8 +3,6 @@
 // This module provides helper functions for checking user permissions
 // in handlers. These are used after the auth middleware has injected
 // the UserContext into the request.
-//
-// Requirements: 7.4, 7.5
 
 use axum::{http::StatusCode, Json, response::{IntoResponse, Response}};
 use identity::{ErrorResponse, UserContext};
@@ -36,9 +34,7 @@ use identity::{ErrorResponse, UserContext};
 /// }
 /// ```
 ///
-/// # Requirements
-///
-/// - Requirement 7.4: Return 403 Forbidden if permission is missing
+/// - Return 403 Forbidden if permission is missing
 pub fn require_permission(ctx: &UserContext, permission: &str) -> Result<(), Response> {
     if ctx.has_permission(permission) {
         Ok(())
@@ -77,9 +73,7 @@ pub fn require_permission(ctx: &UserContext, permission: &str) -> Result<(), Res
 /// }
 /// ```
 ///
-/// # Requirements
-///
-/// - Requirement 7.4: Return 403 Forbidden if any permission is missing
+/// - Return 403 Forbidden if any permission is missing
 pub fn require_all_permissions(ctx: &UserContext, permissions: &[&str]) -> Result<(), Response> {
     let missing: Vec<&str> = permissions
         .iter()
@@ -124,9 +118,7 @@ pub fn require_all_permissions(ctx: &UserContext, permissions: &[&str]) -> Resul
 /// }
 /// ```
 ///
-/// # Requirements
-///
-/// - Requirement 7.4: Return 403 Forbidden if no permission matches
+/// - Return 403 Forbidden if no permission matches
 pub fn require_any_permission(ctx: &UserContext, permissions: &[&str]) -> Result<(), Response> {
     if permissions.is_empty() {
         return Err(forbidden_response("No permissions specified"));
@@ -168,11 +160,9 @@ pub fn require_any_permission(ctx: &UserContext, permissions: &[&str]) -> Result
 /// }
 /// ```
 ///
-/// # Requirements
-///
-/// - Requirement 7.5: Return 403 Forbidden with descriptive message if not super_admin
-/// - Requirement 1.5: Only super_admin can create stores
-/// - Requirement 2.4: Only super_admin can create terminals
+/// - Return 403 Forbidden with descriptive message if not super_admin
+/// - Only super_admin can create stores
+/// - Only super_admin can create terminals
 pub fn require_super_admin(ctx: &UserContext) -> Result<(), Response> {
     // super_admin is identified by having the "system:admin" permission
     // This permission is only granted to users with the super_admin role

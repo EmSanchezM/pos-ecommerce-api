@@ -2,8 +2,6 @@
 //
 // This middleware extracts and validates JWT tokens from the Authorization header,
 // builds the UserContext with permissions, and injects it into request extensions.
-//
-// Requirements: 7.1, 7.2, 7.3, 7.6
 
 use axum::{
     body::Body,
@@ -37,12 +35,10 @@ use crate::state::AppState;
 ///   - Token is invalid or expired
 ///   - User is not found or inactive
 ///
-/// # Requirements
-///
-/// - Requirement 7.1: Return 401 if no token present
-/// - Requirement 7.2: Return 401 if token invalid or expired
-/// - Requirement 7.3: Extract user_id and build UserContext with permissions
-/// - Requirement 7.6: Inject UserContext as extractor for handlers
+/// - Return 401 if no token present
+/// - Return 401 if token invalid or expired
+/// - Extract user_id and build UserContext with permissions
+/// - Inject UserContext as extractor for handlers
 pub async fn auth_middleware(
     State(state): State<AppState>,
     mut request: Request<Body>,
