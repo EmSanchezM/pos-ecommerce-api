@@ -1,5 +1,5 @@
 -- Migration: Create users table
--- Requirements: 6.1 - User management with unique username, email, and password
+-- User management with unique username, email, and password
 
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,

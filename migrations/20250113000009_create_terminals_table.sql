@@ -1,5 +1,5 @@
 -- Migration: Create terminals table
--- Requirements: 5.1 - Terminal entity with store association
+-- Terminal entity with store association
 
 CREATE TABLE IF NOT EXISTS terminals (
     id UUID PRIMARY KEY,
