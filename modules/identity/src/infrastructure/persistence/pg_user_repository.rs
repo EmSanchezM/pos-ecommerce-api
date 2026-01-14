@@ -274,13 +274,24 @@ impl UserRepository for PgUserRepository {
         user_id: UserId,
         store_id: StoreId,
     ) -> Result<Vec<Permission>, IdentityError> {
+        // This query returns permissions from:
+        // 1. Roles assigned to the user in the specific store
+        // 2. The super_admin role if the user has it in ANY store (global permissions)
         let rows = sqlx::query_as::<_, PermissionRow>(
             r#"
             SELECT DISTINCT p.id, p.code, p.description, p.created_at
             FROM permissions p
             INNER JOIN role_permissions rp ON p.id = rp.permission_id
             INNER JOIN user_store_roles usr ON rp.role_id = usr.role_id
-            WHERE usr.user_id = $1 AND usr.store_id = $2
+            WHERE usr.user_id = $1 
+              AND (
+                  usr.store_id = $2
+                  OR EXISTS (
+                      SELECT 1 FROM roles r 
+                      WHERE r.id = usr.role_id 
+                        AND r.name = 'super_admin'
+                  )
+              )
             ORDER BY p.code
             "#,
         )
