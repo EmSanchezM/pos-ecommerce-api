@@ -1,6 +1,4 @@
 // PermissionRepository trait - interface for permission persistence
-//
-// Requirements: 1.3, 1.4, 1.5
 
 use async_trait::async_trait;
 

@@ -1,6 +1,4 @@
 // UserRepository trait - interface for user persistence
-//
-// Requirements: 3.1, 3.2, 3.3, 3.4, 6.1, 6.5
 
 use async_trait::async_trait;
 
