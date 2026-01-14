@@ -10,8 +10,6 @@ use uuid::Uuid;
 use crate::domain::entities::{CaiRange, Terminal};
 
 /// Response DTO for terminal information
-///
-/// Requirements: 4.3, 4.4
 #[derive(Debug, Clone, Serialize)]
 pub struct TerminalResponse {
     /// Unique identifier of the terminal
@@ -65,8 +63,6 @@ impl From<&Terminal> for TerminalResponse {
 }
 
 /// Response DTO for CAI status information
-///
-/// Requirements: 3.4, 3.5
 #[derive(Debug, Clone, Serialize)]
 pub struct CaiStatusResponse {
     /// The CAI number from the fiscal authority
@@ -112,8 +108,6 @@ impl From<CaiRange> for CaiStatusResponse {
 }
 
 /// Response DTO for next invoice number operation
-///
-/// Requirements: 3.1
 #[derive(Debug, Clone, Serialize)]
 pub struct NextInvoiceNumberResponse {
     /// Terminal ID that issued the number
@@ -127,8 +121,6 @@ pub struct NextInvoiceNumberResponse {
 }
 
 /// Response DTO for store detail with terminal count
-///
-/// Requirements: 4.2
 #[derive(Debug, Clone, Serialize)]
 pub struct StoreDetailResponse {
     /// Unique identifier of the store
@@ -150,8 +142,6 @@ pub struct StoreDetailResponse {
 }
 
 /// Response DTO for a store in a list (without terminal count for efficiency)
-///
-/// Requirements: 4.1
 #[derive(Debug, Clone, Serialize)]
 pub struct StoreListItemResponse {
     /// Unique identifier of the store
@@ -171,8 +161,6 @@ pub struct StoreListItemResponse {
 }
 
 /// Paginated response for store listing
-///
-/// Requirements: 4.1
 #[derive(Debug, Clone, Serialize)]
 pub struct PaginatedStoresResponse {
     /// List of stores in the current page
@@ -188,8 +176,6 @@ pub struct PaginatedStoresResponse {
 }
 
 /// Paginated response for terminal listing
-///
-/// Requirements: 4.3
 #[derive(Debug, Clone, Serialize)]
 pub struct PaginatedTerminalsResponse {
     /// List of terminals in the current page
@@ -205,8 +191,6 @@ pub struct PaginatedTerminalsResponse {
 }
 
 /// Response DTO for terminal detail with CAI history
-///
-/// Requirements: 4.4
 #[derive(Debug, Clone, Serialize)]
 pub struct TerminalDetailResponse {
     /// Unique identifier of the terminal
@@ -230,8 +214,6 @@ pub struct TerminalDetailResponse {
 }
 
 /// Response DTO for a CAI range in the history
-///
-/// Requirements: 4.4
 #[derive(Debug, Clone, Serialize)]
 pub struct CaiHistoryItemResponse {
     /// Unique identifier of the CAI range

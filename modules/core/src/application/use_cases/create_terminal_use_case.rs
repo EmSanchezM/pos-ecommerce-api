@@ -1,6 +1,5 @@
 // CreateTerminalUseCase - Creates a new terminal for a store
 //
-// Requirements: 2.1, 6.2
 // - Verify store exists and is active
 // - Validate terminal code is unique within the store
 // - Create terminal and save

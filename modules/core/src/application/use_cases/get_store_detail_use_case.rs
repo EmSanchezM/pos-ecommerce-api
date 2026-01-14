@@ -1,6 +1,5 @@
 // GetStoreDetailUseCase - Gets store details with active terminal count
 //
-// Requirements: 4.2
 // - Obtain store with count of active terminals
 
 use std::sync::Arc;

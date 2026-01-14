@@ -1,6 +1,5 @@
 // UpdateTerminalUseCase - Updates an existing terminal
 //
-// Requirements: 6.2
 // - Find existing terminal
 // - Update specified fields
 // - Register audit with old and new values

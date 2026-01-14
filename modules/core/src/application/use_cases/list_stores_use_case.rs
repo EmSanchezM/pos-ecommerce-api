@@ -1,6 +1,5 @@
 // ListStoresUseCase - Lists stores with pagination and filters
 //
-// Requirements: 4.1
 // - Support filters by is_active, is_ecommerce
 // - Implement pagination (page, page_size)
 

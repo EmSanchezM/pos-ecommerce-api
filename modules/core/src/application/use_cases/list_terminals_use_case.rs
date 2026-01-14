@@ -1,6 +1,5 @@
 // ListTerminalsUseCase - Lists terminals of a store with CAI status
 //
-// Requirements: 4.3
 // - List terminals of a store with their current CAI status
 
 use std::sync::Arc;
@@ -20,8 +19,6 @@ const MAX_PAGE_SIZE: u32 = 100;
 ///
 /// This use case retrieves terminals for a specific store with optional
 /// filtering by active status and pagination support.
-///
-/// Requirements: 4.3
 pub struct ListTerminalsUseCase<T>
 where
     T: TerminalRepository,

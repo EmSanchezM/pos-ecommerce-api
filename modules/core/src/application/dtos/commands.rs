@@ -8,8 +8,6 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 /// Command to create a new terminal for a store
-///
-/// Requirements: 2.1, 2.2
 #[derive(Debug, Clone, Deserialize)]
 pub struct CreateTerminalCommand {
     /// The store ID where the terminal will be created
@@ -21,8 +19,6 @@ pub struct CreateTerminalCommand {
 }
 
 /// Command to assign a CAI range to a terminal
-///
-/// Requirements: 2.2
 #[derive(Debug, Clone, Deserialize)]
 pub struct AssignCaiCommand {
     /// The terminal ID to assign the CAI to
@@ -47,8 +43,6 @@ pub struct UpdateTerminalCommand {
 }
 
 /// Query parameters for listing stores with pagination and filters
-///
-/// Requirements: 4.1
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ListStoresQuery {
     /// Filter by active status (optional)
@@ -62,8 +56,6 @@ pub struct ListStoresQuery {
 }
 
 /// Query parameters for listing terminals of a store
-///
-/// Requirements: 4.3
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct ListTerminalsQuery {
     /// Filter by active status (optional)
