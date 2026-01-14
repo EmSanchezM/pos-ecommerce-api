@@ -2,8 +2,6 @@
 //
 // This module defines the authentication router that groups all auth endpoints
 // under /api/v1/auth prefix.
-//
-// Requirements: 5.1, 5.3, 5.4
 
 use axum::{routing::post, Router};
 

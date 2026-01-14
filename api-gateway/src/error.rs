@@ -2,8 +2,6 @@
 //
 // This module provides a unified error type for the API Gateway that maps
 // domain errors to appropriate HTTP responses.
-//
-// Requirements: 5.5, 5.6, 5.7, 5.8
 
 use axum::{
     http::StatusCode,

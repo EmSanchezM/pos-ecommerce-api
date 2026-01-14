@@ -2,8 +2,6 @@
 //
 // This module defines the store router that groups all store endpoints
 // under /api/v1/stores prefix with authentication middleware.
-//
-// Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 4.1, 4.2
 
 use axum::{
     middleware,
