@@ -2,8 +2,6 @@
 //
 // This module defines the AppState struct that holds all shared dependencies
 // for the API Gateway, following hexagonal architecture principles.
-//
-// Requirements: 5.1, 5.3, 5.4
 
 use std::sync::Arc;
 
