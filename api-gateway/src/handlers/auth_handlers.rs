@@ -4,8 +4,6 @@
 // - POST /api/v1/auth/register - Ecommerce user registration
 // - POST /api/v1/auth/login - Unified login (email or username)
 // - POST /api/v1/auth/refresh - Token refresh
-//
-// Requirements: 5.1, 5.3, 5.4, 5.5, 5.6, 5.8
 
 use axum::{extract::State, http::StatusCode, Json};
 
@@ -44,11 +42,9 @@ use crate::state::AppState;
 /// - 409 Conflict: Email already registered
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 5.1: POST /api/v1/auth/register/ecommerce endpoint
-/// - Requirement 5.5: HTTP 400 for validation errors
-/// - Requirement 5.8: HTTP 500 without exposing internal details
+/// - POST /api/v1/auth/register/ecommerce endpoint
+/// - HTTP 400 for validation errors
+/// - HTTP 500 without exposing internal details
 pub async fn register_handler(
     State(state): State<AppState>,
     Json(command): Json<RegisterEcommerceCommand>,
@@ -85,12 +81,10 @@ pub async fn register_handler(
 /// - 401 Unauthorized: Invalid credentials or account disabled
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 5.3: POST /api/v1/auth/login endpoint
-/// - Requirement 5.5: HTTP 400 for malformed requests
-/// - Requirement 5.6: HTTP 401 for authentication failures
-/// - Requirement 5.8: HTTP 500 without exposing internal details
+/// - POST /api/v1/auth/login endpoint
+/// - HTTP 400 for malformed requests
+/// - HTTP 401 for authentication failures
+/// - HTTP 500 without exposing internal details
 pub async fn login_handler(
     State(state): State<AppState>,
     Json(command): Json<LoginCommand>,
@@ -128,10 +122,10 @@ pub async fn login_handler(
 ///
 /// # Requirements
 ///
-/// - Requirement 5.4: POST /api/v1/auth/refresh endpoint
-/// - Requirement 5.5: HTTP 400 for malformed requests
-/// - Requirement 5.6: HTTP 401 for invalid tokens
-/// - Requirement 5.8: HTTP 500 without exposing internal details
+/// - POST /api/v1/auth/refresh endpoint
+/// - HTTP 400 for malformed requests
+/// - HTTP 401 for invalid tokens
+/// - HTTP 500 without exposing internal details
 pub async fn refresh_handler(
     State(state): State<AppState>,
     Json(command): Json<RefreshCommand>,

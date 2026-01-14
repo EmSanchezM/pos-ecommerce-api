@@ -3,7 +3,6 @@
 // This extractor retrieves the UserContext from request extensions,
 // which is injected by the auth middleware.
 //
-// Requirements: 7.3, 7.6
 
 use axum::{
     extract::FromRequestParts,
@@ -43,10 +42,8 @@ use identity::{ErrorResponse, UserContext};
 /// request extensions. This typically means the auth middleware was
 /// not applied to the route.
 ///
-/// # Requirements
-///
-/// - Requirement 7.3: Extract UserContext with user_id, store_id, and permissions
-/// - Requirement 7.6: Inject UserContext as extractor for handlers
+/// - Extract UserContext with user_id, store_id, and permissions
+/// - Inject UserContext as extractor for handlers
 #[derive(Debug, Clone)]
 pub struct CurrentUser(pub UserContext);
 

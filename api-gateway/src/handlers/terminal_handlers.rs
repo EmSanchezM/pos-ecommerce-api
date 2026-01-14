@@ -8,7 +8,6 @@
 // - POST /terminals/:id/activate - Activate terminal
 // - POST /terminals/:id/deactivate - Deactivate terminal
 //
-// Requirements: 2.1, 2.6, 4.3, 4.4
 
 use axum::{
     extract::{Path, Query, State},
@@ -62,10 +61,8 @@ use crate::state::AppState;
 /// - 409 Conflict: Terminal code already exists in store
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 2.1: Create terminal for active store with unique code
-/// - Requirement 2.4: Only super_admin can create terminals
+/// - Create terminal for active store with unique code
+/// - Only super_admin can create terminals
 pub async fn create_terminal_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
@@ -127,9 +124,7 @@ pub struct CreateTerminalCommandRequest {
 /// - 401 Unauthorized: Missing or invalid token
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 4.3: List terminals with CAI status
+/// - List terminals with CAI status
 pub async fn list_terminals_handler(
     State(state): State<AppState>,
     CurrentUser(_ctx): CurrentUser,
@@ -167,9 +162,7 @@ pub async fn list_terminals_handler(
 /// - 404 Not Found: Terminal doesn't exist
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 4.4: Get terminal details with complete CAI history
+/// - Get terminal details with complete CAI history
 pub async fn get_terminal_handler(
     State(state): State<AppState>,
     CurrentUser(_ctx): CurrentUser,
@@ -250,9 +243,7 @@ pub async fn update_terminal_handler(
 /// - 404 Not Found: Terminal doesn't exist
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 2.6: Activate terminal
+/// - Activate terminal
 pub async fn activate_terminal_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
@@ -288,9 +279,7 @@ pub async fn activate_terminal_handler(
 /// - 404 Not Found: Terminal doesn't exist
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 2.6: Deactivate terminal preserving CAI history
+/// - Deactivate terminal preserving CAI history
 pub async fn deactivate_terminal_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,

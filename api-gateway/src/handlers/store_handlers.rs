@@ -7,8 +7,6 @@
 // - PUT /stores/:id - Update store
 // - POST /stores/:id/activate - Activate store (requires super_admin)
 // - POST /stores/:id/deactivate - Deactivate store (requires super_admin)
-//
-// Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 4.1, 4.2
 
 use axum::{
     extract::{Path, Query, State},
@@ -88,10 +86,8 @@ impl From<identity::Store> for StoreResponse {
 /// - 403 Forbidden: User is not super_admin
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 1.1: Create store with name, address, and type
-/// - Requirement 1.5: Only super_admin can create stores
+/// - Create store with name, address, and type
+/// - Only super_admin can create stores
 pub async fn create_store_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
@@ -132,10 +128,8 @@ pub async fn create_store_handler(
 /// - 401 Unauthorized: Missing or invalid token
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 4.1: List stores with pagination and filters
-/// - Requirement 1.6: Filter by user access (TODO: implement access filtering)
+/// - List stores with pagination and filters
+/// - Filter by user access (TODO: implement access filtering)
 pub async fn list_stores_handler(
     State(state): State<AppState>,
     CurrentUser(_ctx): CurrentUser,
@@ -171,9 +165,7 @@ pub async fn list_stores_handler(
 /// - 404 Not Found: Store doesn't exist
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 4.2: Get store details with active terminal count
+/// - Get store details with active terminal count
 pub async fn get_store_handler(
     State(state): State<AppState>,
     CurrentUser(_ctx): CurrentUser,
@@ -220,10 +212,8 @@ pub async fn get_store_handler(
 /// - 401 Unauthorized: Missing or invalid token
 /// - 404 Not Found: Store doesn't exist
 /// - 500 Internal Server Error: Unexpected error
-///
-/// # Requirements
-///
-/// - Requirement 1.2: Update store details
+/// 
+/// - Update store details
 pub async fn update_store_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
@@ -262,10 +252,8 @@ pub async fn update_store_handler(
 /// - 404 Not Found: Store doesn't exist
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 1.4: Reactivate store without cascading to terminals
-/// - Requirement 1.5: Only super_admin can activate stores
+/// - Reactivate store without cascading to terminals
+/// - Only super_admin can activate stores
 pub async fn activate_store_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
@@ -310,10 +298,8 @@ pub async fn activate_store_handler(
 /// - 404 Not Found: Store doesn't exist
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 1.3: Deactivate store and cascade to terminals
-/// - Requirement 1.5: Only super_admin can deactivate stores
+/// - Deactivate store and cascade to terminals
+/// - Only super_admin can deactivate stores
 pub async fn deactivate_store_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,

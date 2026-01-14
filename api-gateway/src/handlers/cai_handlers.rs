@@ -5,8 +5,6 @@
 // - GET /terminals/:id/cai/status - Get CAI status
 // - POST /terminals/:id/cai/next-number - Get next invoice number
 // - GET /terminals/:id/cai/history - Get CAI history
-//
-// Requirements: 2.2, 2.3, 3.1, 3.4, 3.5
 
 use axum::{
     extract::{Path, State},
@@ -95,10 +93,8 @@ impl From<pos_core::CaiRange> for CaiAssignmentResponse {
 /// - 409 Conflict: CAI range overlaps with existing active range
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 2.2: Assign CAI with number, expiration date, and range
-/// - Requirement 2.3: Validate no overlap with existing active ranges
+/// - Assign CAI with number, expiration date, and range
+/// - Validate no overlap with existing active ranges
 pub async fn assign_cai_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
@@ -159,10 +155,8 @@ pub struct AssignCaiRequest {
 /// - 404 Not Found: Terminal doesn't exist
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 3.4: Return current number, remaining, and expiration date
-/// - Requirement 3.5: Include warning if CAI expires within 30 days
+/// - Return current number, remaining, and expiration date
+/// - Include warning if CAI expires within 30 days
 pub async fn get_cai_status_handler(
     State(state): State<AppState>,
     CurrentUser(_ctx): CurrentUser,
@@ -200,11 +194,9 @@ pub async fn get_cai_status_handler(
 /// - 404 Not Found: Terminal doesn't exist
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 3.1: Return current number and increment counter atomically
-/// - Requirement 3.2: Reject if CAI is expired
-/// - Requirement 3.3: Reject if range is exhausted
+/// - Return current number and increment counter atomically
+/// - Reject if CAI is expired
+/// - Reject if range is exhausted
 pub async fn get_next_invoice_number_handler(
     State(state): State<AppState>,
     CurrentUser(_ctx): CurrentUser,
@@ -240,9 +232,7 @@ pub async fn get_next_invoice_number_handler(
 /// - 404 Not Found: Terminal doesn't exist
 /// - 500 Internal Server Error: Unexpected error
 ///
-/// # Requirements
-///
-/// - Requirement 4.4: Return complete CAI history ordered by creation date
+/// - Return complete CAI history ordered by creation date
 pub async fn get_cai_history_handler(
     State(state): State<AppState>,
     CurrentUser(_ctx): CurrentUser,
