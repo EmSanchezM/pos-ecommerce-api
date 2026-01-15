@@ -19,14 +19,40 @@ mod error;
 pub use error::InventoryError;
 
 // -----------------------------------------------------------------------------
+// Domain Layer - Value Objects
+// -----------------------------------------------------------------------------
+
+// ID value objects
+pub use domain::value_objects::ProductId;
+pub use domain::value_objects::VariantId;
+pub use domain::value_objects::StockId;
+pub use domain::value_objects::MovementId;
+pub use domain::value_objects::ReservationId;
+pub use domain::value_objects::RecipeId;
+pub use domain::value_objects::IngredientId;
+pub use domain::value_objects::SubstituteId;
+pub use domain::value_objects::AdjustmentId;
+pub use domain::value_objects::TransferId;
+pub use domain::value_objects::CategoryId;
+
+// Validated value objects
+pub use domain::value_objects::Sku;
+pub use domain::value_objects::Barcode;
+pub use domain::value_objects::Currency;
+pub use domain::value_objects::UnitOfMeasure;
+
+// Enum value objects
+pub use domain::value_objects::MovementType;
+pub use domain::value_objects::ReservationStatus;
+pub use domain::value_objects::AdjustmentStatus;
+pub use domain::value_objects::AdjustmentType;
+pub use domain::value_objects::AdjustmentReason;
+pub use domain::value_objects::TransferStatus;
+
+// -----------------------------------------------------------------------------
 // Domain Layer - Entities (to be implemented in later tasks)
 // -----------------------------------------------------------------------------
 // pub use domain::entities::{...};
-
-// -----------------------------------------------------------------------------
-// Domain Layer - Value Objects (to be implemented in later tasks)
-// -----------------------------------------------------------------------------
-// pub use domain::value_objects::{...};
 
 // -----------------------------------------------------------------------------
 // Domain Layer - Repository Traits (to be implemented in later tasks)
