@@ -63,10 +63,28 @@ pub use domain::entities::InventoryStock;
 pub use domain::entities::InventoryReservation;
 pub use domain::entities::InventoryMovement;
 
+// Recipe/BOM entities
+pub use domain::entities::Recipe;
+pub use domain::entities::RecipeIngredient;
+pub use domain::entities::IngredientSubstitute;
+
+// Adjustment and transfer entities
+pub use domain::entities::StockAdjustment;
+pub use domain::entities::AdjustmentItem;
+pub use domain::entities::StockTransfer;
+pub use domain::entities::TransferItem;
+
 // -----------------------------------------------------------------------------
-// Domain Layer - Repository Traits (to be implemented in later tasks)
+// Domain Layer - Repository Traits
 // -----------------------------------------------------------------------------
-// pub use domain::repositories::{...};
+pub use domain::repositories::CategoryRepository;
+pub use domain::repositories::ProductRepository;
+pub use domain::repositories::InventoryStockRepository;
+pub use domain::repositories::InventoryMovementRepository;
+pub use domain::repositories::ReservationRepository;
+pub use domain::repositories::RecipeRepository;
+pub use domain::repositories::AdjustmentRepository;
+pub use domain::repositories::TransferRepository;
 
 // -----------------------------------------------------------------------------
 // Application Layer - Use Cases (to be implemented in later tasks)
