@@ -15,6 +15,12 @@ mod expire_reservations_use_case;
 mod create_recipe_use_case;
 mod calculate_recipe_cost_use_case;
 
+// Adjustment use cases
+mod create_adjustment_use_case;
+mod submit_adjustment_use_case;
+mod approve_adjustment_use_case;
+mod apply_adjustment_use_case;
+
 pub use create_category_use_case::CreateCategoryUseCase;
 pub use create_product_use_case::CreateProductUseCase;
 pub use create_variant_use_case::CreateVariantUseCase;
@@ -29,3 +35,9 @@ pub use expire_reservations_use_case::{ExpireReservationsUseCase, ExpireReservat
 // Recipe use cases exports
 pub use create_recipe_use_case::CreateRecipeUseCase;
 pub use calculate_recipe_cost_use_case::{CalculateRecipeCostUseCase, RecipeCostResult};
+
+// Adjustment use cases exports
+pub use create_adjustment_use_case::CreateAdjustmentUseCase;
+pub use submit_adjustment_use_case::SubmitAdjustmentUseCase;
+pub use approve_adjustment_use_case::ApproveAdjustmentUseCase;
+pub use apply_adjustment_use_case::ApplyAdjustmentUseCase;
