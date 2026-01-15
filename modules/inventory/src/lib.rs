@@ -97,6 +97,13 @@ pub use domain::repositories::TransferRepository;
 // pub use application::dtos::{...};
 
 // -----------------------------------------------------------------------------
-// Infrastructure Layer - PostgreSQL Repositories (to be implemented in later tasks)
+// Infrastructure Layer - PostgreSQL Repositories
 // -----------------------------------------------------------------------------
-// pub use infrastructure::persistence::{...};
+pub use infrastructure::persistence::PgCategoryRepository;
+pub use infrastructure::persistence::PgProductRepository;
+pub use infrastructure::persistence::PgInventoryStockRepository;
+pub use infrastructure::persistence::PgReservationRepository;
+pub use infrastructure::persistence::PgInventoryMovementRepository;
+pub use infrastructure::persistence::PgRecipeRepository;
+pub use infrastructure::persistence::PgAdjustmentRepository;
+pub use infrastructure::persistence::PgTransferRepository;
