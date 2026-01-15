@@ -18,7 +18,6 @@ use identity::domain::value_objects::UserId;
 /// Validates version matches, applies quantity change, increments version,
 /// creates inventory movement, and creates audit entry.
 ///
-/// Requirements: 3.3, 3.4, 5.1, 5.3
 pub struct UpdateStockUseCase<S, M, A>
 where
     S: InventoryStockRepository,
