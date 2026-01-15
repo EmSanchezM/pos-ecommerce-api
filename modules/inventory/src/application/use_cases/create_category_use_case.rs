@@ -12,8 +12,6 @@ use crate::InventoryError;
 /// Use case for creating a new product category
 ///
 /// Validates slug uniqueness and parent existence before creating the category.
-///
-/// Requirements: 1A.1, 1A.2
 pub struct CreateCategoryUseCase<C>
 where
     C: CategoryRepository,
