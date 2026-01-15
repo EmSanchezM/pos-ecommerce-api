@@ -21,6 +21,11 @@ mod submit_adjustment_use_case;
 mod approve_adjustment_use_case;
 mod apply_adjustment_use_case;
 
+// Transfer use cases
+mod create_transfer_use_case;
+mod ship_transfer_use_case;
+mod receive_transfer_use_case;
+
 pub use create_category_use_case::CreateCategoryUseCase;
 pub use create_product_use_case::CreateProductUseCase;
 pub use create_variant_use_case::CreateVariantUseCase;
@@ -41,3 +46,8 @@ pub use create_adjustment_use_case::CreateAdjustmentUseCase;
 pub use submit_adjustment_use_case::SubmitAdjustmentUseCase;
 pub use approve_adjustment_use_case::ApproveAdjustmentUseCase;
 pub use apply_adjustment_use_case::ApplyAdjustmentUseCase;
+
+// Transfer use cases exports
+pub use create_transfer_use_case::CreateTransferUseCase;
+pub use ship_transfer_use_case::ShipTransferUseCase;
+pub use receive_transfer_use_case::ReceiveTransferUseCase;
