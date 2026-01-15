@@ -14,7 +14,6 @@ use identity::UserId;
 ///
 /// Validates status is approved, updates stock with optimistic locking for each item,
 /// records balance_before/after, creates movements, and marks adjustment as applied.
-/// Requirements: 9.7, 10.3
 pub struct ApplyAdjustmentUseCase<A, S, M>
 where
     A: AdjustmentRepository,
