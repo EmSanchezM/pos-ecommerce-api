@@ -1,6 +1,4 @@
 // CreateCategoryUseCase - creates a new product category
-//
-// Requirements: 1A.1, 1A.2
 
 use std::sync::Arc;
 

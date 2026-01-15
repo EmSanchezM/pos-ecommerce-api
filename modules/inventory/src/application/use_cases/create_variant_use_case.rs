@@ -1,6 +1,4 @@
 // CreateVariantUseCase - creates a new product variant
-//
-// Requirements: 1.7, 2.1, 2.6
 
 use std::sync::Arc;
 
