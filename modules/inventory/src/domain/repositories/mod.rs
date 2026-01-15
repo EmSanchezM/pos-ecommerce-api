@@ -1,4 +1,23 @@
-// Repository traits for inventory management
+//! Repository traits for inventory management.
+//!
+//! Repository traits define the contract for data persistence operations.
+//! They are implemented by infrastructure layer components (e.g., PostgreSQL repositories).
+//!
+//! ## Available Repositories
+//!
+//! - [`CategoryRepository`]: CRUD operations for product categories
+//! - [`ProductRepository`]: Product catalog persistence
+//! - [`InventoryStockRepository`]: Stock records with optimistic locking support
+//! - [`InventoryMovementRepository`]: Kardex movement history
+//! - [`ReservationRepository`]: Stock reservation management
+//! - [`RecipeRepository`]: Recipe/BOM persistence
+//! - [`AdjustmentRepository`]: Stock adjustment documents
+//! - [`TransferRepository`]: Inter-store transfer documents
+//!
+//! ## Optimistic Locking
+//!
+//! The [`InventoryStockRepository`] supports optimistic locking via the
+//! `update_with_version` method, which prevents concurrent update conflicts.
 
 mod category_repository;
 mod product_repository;
