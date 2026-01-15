@@ -35,3 +35,9 @@ pub use inventory_movement::InventoryMovement;
 pub use recipe::Recipe;
 pub use recipe_ingredient::RecipeIngredient;
 pub use ingredient_substitute::IngredientSubstitute;
+
+// Re-exports - Adjustments and transfers
+pub use stock_adjustment::StockAdjustment;
+pub use adjustment_item::AdjustmentItem;
+pub use stock_transfer::StockTransfer;
+pub use transfer_item::TransferItem;
