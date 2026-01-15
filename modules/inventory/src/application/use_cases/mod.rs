@@ -1,4 +1,39 @@
-// Use cases for inventory operations
+//! Use cases for inventory operations.
+//!
+//! Use cases implement specific business operations by coordinating domain entities
+//! and repositories. Each use case follows the single responsibility principle.
+//!
+//! ## Product and Category Use Cases
+//!
+//! - [`CreateCategoryUseCase`]: Create hierarchical product categories
+//! - [`CreateProductUseCase`]: Create products with auto-generated SKUs
+//! - [`CreateVariantUseCase`]: Create product variants
+//!
+//! ## Stock Management Use Cases
+//!
+//! - [`UpdateStockUseCase`]: Update stock with optimistic locking
+//! - [`CreateReservationUseCase`]: Reserve stock for carts/orders
+//! - [`ConfirmReservationUseCase`]: Confirm and consume reserved stock
+//! - [`CancelReservationUseCase`]: Cancel and release reserved stock
+//! - [`ExpireReservationsUseCase`]: Batch expire old reservations
+//!
+//! ## Recipe Use Cases
+//!
+//! - [`CreateRecipeUseCase`]: Create recipes/BOMs for composite products
+//! - [`CalculateRecipeCostUseCase`]: Calculate recipe cost from ingredients
+//!
+//! ## Adjustment Use Cases
+//!
+//! - [`CreateAdjustmentUseCase`]: Create stock adjustment documents
+//! - [`SubmitAdjustmentUseCase`]: Submit adjustments for approval
+//! - [`ApproveAdjustmentUseCase`]: Approve or reject adjustments
+//! - [`ApplyAdjustmentUseCase`]: Apply approved adjustments to stock
+//!
+//! ## Transfer Use Cases
+//!
+//! - [`CreateTransferUseCase`]: Create inter-store transfer documents
+//! - [`ShipTransferUseCase`]: Ship transfers and reduce source stock
+//! - [`ReceiveTransferUseCase`]: Receive transfers and increase destination stock
 
 mod create_category_use_case;
 mod create_product_use_case;

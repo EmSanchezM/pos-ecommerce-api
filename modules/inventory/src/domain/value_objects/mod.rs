@@ -1,4 +1,32 @@
-// Domain value objects for inventory management
+//! Domain value objects for inventory management.
+//!
+//! Value objects are immutable objects defined by their attributes rather than identity.
+//! They encapsulate validation rules and provide type safety.
+//!
+//! ## ID Value Objects
+//!
+//! All IDs use UUID v7 for temporal ordering:
+//!
+//! - [`ProductId`], [`VariantId`], [`CategoryId`]: Product catalog identifiers
+//! - [`StockId`], [`MovementId`], [`ReservationId`]: Stock management identifiers
+//! - [`RecipeId`], [`IngredientId`], [`SubstituteId`]: Recipe/BOM identifiers
+//! - [`AdjustmentId`], [`TransferId`]: Workflow document identifiers
+//!
+//! ## Validated Value Objects
+//!
+//! - [`Sku`]: Auto-generated stock keeping unit codes
+//! - [`Barcode`]: Optional product barcodes (max 100 chars)
+//! - [`Currency`]: ISO 4217 currency codes (3 uppercase letters)
+//! - [`UnitOfMeasure`]: Measurement units (Unit, Kg, Lb, Liter, Oz)
+//!
+//! ## Enum Value Objects
+//!
+//! - [`MovementType`]: Types of inventory movements (In, Out, Adjustment, etc.)
+//! - [`ReservationStatus`]: Reservation lifecycle states
+//! - [`AdjustmentStatus`]: Adjustment workflow states
+//! - [`AdjustmentType`]: Increase or decrease adjustments
+//! - [`AdjustmentReason`]: Reasons for adjustments (Damage, Theft, etc.)
+//! - [`TransferStatus`]: Transfer workflow states
 
 // ID value objects
 mod product_id;
