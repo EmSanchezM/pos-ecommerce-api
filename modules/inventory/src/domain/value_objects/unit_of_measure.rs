@@ -6,10 +6,11 @@ use std::fmt;
 use std::str::FromStr;
 
 /// Unit of measure for products
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum UnitOfMeasure {
     /// Individual unit/piece
+    #[default]
     Unit,
     /// Kilogram
     Kg,
@@ -58,12 +59,6 @@ impl fmt::Display for UnitOfMeasure {
             UnitOfMeasure::Liter => write!(f, "liter"),
             UnitOfMeasure::Oz => write!(f, "oz"),
         }
-    }
-}
-
-impl Default for UnitOfMeasure {
-    fn default() -> Self {
-        UnitOfMeasure::Unit
     }
 }
 
