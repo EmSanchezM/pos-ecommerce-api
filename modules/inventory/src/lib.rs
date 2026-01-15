@@ -50,9 +50,18 @@ pub use domain::value_objects::AdjustmentReason;
 pub use domain::value_objects::TransferStatus;
 
 // -----------------------------------------------------------------------------
-// Domain Layer - Entities (to be implemented in later tasks)
+// Domain Layer - Entities
 // -----------------------------------------------------------------------------
-// pub use domain::entities::{...};
+
+// Product catalog entities
+pub use domain::entities::ProductCategory;
+pub use domain::entities::Product;
+pub use domain::entities::ProductVariant;
+
+// Stock management entities
+pub use domain::entities::InventoryStock;
+pub use domain::entities::InventoryReservation;
+pub use domain::entities::InventoryMovement;
 
 // -----------------------------------------------------------------------------
 // Domain Layer - Repository Traits (to be implemented in later tasks)

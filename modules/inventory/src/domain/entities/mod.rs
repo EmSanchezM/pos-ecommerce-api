@@ -1,5 +1,4 @@
 // Domain entities for inventory management
-// These will be implemented in later tasks (Task 3+)
 
 // Product catalog
 mod product_category;
@@ -22,4 +21,14 @@ mod adjustment_item;
 mod stock_transfer;
 mod transfer_item;
 
-// Re-exports will be added as entities are implemented
+// Re-exports - Product catalog
+pub use product_category::ProductCategory;
+pub use product::Product;
+pub use product_variant::ProductVariant;
+
+// Re-exports - Stock management
+pub use inventory_stock::InventoryStock;
+pub use inventory_reservation::InventoryReservation;
+pub use inventory_movement::InventoryMovement;
+
+// Re-exports for Recipe/BOM, Adjustments, and Transfers will be added as entities are implemented
