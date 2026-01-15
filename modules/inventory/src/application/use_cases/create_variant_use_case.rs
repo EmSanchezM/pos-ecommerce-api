@@ -13,8 +13,6 @@ use crate::InventoryError;
 ///
 /// Validates that the product has variants enabled, auto-generates variant SKU,
 /// and validates barcode uniqueness.
-///
-/// Requirements: 1.7, 2.1, 2.6
 pub struct CreateVariantUseCase<P>
 where
     P: ProductRepository,

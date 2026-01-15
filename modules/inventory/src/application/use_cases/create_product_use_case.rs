@@ -17,8 +17,7 @@ use identity::domain::value_objects::UserId;
 ///
 /// Auto-generates SKU, validates barcode uniqueness, validates category existence,
 /// and creates an audit entry.
-///
-/// Requirements: 1.1, 1.2, 1.3
+
 pub struct CreateProductUseCase<P, C, A>
 where
     P: ProductRepository,
