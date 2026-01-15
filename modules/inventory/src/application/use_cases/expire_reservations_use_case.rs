@@ -24,7 +24,6 @@ pub struct ExpireReservationsResult {
 /// Finds all expired pending reservations, marks them as expired,
 /// and releases reserved quantities.
 ///
-/// Requirements: 4.4
 pub struct ExpireReservationsUseCase<R, S>
 where
     R: ReservationRepository,
