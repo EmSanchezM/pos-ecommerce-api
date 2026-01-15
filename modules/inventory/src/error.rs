@@ -74,6 +74,27 @@ pub enum InventoryError {
     #[error("Cannot delete ingredient used in active recipes")]
     IngredientInUse,
 
+    #[error("Yield quantity must be positive")]
+    InvalidYieldQuantity,
+
+    #[error("Ingredient quantity must be positive")]
+    InvalidIngredientQuantity,
+
+    #[error("Waste percentage must be between 0 and 1")]
+    InvalidWastePercentage,
+
+    #[error("Conversion ratio must be positive")]
+    InvalidConversionRatio,
+
+    #[error("Substitute priority must be non-negative")]
+    InvalidSubstitutePriority,
+
+    #[error("Ingredient does not allow substitutes")]
+    SubstitutesNotAllowed,
+
+    #[error("Substitute not found: {0}")]
+    SubstituteNotFound(Uuid),
+
     // Adjustment errors
     #[error("Adjustment not found: {0}")]
     AdjustmentNotFound(Uuid),

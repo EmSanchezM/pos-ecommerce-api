@@ -31,4 +31,7 @@ pub use inventory_stock::InventoryStock;
 pub use inventory_reservation::InventoryReservation;
 pub use inventory_movement::InventoryMovement;
 
-// Re-exports for Recipe/BOM, Adjustments, and Transfers will be added as entities are implemented
+// Re-exports - Recipe/BOM
+pub use recipe::Recipe;
+pub use recipe_ingredient::RecipeIngredient;
+pub use ingredient_substitute::IngredientSubstitute;
