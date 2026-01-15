@@ -14,7 +14,6 @@ use identity::{StoreId, UserId};
 /// Use case for creating a new stock adjustment.
 ///
 /// Generates adjustment number, sets status to draft, and adds items.
-/// Requirements: 9.4, 9.8
 pub struct CreateAdjustmentUseCase<A>
 where
     A: AdjustmentRepository,

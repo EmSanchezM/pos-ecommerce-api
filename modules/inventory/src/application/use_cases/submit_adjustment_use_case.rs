@@ -12,7 +12,6 @@ use crate::InventoryError;
 /// Use case for submitting a stock adjustment for approval.
 ///
 /// Validates status is draft, validates has items, and changes status to pending_approval.
-/// Requirements: 9.5
 pub struct SubmitAdjustmentUseCase<A>
 where
     A: AdjustmentRepository,

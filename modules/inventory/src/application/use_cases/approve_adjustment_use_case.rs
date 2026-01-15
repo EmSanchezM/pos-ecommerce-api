@@ -14,7 +14,6 @@ use identity::UserId;
 ///
 /// Validates status is pending_approval, records approver and timestamp,
 /// and changes status to approved or rejected.
-/// Requirements: 9.6
 pub struct ApproveAdjustmentUseCase<A>
 where
     A: AdjustmentRepository,
