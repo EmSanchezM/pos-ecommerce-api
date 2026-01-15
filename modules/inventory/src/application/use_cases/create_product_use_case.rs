@@ -1,6 +1,4 @@
 // CreateProductUseCase - creates a new product
-//
-// Requirements: 1.1, 1.2, 1.3
 
 use std::str::FromStr;
 use std::sync::Arc;
