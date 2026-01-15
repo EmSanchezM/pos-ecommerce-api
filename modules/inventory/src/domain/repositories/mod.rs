@@ -1,5 +1,4 @@
 // Repository traits for inventory management
-// These will be implemented in later tasks (Task 8)
 
 mod category_repository;
 mod product_repository;
@@ -10,4 +9,12 @@ mod recipe_repository;
 mod adjustment_repository;
 mod transfer_repository;
 
-// Re-exports will be added as repository traits are implemented
+// Re-exports
+pub use category_repository::CategoryRepository;
+pub use product_repository::ProductRepository;
+pub use inventory_stock_repository::InventoryStockRepository;
+pub use inventory_movement_repository::InventoryMovementRepository;
+pub use reservation_repository::ReservationRepository;
+pub use recipe_repository::RecipeRepository;
+pub use adjustment_repository::AdjustmentRepository;
+pub use transfer_repository::TransferRepository;
