@@ -11,6 +11,10 @@ mod confirm_reservation_use_case;
 mod cancel_reservation_use_case;
 mod expire_reservations_use_case;
 
+// Recipe use cases
+mod create_recipe_use_case;
+mod calculate_recipe_cost_use_case;
+
 pub use create_category_use_case::CreateCategoryUseCase;
 pub use create_product_use_case::CreateProductUseCase;
 pub use create_variant_use_case::CreateVariantUseCase;
@@ -21,3 +25,7 @@ pub use create_reservation_use_case::CreateReservationUseCase;
 pub use confirm_reservation_use_case::ConfirmReservationUseCase;
 pub use cancel_reservation_use_case::CancelReservationUseCase;
 pub use expire_reservations_use_case::{ExpireReservationsUseCase, ExpireReservationsResult};
+
+// Recipe use cases exports
+pub use create_recipe_use_case::CreateRecipeUseCase;
+pub use calculate_recipe_cost_use_case::{CalculateRecipeCostUseCase, RecipeCostResult};
