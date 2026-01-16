@@ -26,17 +26,50 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     ("stores:list", "List all stores"),
     ("stores:assign_users", "Assign users to stores"),
     
-    // Inventory module permissions
+    // Product management permissions
     ("products:create", "Create new products"),
     ("products:read", "View product information"),
     ("products:update", "Update product information"),
     ("products:delete", "Delete products"),
     ("products:list", "List all products"),
     
+    ("variants:create", "Create product variants"),
+    ("variants:read", "View product variants"),
+    ("variants:update", "Update product variants"),
+    ("variants:delete", "Delete product variants"),
+    
+    ("recipes:create", "Create product recipes"),
+    ("recipes:read", "View product recipes"),
+    ("recipes:update", "Update product recipes"),
+    ("recipes:delete", "Delete product recipes"),
+    ("recipes:calculate_cost", "Calculate recipe costs"),
+    
+    // Inventory module permissions
     ("inventory:read", "View inventory levels"),
     ("inventory:update", "Update inventory levels"),
     ("inventory:transfer", "Transfer inventory between stores"),
-    ("inventory:adjust", "Adjust inventory quantities"),
+    ("inventory:adjust", "Create and manage inventory adjustments"),
+    ("inventory:approve_adjustments", "Approve inventory adjustments"),
+    ("inventory:reserve", "Create inventory reservations"),
+    
+    ("reservations:create", "Create inventory reservations"),
+    ("reservations:read", "View reservations"),
+    ("reservations:confirm", "Confirm reservations"),
+    ("reservations:cancel", "Cancel reservations"),
+    ("reservations:expire", "Expire pending reservations"),
+    
+    ("adjustments:create", "Create inventory adjustments"),
+    ("adjustments:read", "View inventory adjustments"),
+    ("adjustments:submit", "Submit adjustments for approval"),
+    ("adjustments:approve", "Approve inventory adjustments"),
+    ("adjustments:reject", "Reject inventory adjustments"),
+    ("adjustments:apply", "Apply approved adjustments to inventory"),
+    
+    ("transfers:create", "Create stock transfers"),
+    ("transfers:read", "View stock transfers"),
+    ("transfers:ship", "Ship stock transfers"),
+    ("transfers:receive", "Receive stock transfers"),
+    ("transfers:cancel", "Cancel stock transfers"),
     
     ("categories:create", "Create product categories"),
     ("categories:read", "View product categories"),
@@ -74,6 +107,9 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     // Reports permissions
     ("reports:sales", "Access sales reports"),
     ("reports:inventory", "Access inventory reports"),
+    ("reports:inventory:kardex", "Access kardex reports"),
+    ("reports:inventory:valuation", "Access inventory valuation reports"),
+    ("reports:inventory:low_stock", "Access low stock reports"),
     ("reports:purchases", "Access purchasing reports"),
     ("reports:financial", "Access financial reports"),
     
@@ -143,118 +179,198 @@ pub const ROLES: &[(&str, &str, bool)] = &[
     ),
 ];
 
-
 /// Role permissions mapping: (role_name, &[permission_codes])
 pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
     // Super admin gets all permissions
     (
         "super_admin",
         &[
+            // Identity
             "users:create", "users:read", "users:update", "users:delete", "users:list",
             "roles:create", "roles:read", "roles:update", "roles:delete", "roles:list", "roles:assign_permissions",
             "permissions:read", "permissions:list",
+            // Stores
             "stores:create", "stores:read", "stores:update", "stores:delete", "stores:list", "stores:assign_users",
+            // Products
             "products:create", "products:read", "products:update", "products:delete", "products:list",
-            "inventory:read", "inventory:update", "inventory:transfer", "inventory:adjust",
+            "variants:create", "variants:read", "variants:update", "variants:delete",
+            "recipes:create", "recipes:read", "recipes:update", "recipes:delete", "recipes:calculate_cost",
+            // Inventory
+            "inventory:read", "inventory:update", "inventory:transfer", "inventory:adjust", "inventory:approve_adjustments", "inventory:reserve",
+            "reservations:create", "reservations:read", "reservations:confirm", "reservations:cancel", "reservations:expire",
+            "adjustments:create", "adjustments:read", "adjustments:submit", "adjustments:approve", "adjustments:reject", "adjustments:apply",
+            "transfers:create", "transfers:read", "transfers:ship", "transfers:receive", "transfers:cancel",
             "categories:create", "categories:read", "categories:update", "categories:delete", "categories:list",
+            // Sales
             "sales:create", "sales:read", "sales:void", "sales:list", "sales:reports",
             "customers:create", "customers:read", "customers:update", "customers:delete", "customers:list",
+            // Purchasing
             "purchases:create", "purchases:read", "purchases:update", "purchases:approve", "purchases:receive", "purchases:list",
             "suppliers:create", "suppliers:read", "suppliers:update", "suppliers:delete", "suppliers:list",
-            "reports:sales", "reports:inventory", "reports:purchases", "reports:financial",
+            // Reports
+            "reports:sales", "reports:inventory", "reports:inventory:kardex", "reports:inventory:valuation", "reports:inventory:low_stock",
+            "reports:purchases", "reports:financial",
+            // System
             "system:admin", "system:settings", "system:audit_log", "system:backup",
         ],
     ),
+    
     // Store admin - full store access
     (
         "store_admin",
         &[
+            // Identity
             "users:create", "users:read", "users:update", "users:list",
             "roles:read", "roles:list",
             "permissions:read", "permissions:list",
+            // Stores
             "stores:read", "stores:update", "stores:assign_users",
+            // Products
             "products:create", "products:read", "products:update", "products:delete", "products:list",
-            "inventory:read", "inventory:update", "inventory:transfer", "inventory:adjust",
+            "variants:create", "variants:read", "variants:update", "variants:delete",
+            "recipes:create", "recipes:read", "recipes:update", "recipes:delete", "recipes:calculate_cost",
+            // Inventory
+            "inventory:read", "inventory:update", "inventory:transfer", "inventory:adjust", "inventory:approve_adjustments", "inventory:reserve",
+            "reservations:create", "reservations:read", "reservations:confirm", "reservations:cancel",
+            "adjustments:create", "adjustments:read", "adjustments:submit", "adjustments:approve", "adjustments:reject", "adjustments:apply",
+            "transfers:create", "transfers:read", "transfers:ship", "transfers:receive", "transfers:cancel",
             "categories:create", "categories:read", "categories:update", "categories:delete", "categories:list",
+            // Sales
             "sales:create", "sales:read", "sales:void", "sales:list", "sales:reports",
             "customers:create", "customers:read", "customers:update", "customers:delete", "customers:list",
+            // Purchasing
             "purchases:create", "purchases:read", "purchases:update", "purchases:approve", "purchases:receive", "purchases:list",
             "suppliers:create", "suppliers:read", "suppliers:update", "suppliers:delete", "suppliers:list",
-            "reports:sales", "reports:inventory", "reports:purchases",
+            // Reports
+            "reports:sales", "reports:inventory", "reports:inventory:kardex", "reports:inventory:valuation", "reports:inventory:low_stock",
+            "reports:purchases",
         ],
     ),
+    
     // Store manager
     (
         "store_manager",
         &[
+            // Identity
             "users:read", "users:list",
             "roles:read", "roles:list",
+            // Stores
             "stores:read",
+            // Products
             "products:read", "products:update", "products:list",
-            "inventory:read", "inventory:update", "inventory:adjust",
+            "variants:create", "variants:read", "variants:update",
+            "recipes:create", "recipes:read", "recipes:update", "recipes:calculate_cost",
+            // Inventory
+            "inventory:read", "inventory:update", "inventory:adjust", "inventory:approve_adjustments", "inventory:transfer", "inventory:reserve",
+            "reservations:create", "reservations:read", "reservations:confirm", "reservations:cancel",
+            "adjustments:create", "adjustments:read", "adjustments:submit", "adjustments:approve",
+            "transfers:create", "transfers:read", "transfers:ship", "transfers:receive", "transfers:cancel",
             "categories:read", "categories:list",
+            // Sales
             "sales:create", "sales:read", "sales:void", "sales:list", "sales:reports",
             "customers:create", "customers:read", "customers:update", "customers:list",
+            // Purchasing
             "purchases:create", "purchases:read", "purchases:update", "purchases:list",
             "suppliers:read", "suppliers:list",
-            "reports:sales", "reports:inventory",
+            // Reports
+            "reports:sales", "reports:inventory", "reports:inventory:kardex", "reports:inventory:valuation", "reports:inventory:low_stock",
         ],
     ),
+    
     // Cashier
     (
         "cashier",
         &[
+            // Products
             "products:read", "products:list",
-            "inventory:read",
+            "variants:read",
+            "recipes:read",
             "categories:read", "categories:list",
+            // Inventory
+            "inventory:read", "inventory:reserve",
+            "reservations:create", "reservations:confirm", "reservations:cancel",
+            // Sales
             "sales:create", "sales:read", "sales:list",
             "customers:create", "customers:read", "customers:update", "customers:list",
         ],
     ),
+    
     // Inventory clerk
     (
         "inventory_clerk",
         &[
+            // Products
             "products:read", "products:update", "products:list",
-            "inventory:read", "inventory:update", "inventory:adjust",
+            "variants:read", "variants:update",
+            "recipes:read",
             "categories:read", "categories:list",
+            // Inventory
+            "inventory:read", "inventory:update", "inventory:adjust",
+            "adjustments:create", "adjustments:read", "adjustments:submit",
+            "transfers:read",
+            // Purchasing
             "purchases:read", "purchases:receive", "purchases:list",
             "suppliers:read", "suppliers:list",
-            "reports:inventory",
+            // Reports
+            "reports:inventory", "reports:inventory:kardex", "reports:inventory:low_stock",
         ],
     ),
+    
     // Purchasing agent
     (
         "purchasing_agent",
         &[
+            // Products
             "products:read", "products:list",
+            "variants:read",
+            "categories:read", "categories:list",
+            // Inventory
             "inventory:read",
+            // Purchasing
             "purchases:create", "purchases:read", "purchases:update", "purchases:list",
             "suppliers:create", "suppliers:read", "suppliers:update", "suppliers:list",
+            // Reports
             "reports:purchases",
         ],
     ),
+    
     // Viewer - read only
     (
         "viewer",
         &[
+            // Products
             "products:read", "products:list",
-            "inventory:read",
+            "variants:read",
+            "recipes:read",
             "categories:read", "categories:list",
+            // Inventory
+            "inventory:read",
+            "adjustments:read",
+            "transfers:read",
+            // Sales
             "sales:read", "sales:list",
             "customers:read", "customers:list",
+            // Purchasing
             "purchases:read", "purchases:list",
             "suppliers:read", "suppliers:list",
         ],
     ),
+    
     // Customer - e-commerce user
     (
         "customer",
         &[
+            // Products (read-only for browsing)
             "products:read", "products:list",
+            "variants:read",
             "categories:read", "categories:list",
+            // Inventory (only to check availability)
+            "inventory:read",
+            // Shopping
             "cart:view", "cart:add", "cart:update", "cart:remove", "cart:checkout",
+            "reservations:create", "reservations:cancel", // Only own reservations
             "orders:create", "orders:view_own", "orders:cancel_own",
+            // Profile
             "profile:view", "profile:update",
             "wishlist:manage",
             "reviews:create", "reviews:view",
