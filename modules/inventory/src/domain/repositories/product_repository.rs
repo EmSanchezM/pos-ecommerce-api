@@ -35,6 +35,25 @@ pub trait ProductRepository: Send + Sync {
     /// Finds all products in a specific category
     async fn find_by_category(&self, category_id: CategoryId) -> Result<Vec<Product>, InventoryError>;
 
+    /// Finds products with pagination and filters
+    /// Returns (products, total_count)
+    async fn find_paginated(
+        &self,
+        category_id: Option<CategoryId>,
+        is_active: Option<bool>,
+        search: Option<&str>,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<Product>, i64), InventoryError>;
+
+    /// Counts total products matching the filters
+    async fn count_filtered(
+        &self,
+        category_id: Option<CategoryId>,
+        is_active: Option<bool>,
+        search: Option<&str>,
+    ) -> Result<i64, InventoryError>;
+
     // =========================================================================
     // Variant operations
     // =========================================================================

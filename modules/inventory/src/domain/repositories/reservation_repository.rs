@@ -36,4 +36,24 @@ pub trait ReservationRepository: Send + Sync {
 
     /// Deletes a reservation by ID
     async fn delete(&self, id: ReservationId) -> Result<(), InventoryError>;
+
+    /// Finds reservations with pagination and optional filters
+    ///
+    /// # Arguments
+    /// * `stock_id` - Optional filter by stock ID
+    /// * `status` - Optional filter by status (pending, confirmed, cancelled, expired)
+    /// * `reference_type` - Optional filter by reference type (cart, order, quote)
+    /// * `page` - Page number (1-indexed)
+    /// * `page_size` - Number of items per page
+    ///
+    /// # Returns
+    /// Tuple of (reservations, total_count) for pagination
+    async fn find_paginated(
+        &self,
+        stock_id: Option<StockId>,
+        status: Option<&str>,
+        reference_type: Option<&str>,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<InventoryReservation>, i64), InventoryError>;
 }

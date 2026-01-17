@@ -32,6 +32,23 @@ pub trait RecipeRepository: Send + Sync {
     /// Finds the active recipe for a variant (only one active recipe per variant)
     async fn find_active_by_variant(&self, variant_id: VariantId) -> Result<Option<Recipe>, InventoryError>;
 
+    /// Finds recipes with pagination and filters
+    /// Returns (recipes, total_count)
+    async fn find_paginated(
+        &self,
+        is_active: Option<bool>,
+        search: Option<&str>,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<Recipe>, i64), InventoryError>;
+
+    /// Counts total recipes matching the filters
+    async fn count_filtered(
+        &self,
+        is_active: Option<bool>,
+        search: Option<&str>,
+    ) -> Result<i64, InventoryError>;
+
     /// Updates an existing recipe
     async fn update(&self, recipe: &Recipe) -> Result<(), InventoryError>;
 

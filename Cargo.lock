@@ -47,6 +47,7 @@ dependencies = [
  "inventory",
  "pos_core",
  "purchasing",
+ "rust_decimal",
  "sales",
  "serde",
  "serde_json",

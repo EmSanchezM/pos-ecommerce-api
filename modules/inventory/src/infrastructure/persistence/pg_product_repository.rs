@@ -206,6 +206,70 @@ impl ProductRepository for PgProductRepository {
         rows.into_iter().map(|r| r.try_into()).collect()
     }
 
+    async fn find_paginated(
+        &self,
+        category_id: Option<CategoryId>,
+        is_active: Option<bool>,
+        search: Option<&str>,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<Product>, i64), InventoryError> {
+        let offset = (page - 1) * page_size;
+
+        // Build dynamic query based on filters
+        let rows = sqlx::query_as::<_, ProductRow>(
+            r#"
+            SELECT id, sku, barcode, name, description, category_id, brand, unit_of_measure,
+                   base_price, cost_price, currency, is_perishable, is_trackable, has_variants,
+                   tax_rate, tax_included, attributes, is_active, created_at, updated_at
+            FROM products
+            WHERE ($1::uuid IS NULL OR category_id = $1)
+              AND ($2::bool IS NULL OR is_active = $2)
+              AND ($3::text IS NULL OR name ILIKE '%' || $3 || '%' OR description ILIKE '%' || $3 || '%')
+            ORDER BY created_at DESC
+            LIMIT $4 OFFSET $5
+            "#,
+        )
+        .bind(category_id.map(|c| c.into_uuid()))
+        .bind(is_active)
+        .bind(search)
+        .bind(page_size)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let products: Result<Vec<Product>, _> = rows.into_iter().map(|r| r.try_into()).collect();
+        let products = products?;
+
+        // Get total count
+        let total = self.count_filtered(category_id, is_active, search).await?;
+
+        Ok((products, total))
+    }
+
+    async fn count_filtered(
+        &self,
+        category_id: Option<CategoryId>,
+        is_active: Option<bool>,
+        search: Option<&str>,
+    ) -> Result<i64, InventoryError> {
+        let count: (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)
+            FROM products
+            WHERE ($1::uuid IS NULL OR category_id = $1)
+              AND ($2::bool IS NULL OR is_active = $2)
+              AND ($3::text IS NULL OR name ILIKE '%' || $3 || '%' OR description ILIKE '%' || $3 || '%')
+            "#,
+        )
+        .bind(category_id.map(|c| c.into_uuid()))
+        .bind(is_active)
+        .bind(search)
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(count.0)
+    }
 
     // =========================================================================
     // Variant operations

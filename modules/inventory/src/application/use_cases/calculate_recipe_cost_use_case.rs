@@ -173,6 +173,24 @@ mod tests {
             unimplemented!()
         }
 
+        async fn find_paginated(
+            &self,
+            _is_active: Option<bool>,
+            _search: Option<&str>,
+            _page: i64,
+            _page_size: i64,
+        ) -> Result<(Vec<Recipe>, i64), InventoryError> {
+            unimplemented!()
+        }
+
+        async fn count_filtered(
+            &self,
+            _is_active: Option<bool>,
+            _search: Option<&str>,
+        ) -> Result<i64, InventoryError> {
+            unimplemented!()
+        }
+
         async fn update(&self, _recipe: &Recipe) -> Result<(), InventoryError> {
             unimplemented!()
         }

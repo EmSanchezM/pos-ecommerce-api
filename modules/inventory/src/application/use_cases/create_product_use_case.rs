@@ -308,6 +308,26 @@ mod tests {
         async fn count_variants(&self, _product_id: ProductId) -> Result<u32, InventoryError> {
             unimplemented!()
         }
+
+        async fn find_paginated(
+            &self,
+            _category_id: Option<CategoryId>,
+            _is_active: Option<bool>,
+            _search: Option<&str>,
+            _page: i64,
+            _page_size: i64,
+        ) -> Result<(Vec<Product>, i64), InventoryError> {
+            unimplemented!()
+        }
+
+        async fn count_filtered(
+            &self,
+            _category_id: Option<CategoryId>,
+            _is_active: Option<bool>,
+            _search: Option<&str>,
+        ) -> Result<i64, InventoryError> {
+            unimplemented!()
+        }
     }
 
     struct MockCategoryRepository {
