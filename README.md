@@ -5,9 +5,15 @@ API REST en Rust con Axum para sistema de punto de venta y ecommerce
 
 ```
 pos-ecommerce-api/
-├── api-gateway/          # API Gateway principal
+├── api-gateway/              # HTTP API entry point (Axum server)
 │   └── src/
-│       └── main.rs
+│       ├── main.rs          # Application bootstrap
+│       ├── state.rs         # Shared application state & DI container
+│       ├── error.rs         # Unified error handling (HTTP mapping)
+│       ├── handlers/        # HTTP request handlers
+│       ├── middleware/      # Auth & permission middleware
+│       ├── extractors/      # Axum extractors (CurrentUser)
+│       └── routes/          # Route registration
 ├── modules/              # Módulos del sistema
 │   ├── common/          # Utilidades y código compartido
 │   ├── core/            # Funcionalidad core del sistema
