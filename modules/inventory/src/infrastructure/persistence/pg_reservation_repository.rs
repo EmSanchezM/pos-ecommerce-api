@@ -154,6 +154,91 @@ impl ReservationRepository for PgReservationRepository {
 
         Ok(())
     }
+
+    async fn find_paginated(
+        &self,
+        stock_id: Option<StockId>,
+        status: Option<&str>,
+        reference_type: Option<&str>,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<InventoryReservation>, i64), InventoryError> {
+        let offset = (page - 1) * page_size;
+
+        // Build dynamic query for filtering
+        let mut conditions: Vec<String> = Vec::new();
+        let mut param_count = 0;
+
+        if stock_id.is_some() {
+            param_count += 1;
+            conditions.push(format!("stock_id = ${}", param_count));
+        }
+        if status.is_some() {
+            param_count += 1;
+            conditions.push(format!("status = ${}", param_count));
+        }
+        if reference_type.is_some() {
+            param_count += 1;
+            conditions.push(format!("reference_type = ${}", param_count));
+        }
+
+        let where_clause = if conditions.is_empty() {
+            String::new()
+        } else {
+            format!("WHERE {}", conditions.join(" AND "))
+        };
+
+        // Count query
+        let count_query = format!(
+            "SELECT COUNT(*) as count FROM inventory_reservations {}",
+            where_clause
+        );
+
+        // Data query
+        let data_query = format!(
+            r#"
+            SELECT id, stock_id, reference_type, reference_id, quantity, status, expires_at, created_at, updated_at
+            FROM inventory_reservations
+            {}
+            ORDER BY created_at DESC
+            LIMIT ${} OFFSET ${}
+            "#,
+            where_clause,
+            param_count + 1,
+            param_count + 2
+        );
+
+        // Execute count query
+        let mut count_q = sqlx::query_scalar::<_, i64>(&count_query);
+        if let Some(sid) = stock_id {
+            count_q = count_q.bind(sid.into_uuid());
+        }
+        if let Some(s) = status {
+            count_q = count_q.bind(s);
+        }
+        if let Some(rt) = reference_type {
+            count_q = count_q.bind(rt);
+        }
+        let total_count = count_q.fetch_one(&self.pool).await?;
+
+        // Execute data query
+        let mut data_q = sqlx::query_as::<_, ReservationRow>(&data_query);
+        if let Some(sid) = stock_id {
+            data_q = data_q.bind(sid.into_uuid());
+        }
+        if let Some(s) = status {
+            data_q = data_q.bind(s);
+        }
+        if let Some(rt) = reference_type {
+            data_q = data_q.bind(rt);
+        }
+        data_q = data_q.bind(page_size).bind(offset);
+
+        let rows = data_q.fetch_all(&self.pool).await?;
+        let reservations: Result<Vec<_>, _> = rows.into_iter().map(|r| r.try_into()).collect();
+
+        Ok((reservations?, total_count))
+    }
 }
 
 /// Internal row type for mapping reservation database results

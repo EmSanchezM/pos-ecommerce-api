@@ -325,6 +325,24 @@ mod tests {
         ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
+
+        async fn find_paginated(
+            &self,
+            _store_id: Option<StoreId>,
+            _product_id: Option<ProductId>,
+            _low_stock_only: bool,
+            _page: i64,
+            _page_size: i64,
+        ) -> Result<(Vec<InventoryStock>, i64), InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_by_product(
+            &self,
+            _product_id: ProductId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
     }
 
     struct MockMovementRepository {

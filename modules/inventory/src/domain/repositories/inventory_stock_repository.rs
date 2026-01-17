@@ -51,4 +51,18 @@ pub trait InventoryStockRepository: Send + Sync {
 
     /// Finds all stock records for a specific store
     async fn find_by_store(&self, store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError>;
+
+    /// Finds stock records with pagination and optional filters
+    /// Returns (stocks, total_count)
+    async fn find_paginated(
+        &self,
+        store_id: Option<StoreId>,
+        product_id: Option<ProductId>,
+        low_stock_only: bool,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<InventoryStock>, i64), InventoryError>;
+
+    /// Finds all stock records for a specific product across all stores
+    async fn find_by_product(&self, product_id: ProductId) -> Result<Vec<InventoryStock>, InventoryError>;
 }

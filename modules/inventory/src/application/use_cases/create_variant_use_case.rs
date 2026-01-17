@@ -299,6 +299,26 @@ mod tests {
                 .map(|v| v.len() as u32)
                 .unwrap_or(0))
         }
+
+        async fn find_paginated(
+            &self,
+            _category_id: Option<CategoryId>,
+            _is_active: Option<bool>,
+            _search: Option<&str>,
+            _page: i64,
+            _page_size: i64,
+        ) -> Result<(Vec<Product>, i64), InventoryError> {
+            unimplemented!()
+        }
+
+        async fn count_filtered(
+            &self,
+            _category_id: Option<CategoryId>,
+            _is_active: Option<bool>,
+            _search: Option<&str>,
+        ) -> Result<i64, InventoryError> {
+            unimplemented!()
+        }
     }
 
     #[tokio::test]

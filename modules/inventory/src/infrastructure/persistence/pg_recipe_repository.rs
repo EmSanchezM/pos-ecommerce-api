@@ -152,6 +152,64 @@ impl RecipeRepository for PgRecipeRepository {
         row.map(|r| r.try_into()).transpose()
     }
 
+    async fn find_paginated(
+        &self,
+        is_active: Option<bool>,
+        search: Option<&str>,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<Recipe>, i64), InventoryError> {
+        let offset = (page - 1) * page_size;
+
+        // Build dynamic query based on filters
+        let rows = sqlx::query_as::<_, RecipeRow>(
+            r#"
+            SELECT id, product_id, variant_id, name, description, version, yield_quantity, preparation_time_minutes,
+                   calculate_cost_from_ingredients, notes, metadata, is_active, created_at, updated_at
+            FROM recipes
+            WHERE ($1::bool IS NULL OR is_active = $1)
+              AND ($2::text IS NULL OR name ILIKE '%' || $2 || '%' OR description ILIKE '%' || $2 || '%')
+            ORDER BY created_at DESC
+            LIMIT $4 OFFSET $5
+            "#,
+        )
+        .bind(is_active)
+        .bind(search)
+        .bind(page_size)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let recipes: Result<Vec<Recipe>, _> = rows.into_iter().map(|r| r.try_into()).collect();
+        let recipes = recipes?;
+
+        // Get total count
+        let total = self.count_filtered(is_active, search).await?;
+
+        Ok((recipes, total))
+    }
+
+    async fn count_filtered(
+        &self,
+        is_active: Option<bool>,
+        search: Option<&str>,
+    ) -> Result<i64, InventoryError> {
+        let count: (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)
+            FROM recipes
+            WHERE ($1::bool IS NULL OR is_active = $1)
+              AND ($2::text IS NULL OR name ILIKE '%' || $2 || '%' OR description ILIKE '%' || $2 || '%')
+            "#,
+        )
+        .bind(is_active)
+        .bind(search)
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(count.0)
+    }
+
     async fn update(&self, recipe: &Recipe) -> Result<(), InventoryError> {
         let result = sqlx::query(
             r#"

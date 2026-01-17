@@ -180,6 +180,128 @@ impl InventoryStockRepository for PgInventoryStockRepository {
 
         rows.into_iter().map(|r| r.try_into()).collect()
     }
+
+    async fn find_paginated(
+        &self,
+        store_id: Option<StoreId>,
+        product_id: Option<ProductId>,
+        low_stock_only: bool,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<InventoryStock>, i64), InventoryError> {
+        let offset = (page - 1) * page_size;
+
+        // Build dynamic query based on filters
+        let mut conditions = Vec::new();
+        if store_id.is_some() {
+            conditions.push("store_id = $1");
+        }
+        if product_id.is_some() {
+            conditions.push(if store_id.is_some() {
+                "product_id = $2"
+            } else {
+                "product_id = $1"
+            });
+        }
+        if low_stock_only {
+            conditions.push("(quantity - reserved_quantity) <= min_stock_level");
+        }
+
+        let where_clause = if conditions.is_empty() {
+            String::new()
+        } else {
+            format!("WHERE {}", conditions.join(" AND "))
+        };
+
+        // Count query
+        let count_query = format!(
+            "SELECT COUNT(*) as count FROM inventory_stock {}",
+            where_clause
+        );
+
+        // Data query
+        let data_query = format!(
+            r#"
+            SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
+                   version, min_stock_level, max_stock_level, created_at, updated_at
+            FROM inventory_stock
+            {}
+            ORDER BY created_at DESC
+            LIMIT {} OFFSET {}
+            "#,
+            where_clause, page_size, offset
+        );
+
+        // Execute queries based on which parameters are provided
+        let (rows, total): (Vec<StockRow>, i64) = match (store_id, product_id) {
+            (Some(sid), Some(pid)) => {
+                let count: (i64,) = sqlx::query_as(&count_query)
+                    .bind(sid.as_uuid())
+                    .bind(pid.into_uuid())
+                    .fetch_one(&self.pool)
+                    .await?;
+                let rows = sqlx::query_as::<_, StockRow>(&data_query)
+                    .bind(sid.as_uuid())
+                    .bind(pid.into_uuid())
+                    .fetch_all(&self.pool)
+                    .await?;
+                (rows, count.0)
+            }
+            (Some(sid), None) => {
+                let count: (i64,) = sqlx::query_as(&count_query)
+                    .bind(sid.as_uuid())
+                    .fetch_one(&self.pool)
+                    .await?;
+                let rows = sqlx::query_as::<_, StockRow>(&data_query)
+                    .bind(sid.as_uuid())
+                    .fetch_all(&self.pool)
+                    .await?;
+                (rows, count.0)
+            }
+            (None, Some(pid)) => {
+                let count: (i64,) = sqlx::query_as(&count_query)
+                    .bind(pid.into_uuid())
+                    .fetch_one(&self.pool)
+                    .await?;
+                let rows = sqlx::query_as::<_, StockRow>(&data_query)
+                    .bind(pid.into_uuid())
+                    .fetch_all(&self.pool)
+                    .await?;
+                (rows, count.0)
+            }
+            (None, None) => {
+                let count: (i64,) = sqlx::query_as(&count_query)
+                    .fetch_one(&self.pool)
+                    .await?;
+                let rows = sqlx::query_as::<_, StockRow>(&data_query)
+                    .fetch_all(&self.pool)
+                    .await?;
+                (rows, count.0)
+            }
+        };
+
+        let stocks: Result<Vec<InventoryStock>, InventoryError> =
+            rows.into_iter().map(|r| r.try_into()).collect();
+
+        Ok((stocks?, total))
+    }
+
+    async fn find_by_product(&self, product_id: ProductId) -> Result<Vec<InventoryStock>, InventoryError> {
+        let rows = sqlx::query_as::<_, StockRow>(
+            r#"
+            SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
+                   version, min_stock_level, max_stock_level, created_at, updated_at
+            FROM inventory_stock
+            WHERE product_id = $1
+            ORDER BY store_id, created_at DESC
+            "#,
+        )
+        .bind(product_id.into_uuid())
+        .fetch_all(&self.pool)
+        .await?;
+
+        rows.into_iter().map(|r| r.try_into()).collect()
+    }
 }
 
 /// Internal row type for mapping stock database results

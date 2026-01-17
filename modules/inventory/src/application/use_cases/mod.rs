@@ -38,17 +38,34 @@
 mod create_category_use_case;
 mod create_product_use_case;
 mod create_variant_use_case;
+mod list_products_use_case;
+mod get_product_use_case;
+mod update_product_use_case;
+mod delete_product_use_case;
+mod list_variants_use_case;
+mod get_variant_use_case;
+mod update_variant_use_case;
+mod delete_variant_use_case;
 
 // Stock use cases
 mod update_stock_use_case;
+mod list_stock_use_case;
+mod get_stock_use_case;
+mod get_store_inventory_use_case;
+mod get_product_stock_use_case;
 mod create_reservation_use_case;
 mod confirm_reservation_use_case;
 mod cancel_reservation_use_case;
 mod expire_reservations_use_case;
+mod list_reservations_use_case;
 
 // Recipe use cases
 mod create_recipe_use_case;
 mod calculate_recipe_cost_use_case;
+mod list_recipes_use_case;
+mod get_recipe_use_case;
+mod get_product_recipe_use_case;
+mod update_recipe_use_case;
 
 // Adjustment use cases
 mod create_adjustment_use_case;
@@ -64,17 +81,34 @@ mod receive_transfer_use_case;
 pub use create_category_use_case::CreateCategoryUseCase;
 pub use create_product_use_case::CreateProductUseCase;
 pub use create_variant_use_case::CreateVariantUseCase;
+pub use list_products_use_case::{ListProductsUseCase, ListProductsQuery};
+pub use get_product_use_case::GetProductUseCase;
+pub use update_product_use_case::UpdateProductUseCase;
+pub use delete_product_use_case::DeleteProductUseCase;
+pub use list_variants_use_case::ListVariantsUseCase;
+pub use get_variant_use_case::GetVariantUseCase;
+pub use update_variant_use_case::UpdateVariantUseCase;
+pub use delete_variant_use_case::DeleteVariantUseCase;
 
 // Stock use cases exports
 pub use update_stock_use_case::UpdateStockUseCase;
+pub use list_stock_use_case::{ListStockUseCase, ListStockQuery};
+pub use get_stock_use_case::GetStockUseCase;
+pub use get_store_inventory_use_case::GetStoreInventoryUseCase;
+pub use get_product_stock_use_case::GetProductStockUseCase;
 pub use create_reservation_use_case::CreateReservationUseCase;
 pub use confirm_reservation_use_case::ConfirmReservationUseCase;
 pub use cancel_reservation_use_case::CancelReservationUseCase;
 pub use expire_reservations_use_case::{ExpireReservationsUseCase, ExpireReservationsResult};
+pub use list_reservations_use_case::{ListReservationsUseCase, ListReservationsQuery};
 
 // Recipe use cases exports
 pub use create_recipe_use_case::CreateRecipeUseCase;
 pub use calculate_recipe_cost_use_case::{CalculateRecipeCostUseCase, RecipeCostResult};
+pub use list_recipes_use_case::{ListRecipesUseCase, ListRecipesQuery};
+pub use get_recipe_use_case::GetRecipeUseCase;
+pub use get_product_recipe_use_case::GetProductRecipeUseCase;
+pub use update_recipe_use_case::UpdateRecipeUseCase;
 
 // Adjustment use cases exports
 pub use create_adjustment_use_case::CreateAdjustmentUseCase;
