@@ -9,6 +9,7 @@ use axum::{
     Json,
 };
 use identity::{AuthError, ErrorResponse, IdentityError};
+use inventory::InventoryError;
 use pos_core::CoreError;
 
 // =============================================================================
@@ -309,6 +310,268 @@ impl From<CoreError> for AppError {
     }
 }
 
+// =============================================================================
+// From<InventoryError> Implementation
+// =============================================================================
+
+impl From<InventoryError> for AppError {
+    fn from(err: InventoryError) -> Self {
+        let (status, response) = match &err {
+            // -----------------------------------------------------------------
+            // 404 Not Found - Resource not found errors
+            // -----------------------------------------------------------------
+            InventoryError::CategoryNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CATEGORY_NOT_FOUND", format!("Category not found: {}", id)),
+            ),
+            InventoryError::ParentCategoryNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "PARENT_CATEGORY_NOT_FOUND",
+                    format!("Parent category not found: {}", id),
+                ),
+            ),
+            InventoryError::ProductNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PRODUCT_NOT_FOUND", format!("Product not found: {}", id)),
+            ),
+            InventoryError::VariantNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("VARIANT_NOT_FOUND", format!("Variant not found: {}", id)),
+            ),
+            InventoryError::StockNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("STOCK_NOT_FOUND", format!("Stock record not found: {}", id)),
+            ),
+            InventoryError::ReservationNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "RESERVATION_NOT_FOUND",
+                    format!("Reservation not found: {}", id),
+                ),
+            ),
+            InventoryError::RecipeNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("RECIPE_NOT_FOUND", format!("Recipe not found: {}", id)),
+            ),
+            InventoryError::IngredientNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "INGREDIENT_NOT_FOUND",
+                    format!("Ingredient not found: {}", id),
+                ),
+            ),
+            InventoryError::SubstituteNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SUBSTITUTE_NOT_FOUND",
+                    format!("Substitute not found: {}", id),
+                ),
+            ),
+            InventoryError::AdjustmentNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ADJUSTMENT_NOT_FOUND",
+                    format!("Adjustment not found: {}", id),
+                ),
+            ),
+            InventoryError::TransferNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("TRANSFER_NOT_FOUND", format!("Transfer not found: {}", id)),
+            ),
+
+            // -----------------------------------------------------------------
+            // 409 Conflict - Duplicate resources and version conflicts
+            // -----------------------------------------------------------------
+            InventoryError::DuplicateCategorySlug(slug) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_CATEGORY_SLUG",
+                    format!("Category slug '{}' already exists", slug),
+                ),
+            ),
+            InventoryError::DuplicateSku(sku) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_SKU", format!("SKU '{}' already exists", sku)),
+            ),
+            InventoryError::DuplicateBarcode(barcode) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_BARCODE",
+                    format!("Barcode '{}' already exists", barcode),
+                ),
+            ),
+            InventoryError::ActiveRecipeExists => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "ACTIVE_RECIPE_EXISTS",
+                    "Active recipe already exists for this product/variant",
+                ),
+            ),
+            InventoryError::OptimisticLockError => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "VERSION_CONFLICT",
+                    "Record was modified by another process, please retry",
+                ),
+            ),
+
+            // -----------------------------------------------------------------
+            // 400 Bad Request - Validation and business rule violations
+            // -----------------------------------------------------------------
+            InventoryError::VariantsNotEnabled => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Product does not have variants enabled"),
+            ),
+            InventoryError::InsufficientStock => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INSUFFICIENT_STOCK", "Insufficient stock available"),
+            ),
+            InventoryError::NegativeStock => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Cannot have negative stock"),
+            ),
+            InventoryError::ReservedExceedsQuantity => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Reserved quantity cannot exceed total quantity"),
+            ),
+            InventoryError::InvalidReleaseQuantity => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid release quantity"),
+            ),
+            InventoryError::ReservationExpired => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("RESERVATION_EXPIRED", "Reservation has expired"),
+            ),
+            InventoryError::InvalidReservationStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "INVALID_RESERVATION_STATUS",
+                    "Invalid reservation status transition",
+                ),
+            ),
+            InventoryError::IngredientInUse => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "INGREDIENT_IN_USE",
+                    "Cannot delete ingredient used in active recipes",
+                ),
+            ),
+            InventoryError::InvalidYieldQuantity => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Yield quantity must be positive"),
+            ),
+            InventoryError::InvalidIngredientQuantity => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Ingredient quantity must be positive"),
+            ),
+            InventoryError::InvalidWastePercentage => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Waste percentage must be between 0 and 1"),
+            ),
+            InventoryError::InvalidConversionRatio => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Conversion ratio must be positive"),
+            ),
+            InventoryError::InvalidSubstitutePriority => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Substitute priority must be non-negative"),
+            ),
+            InventoryError::SubstitutesNotAllowed => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "SUBSTITUTES_NOT_ALLOWED",
+                    "Ingredient does not allow substitutes",
+                ),
+            ),
+            InventoryError::EmptyAdjustment => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Adjustment has no items"),
+            ),
+            InventoryError::AdjustmentAlreadyApplied => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "ADJUSTMENT_ALREADY_APPLIED",
+                    "Cannot modify applied adjustment",
+                ),
+            ),
+            InventoryError::SameStoreTransfer => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "SAME_STORE_TRANSFER",
+                    "Cannot transfer to the same store",
+                ),
+            ),
+            InventoryError::EmptyTransfer => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Transfer has no items"),
+            ),
+            InventoryError::InvalidStatusTransition => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_STATUS_TRANSITION", "Invalid status transition"),
+            ),
+            InventoryError::InvalidCurrency => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(
+                    "Invalid currency code: must be 3 uppercase letters (ISO 4217)",
+                ),
+            ),
+            InventoryError::InvalidBarcode => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid barcode: maximum 100 characters"),
+            ),
+            InventoryError::InvalidUnitOfMeasure => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid unit of measure"),
+            ),
+            InventoryError::InvalidMovementType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid movement type"),
+            ),
+            InventoryError::InvalidAdjustmentType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid adjustment type"),
+            ),
+            InventoryError::InvalidAdjustmentReason => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid adjustment reason"),
+            ),
+            InventoryError::InvalidTransferStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid transfer status"),
+            ),
+            InventoryError::InvalidReservationStatusValue => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid reservation status"),
+            ),
+            InventoryError::InvalidAdjustmentStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid adjustment status"),
+            ),
+            InventoryError::InvalidProductVariantConstraint => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(
+                    "Must specify either product_id or variant_id, but not both",
+                ),
+            ),
+
+            // -----------------------------------------------------------------
+            // 500 Internal Server Error - Database and system errors
+            // -----------------------------------------------------------------
+            InventoryError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+            InventoryError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -428,5 +691,110 @@ mod tests {
         let app_error: AppError = IdentityError::UserInactive.into();
         assert_eq!(app_error.status(), StatusCode::UNAUTHORIZED);
         assert_eq!(app_error.response().error_code, "ACCOUNT_DISABLED");
+    }
+
+    // =========================================================================
+    // InventoryError Mapping Tests
+    // =========================================================================
+
+    #[test]
+    fn test_inventory_error_product_not_found_maps_to_404() {
+        let app_error: AppError = InventoryError::ProductNotFound(Uuid::nil()).into();
+        assert_eq!(app_error.status(), StatusCode::NOT_FOUND);
+        assert_eq!(app_error.response().error_code, "PRODUCT_NOT_FOUND");
+    }
+
+    #[test]
+    fn test_inventory_error_variant_not_found_maps_to_404() {
+        let app_error: AppError = InventoryError::VariantNotFound(Uuid::nil()).into();
+        assert_eq!(app_error.status(), StatusCode::NOT_FOUND);
+        assert_eq!(app_error.response().error_code, "VARIANT_NOT_FOUND");
+    }
+
+    #[test]
+    fn test_inventory_error_stock_not_found_maps_to_404() {
+        let app_error: AppError = InventoryError::StockNotFound(Uuid::nil()).into();
+        assert_eq!(app_error.status(), StatusCode::NOT_FOUND);
+        assert_eq!(app_error.response().error_code, "STOCK_NOT_FOUND");
+    }
+
+    #[test]
+    fn test_inventory_error_reservation_not_found_maps_to_404() {
+        let app_error: AppError = InventoryError::ReservationNotFound(Uuid::nil()).into();
+        assert_eq!(app_error.status(), StatusCode::NOT_FOUND);
+        assert_eq!(app_error.response().error_code, "RESERVATION_NOT_FOUND");
+    }
+
+    #[test]
+    fn test_inventory_error_recipe_not_found_maps_to_404() {
+        let app_error: AppError = InventoryError::RecipeNotFound(Uuid::nil()).into();
+        assert_eq!(app_error.status(), StatusCode::NOT_FOUND);
+        assert_eq!(app_error.response().error_code, "RECIPE_NOT_FOUND");
+    }
+
+    #[test]
+    fn test_inventory_error_adjustment_not_found_maps_to_404() {
+        let app_error: AppError = InventoryError::AdjustmentNotFound(Uuid::nil()).into();
+        assert_eq!(app_error.status(), StatusCode::NOT_FOUND);
+        assert_eq!(app_error.response().error_code, "ADJUSTMENT_NOT_FOUND");
+    }
+
+    #[test]
+    fn test_inventory_error_transfer_not_found_maps_to_404() {
+        let app_error: AppError = InventoryError::TransferNotFound(Uuid::nil()).into();
+        assert_eq!(app_error.status(), StatusCode::NOT_FOUND);
+        assert_eq!(app_error.response().error_code, "TRANSFER_NOT_FOUND");
+    }
+
+    #[test]
+    fn test_inventory_error_duplicate_sku_maps_to_409() {
+        let app_error: AppError = InventoryError::DuplicateSku("SKU-001".to_string()).into();
+        assert_eq!(app_error.status(), StatusCode::CONFLICT);
+        assert_eq!(app_error.response().error_code, "DUPLICATE_SKU");
+    }
+
+    #[test]
+    fn test_inventory_error_duplicate_barcode_maps_to_409() {
+        let app_error: AppError = InventoryError::DuplicateBarcode("1234567890".to_string()).into();
+        assert_eq!(app_error.status(), StatusCode::CONFLICT);
+        assert_eq!(app_error.response().error_code, "DUPLICATE_BARCODE");
+    }
+
+    #[test]
+    fn test_inventory_error_optimistic_lock_maps_to_409() {
+        let app_error: AppError = InventoryError::OptimisticLockError.into();
+        assert_eq!(app_error.status(), StatusCode::CONFLICT);
+        assert_eq!(app_error.response().error_code, "VERSION_CONFLICT");
+    }
+
+    #[test]
+    fn test_inventory_error_insufficient_stock_maps_to_400() {
+        let app_error: AppError = InventoryError::InsufficientStock.into();
+        assert_eq!(app_error.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(app_error.response().error_code, "INSUFFICIENT_STOCK");
+    }
+
+    #[test]
+    fn test_inventory_error_same_store_transfer_maps_to_400() {
+        let app_error: AppError = InventoryError::SameStoreTransfer.into();
+        assert_eq!(app_error.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(app_error.response().error_code, "SAME_STORE_TRANSFER");
+    }
+
+    #[test]
+    fn test_inventory_error_invalid_status_transition_maps_to_400() {
+        let app_error: AppError = InventoryError::InvalidStatusTransition.into();
+        assert_eq!(app_error.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(app_error.response().error_code, "INVALID_STATUS_TRANSITION");
+    }
+
+    #[test]
+    fn test_inventory_error_database_maps_to_500() {
+        let db_error = sqlx::Error::RowNotFound;
+        let app_error: AppError = InventoryError::Database(db_error).into();
+        assert_eq!(app_error.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(app_error.response().error_code, "INTERNAL_ERROR");
+        // Internal details should not be exposed
+        assert_eq!(app_error.response().message, "Internal error");
     }
 }

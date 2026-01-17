@@ -14,7 +14,6 @@ use uuid::Uuid;
 // =============================================================================
 
 /// Response for a single category
-/// Requirements: 1A.1, 1A.2, 1A.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CategoryResponse {
     pub id: Uuid,
@@ -30,7 +29,6 @@ pub struct CategoryResponse {
 }
 
 /// Response for hierarchical category tree
-/// Requirements: 1A.1, 1A.2, 1A.5
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CategoryTreeResponse {
     pub id: Uuid,
@@ -51,7 +49,6 @@ pub struct CategoryTreeResponse {
 // =============================================================================
 
 /// Response for a single product (summary)
-/// Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.8, 1.9
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProductResponse {
     pub id: Uuid,
@@ -76,7 +73,6 @@ pub struct ProductResponse {
 }
 
 /// Response for product with full details including variants
-/// Requirements: 1.1, 1.6, 2.1
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProductDetailResponse {
     pub id: Uuid,
@@ -108,7 +104,6 @@ pub struct ProductDetailResponse {
 // =============================================================================
 
 /// Response for a product variant
-/// Requirements: 2.1, 2.2, 2.3, 2.4, 2.6
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VariantResponse {
     pub id: Uuid,
@@ -131,7 +126,6 @@ pub struct VariantResponse {
 // =============================================================================
 
 /// Response for stock summary
-/// Requirements: 3.1, 3.2, 3.5, 3.6, 3.8
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StockResponse {
     pub id: Uuid,
@@ -150,7 +144,6 @@ pub struct StockResponse {
 }
 
 /// Response for stock with full details including product/variant info
-/// Requirements: 3.1, 3.2
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StockDetailResponse {
     pub id: Uuid,
@@ -176,7 +169,6 @@ pub struct StockDetailResponse {
 // =============================================================================
 
 /// Response for an inventory reservation
-/// Requirements: 4.1, 4.2, 4.3, 4.7
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReservationResponse {
     pub id: Uuid,
@@ -195,7 +187,6 @@ pub struct ReservationResponse {
 // =============================================================================
 
 /// Response for a single inventory movement
-/// Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MovementResponse {
     pub id: Uuid,
@@ -216,7 +207,6 @@ pub struct MovementResponse {
 }
 
 /// Response for Kardex report (movement history)
-/// Requirements: 5.7
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KardexResponse {
     pub stock_id: Uuid,
@@ -237,7 +227,6 @@ pub struct KardexResponse {
 // =============================================================================
 
 /// Response for a recipe summary
-/// Requirements: 6.1, 6.2, 6.3, 6.4, 6.5
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecipeResponse {
     pub id: Uuid,
@@ -256,7 +245,6 @@ pub struct RecipeResponse {
 }
 
 /// Response for recipe with full details including ingredients
-/// Requirements: 6.1, 7.1, 7.2, 7.3, 7.4, 7.5, 8.1, 8.2, 8.3
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecipeDetailResponse {
     pub id: Uuid,
@@ -280,7 +268,6 @@ pub struct RecipeDetailResponse {
 }
 
 /// Response for a recipe ingredient
-/// Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.7
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecipeIngredientResponse {
     pub id: Uuid,
@@ -304,7 +291,6 @@ pub struct RecipeIngredientResponse {
 }
 
 /// Response for an ingredient substitute
-/// Requirements: 8.1, 8.2, 8.3, 8.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IngredientSubstituteResponse {
     pub id: Uuid,
@@ -324,7 +310,6 @@ pub struct IngredientSubstituteResponse {
 // =============================================================================
 
 /// Response for an adjustment summary
-/// Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AdjustmentResponse {
     pub id: Uuid,
@@ -344,7 +329,6 @@ pub struct AdjustmentResponse {
 }
 
 /// Response for adjustment with full details including items
-/// Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.9, 10.1, 10.2, 10.3, 10.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AdjustmentDetailResponse {
     pub id: Uuid,
@@ -365,7 +349,6 @@ pub struct AdjustmentDetailResponse {
 }
 
 /// Response for an adjustment item
-/// Requirements: 10.1, 10.2, 10.3, 10.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AdjustmentItemResponse {
     pub id: Uuid,
@@ -385,7 +368,6 @@ pub struct AdjustmentItemResponse {
 // =============================================================================
 
 /// Response for a transfer summary
-/// Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransferResponse {
     pub id: Uuid,
@@ -408,7 +390,6 @@ pub struct TransferResponse {
 }
 
 /// Response for transfer with full details including items
-/// Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.9, 12.1, 12.2, 12.3, 12.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransferDetailResponse {
     pub id: Uuid,
@@ -431,7 +412,6 @@ pub struct TransferDetailResponse {
 }
 
 /// Response for a transfer item
-/// Requirements: 12.1, 12.2, 12.3, 12.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransferItemResponse {
     pub id: Uuid,
