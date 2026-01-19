@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "pos-ecommerce-api-collection",
 		"name": "POS Ecommerce API",
-		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI",
+		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI\n\n### Products (requiere autenticación)\n- POST /api/v1/products - Crear producto (products:create)\n- GET /api/v1/products - Listar productos con paginación\n- GET /api/v1/products/:id - Obtener detalle de producto\n- PUT /api/v1/products/:id - Actualizar producto (products:update)\n- DELETE /api/v1/products/:id - Eliminar producto (products:delete)\n- POST /api/v1/products/:id/variants - Crear variante (products:create)\n- GET /api/v1/products/:id/variants - Listar variantes\n- GET /api/v1/products/:id/variants/:variant_id - Obtener variante\n- PUT /api/v1/products/:id/variants/:variant_id - Actualizar variante (products:update)\n- DELETE /api/v1/products/:id/variants/:variant_id - Eliminar variante (products:delete)\n- GET /api/v1/products/:id/recipe - Obtener receta activa del producto\n- GET /api/v1/products/:id/stock - Obtener stock del producto\n\n### Recipes (requiere autenticación)\n- POST /api/v1/recipes - Crear receta (recipes:create)\n- GET /api/v1/recipes - Listar recetas con paginación\n- GET /api/v1/recipes/:id - Obtener detalle de receta\n- PUT /api/v1/recipes/:id - Actualizar receta (recipes:update)\n- POST /api/v1/recipes/:id/calculate-cost - Calcular costo de receta\n\n### Inventory (requiere autenticación)\n- GET /api/v1/inventory/stock - Listar stock con paginación\n- GET /api/v1/inventory/stock/:stock_id - Obtener detalle de stock\n- POST /api/v1/inventory/reservations - Crear reserva\n- GET /api/v1/inventory/reservations - Listar reservas\n- PUT /api/v1/inventory/reservations/:id/confirm - Confirmar reserva\n- PUT /api/v1/inventory/reservations/:id/cancel - Cancelar reserva\n- POST /api/v1/inventory/reservations/expire - Expirar reservas vencidas",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -28,6 +28,31 @@
 		},
 		{
 			"key": "terminal_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "product_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "variant_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "recipe_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "stock_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "reservation_id",
 			"value": "",
 			"type": "string"
 		}
@@ -660,6 +685,718 @@
 				}
 			],
 			"description": "Endpoints de gestión de CAI (Código de Autorización de Impresión). Requieren autenticación."
+		},
+		{
+			"name": "Products",
+			"item": [
+				{
+					"name": "Create Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('product_id', jsonData.id);",
+									"    pm.test('Product created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.sku).to.not.be.empty;",
+									"        pm.expect(jsonData.name).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Producto de Prueba\",\n    \"unit_of_measure\": \"unit\",\n    \"base_price\": 99.99,\n    \"cost_price\": 50.00,\n    \"barcode\": \"7501234567890\",\n    \"description\": \"Descripción del producto\",\n    \"is_trackable\": true,\n    \"has_variants\": false,\n    \"tax_rate\": 0.15,\n    \"tax_included\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/products",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products"]
+						},
+						"description": "Crea un nuevo producto. Requiere permiso products:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | Sí | Nombre del producto |\n| unit_of_measure | string | Sí | Unidad: unit, kg, lb, liter, oz |\n| base_price | decimal | No | Precio de venta |\n| cost_price | decimal | No | Precio de costo |\n| barcode | string | No | Código de barras único |\n| description | string | No | Descripción |\n| category_id | uuid | No | ID de categoría |\n| is_trackable | boolean | No | Si se rastrea inventario (default: true) |\n| has_variants | boolean | No | Si tiene variantes (default: false) |\n| tax_rate | decimal | No | Tasa de impuesto |\n| tax_included | boolean | No | Si el precio incluye impuesto |"
+					},
+					"response": []
+				},
+				{
+					"name": "List Products",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "category_id",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista productos con paginación y filtros opcionales.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20, max: 100) |\n| category_id | uuid | Filtrar por categoría |\n| is_active | boolean | Filtrar por estado activo |\n| search | string | Buscar en nombre/descripción |"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Product",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{product_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{product_id}}"]
+						},
+						"description": "Obtiene el detalle de un producto incluyendo sus variantes."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Product",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Producto Actualizado\",\n    \"base_price\": 149.99,\n    \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{product_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{product_id}}"]
+						},
+						"description": "Actualiza los datos de un producto. Requiere permiso products:update. Todos los campos son opcionales."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Product",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{product_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{product_id}}"]
+						},
+						"description": "Elimina un producto (soft delete). Requiere permiso products:delete."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Variant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('variant_id', jsonData.id);",
+									"    pm.test('Variant created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.sku).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Rojo - Grande\",\n    \"variant_attributes\": {\n        \"color\": \"rojo\",\n        \"size\": \"L\"\n    },\n    \"price\": 109.99,\n    \"cost_price\": 55.00,\n    \"barcode\": \"7501234567891\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{product_id}}/variants",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{product_id}}", "variants"]
+						},
+						"description": "Crea una variante para un producto. Requiere permiso products:create.\n\nNota: El producto debe tener has_variants=true.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | Sí | Nombre de la variante |\n| variant_attributes | object | Sí | Atributos específicos (color, size, etc.) |\n| price | decimal | No | Precio override |\n| cost_price | decimal | No | Costo override |\n| barcode | string | No | Código de barras único |"
+					},
+					"response": []
+				},
+				{
+					"name": "List Variants",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{product_id}}/variants",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{product_id}}", "variants"]
+						},
+						"description": "Lista todas las variantes de un producto."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Variant",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{product_id}}/variants/{{variant_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{product_id}}", "variants", "{{variant_id}}"]
+						},
+						"description": "Obtiene el detalle de una variante específica."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Variant",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Azul - Mediano\",\n    \"variant_attributes\": {\n        \"color\": \"azul\",\n        \"size\": \"M\"\n    },\n    \"price\": 119.99,\n    \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{product_id}}/variants/{{variant_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{product_id}}", "variants", "{{variant_id}}"]
+						},
+						"description": "Actualiza los datos de una variante. Requiere permiso products:update."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Variant",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{product_id}}/variants/{{variant_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{product_id}}", "variants", "{{variant_id}}"]
+						},
+						"description": "Elimina una variante (soft delete). Requiere permiso products:delete."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Product Recipe",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{product_id}}/recipe",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{product_id}}", "recipe"]
+						},
+						"description": "Obtiene la receta activa de un producto con todos sus ingredientes y sustitutos."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Product Stock",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/products/{{product_id}}/stock",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "products", "{{product_id}}", "stock"]
+						},
+						"description": "Obtiene los niveles de stock del producto en todas las tiendas. Requiere permiso inventory:read."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de productos y variantes. Requieren autenticación."
+		},
+		{
+			"name": "Recipes",
+			"item": [
+				{
+					"name": "Create Recipe",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('recipe_id', jsonData.id);",
+									"    pm.test('Recipe created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.name).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": \"{{product_id}}\",\n    \"name\": \"Receta de Prueba\",\n    \"description\": \"Descripción de la receta\",\n    \"yield_quantity\": 10,\n    \"preparation_time_minutes\": 30,\n    \"calculate_cost_from_ingredients\": true,\n    \"ingredients\": [\n        {\n            \"ingredient_product_id\": \"uuid-del-ingrediente\",\n            \"quantity\": 2,\n            \"unit_of_measure\": \"kg\",\n            \"is_optional\": false,\n            \"can_substitute\": true,\n            \"sort_order\": 1,\n            \"preparation_step\": \"Picar finamente\",\n            \"substitutes\": []\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/recipes",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "recipes"]
+						},
+						"description": "Crea una nueva receta con ingredientes. Requiere permiso recipes:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| product_id | uuid | Sí* | ID del producto que produce esta receta |\n| variant_id | uuid | Sí* | O ID de la variante (excluyente con product_id) |\n| name | string | Sí | Nombre de la receta |\n| yield_quantity | decimal | Sí | Cantidad producida |\n| ingredients | array | Sí | Lista de ingredientes |\n\n*Debe especificar product_id O variant_id, no ambos."
+					},
+					"response": []
+				},
+				{
+					"name": "List Recipes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/recipes?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "recipes"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista recetas con paginación y filtros opcionales.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20, max: 100) |\n| is_active | boolean | Filtrar por estado activo |\n| search | string | Buscar en nombre/descripción |"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Recipe",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "recipes", "{{recipe_id}}"]
+						},
+						"description": "Obtiene el detalle de una receta con todos sus ingredientes y sustitutos."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Recipe",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Receta Actualizada\",\n    \"yield_quantity\": 15,\n    \"preparation_time_minutes\": 45,\n    \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "recipes", "{{recipe_id}}"]
+						},
+						"description": "Actualiza los datos de una receta. Requiere permiso recipes:update. Todos los campos son opcionales."
+					},
+					"response": []
+				},
+				{
+					"name": "Calculate Recipe Cost",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}/calculate-cost",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "recipes", "{{recipe_id}}", "calculate-cost"]
+						},
+						"description": "Calcula el costo de una receta basado en los costos actuales de los ingredientes.\n\n## Response\n\n| Campo | Tipo | Descripción |\n|-------|------|-------------|\n| recipe_id | uuid | ID de la receta |\n| total_ingredient_cost | decimal | Costo total de ingredientes |\n| cost_per_unit | decimal | Costo por unidad producida |\n| yield_quantity | decimal | Cantidad producida |\n| ingredient_count | number | Número total de ingredientes |\n| ingredients_with_cost | number | Ingredientes con costo definido |"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de recetas (Bill of Materials). Requieren autenticación."
+		},
+		{
+			"name": "Inventory",
+			"item": [
+				{
+					"name": "List Stock",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/stock?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "stock"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "store_id",
+									"value": "{{store_id}}",
+									"disabled": true
+								},
+								{
+									"key": "product_id",
+									"value": "{{product_id}}",
+									"disabled": true
+								},
+								{
+									"key": "low_stock",
+									"value": "false",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista registros de stock con paginación y filtros. Requiere permiso inventory:read.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20, max: 100) |\n| store_id | uuid | Filtrar por tienda |\n| product_id | uuid | Filtrar por producto |\n| low_stock | boolean | Solo mostrar items con stock bajo |"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Stock",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('stock_id', jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/stock/{{stock_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "stock", "{{stock_id}}"]
+						},
+						"description": "Obtiene el detalle de un registro de stock con información del producto/variante. Requiere permiso inventory:read."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Reservation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('reservation_id', jsonData.id);",
+									"    pm.test('Reservation created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.status).to.equal('pending');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"stock_id\": \"{{stock_id}}\",\n    \"reference_type\": \"cart\",\n    \"reference_id\": \"00000000-0000-0000-0000-000000000001\",\n    \"quantity\": 5,\n    \"expires_at\": \"2026-12-31T23:59:59Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/reservations",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "reservations"]
+						},
+						"description": "Crea una reserva de inventario. Requiere permiso cart:add o sales:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| stock_id | uuid | Sí | ID del registro de stock |\n| reference_type | string | Sí | Tipo: cart, order, quote |\n| reference_id | uuid | Sí | ID de referencia (carrito, orden, etc.) |\n| quantity | decimal | Sí | Cantidad a reservar |\n| expires_at | datetime | Sí | Fecha de expiración (ISO 8601) |"
+					},
+					"response": []
+				},
+				{
+					"name": "List Reservations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/reservations?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "reservations"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "stock_id",
+									"value": "{{stock_id}}",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "pending",
+									"disabled": true
+								},
+								{
+									"key": "reference_type",
+									"value": "cart",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista reservas con paginación y filtros. Requiere permiso inventory:read.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20, max: 100) |\n| stock_id | uuid | Filtrar por registro de stock |\n| status | string | Filtrar por estado: pending, confirmed, cancelled, expired |\n| reference_type | string | Filtrar por tipo: cart, order, quote |"
+					},
+					"response": []
+				},
+				{
+					"name": "Confirm Reservation",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/reservations/{{reservation_id}}/confirm",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "reservations", "{{reservation_id}}", "confirm"]
+						},
+						"description": "Confirma una reserva pendiente y decrementa el stock. Requiere permiso sales:create.\n\nLa reserva debe estar en estado 'pending'."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Reservation",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/reservations/{{reservation_id}}/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "reservations", "{{reservation_id}}", "cancel"]
+						},
+						"description": "Cancela una reserva pendiente y libera el stock reservado. Requiere permiso cart:remove o sales:void.\n\nLa reserva debe estar en estado 'pending'."
+					},
+					"response": []
+				},
+				{
+					"name": "Expire Reservations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/reservations/expire",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "reservations", "expire"]
+						},
+						"description": "Proceso batch para expirar todas las reservas pendientes que han pasado su fecha de expiración. Requiere permiso system:admin.\n\nTípicamente llamado por un job programado.\n\n## Response\n\n| Campo | Tipo | Descripción |\n|-------|------|-------------|\n| expired_count | number | Reservas expiradas exitosamente |\n| failed_count | number | Reservas que fallaron al expirar |\n| expired_reservations | array | Detalles de reservas expiradas |\n| errors | array | Errores encontrados |"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de inventario (stock y reservas). Requieren autenticación."
 		}
 	]
 }
