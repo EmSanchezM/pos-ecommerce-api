@@ -97,7 +97,7 @@ where
             let barcode = Barcode::new(&barcode_str)?;
 
             // Check against products
-            if let Some(existing_product) = self.product_repo.find_by_barcode(&barcode).await? {
+            if let Some(_existing_product) = self.product_repo.find_by_barcode(&barcode).await? {
                 return Err(InventoryError::DuplicateBarcode(barcode_str));
             }
 
