@@ -5,14 +5,17 @@
 // - variants: Product variant operations
 // - recipes: Recipe management and cost calculation
 // - stock: Inventory stock operations
+// - reservations: Inventory reservation operations
 
 pub mod products;
 pub mod recipes;
+pub mod reservations;
 pub mod stock;
 pub mod variants;
 
 // Re-export all handlers for easy access
 pub use products::*;
 pub use recipes::*;
+pub use reservations::*;
 pub use stock::*;
 pub use variants::*;

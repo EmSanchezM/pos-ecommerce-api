@@ -9,15 +9,17 @@
 
 use axum::{
     middleware,
-    routing::{get, post},
+    routing::{get, post, put},
     Router,
 };
 
 use crate::handlers::{
-    calculate_recipe_cost_handler, create_product_handler, create_recipe_handler,
-    create_variant_handler, delete_product_handler, delete_variant_handler, get_product_handler,
-    get_product_recipe_handler, get_product_stock_handler, get_recipe_handler, get_stock_handler,
-    get_variant_handler, list_products_handler, list_recipes_handler, list_stock_handler,
+    calculate_recipe_cost_handler, cancel_reservation_handler, confirm_reservation_handler,
+    create_product_handler, create_recipe_handler, create_reservation_handler,
+    create_variant_handler, delete_product_handler, delete_variant_handler,
+    expire_reservations_handler, get_product_handler, get_product_recipe_handler,
+    get_product_stock_handler, get_recipe_handler, get_stock_handler, get_variant_handler,
+    list_products_handler, list_recipes_handler, list_reservations_handler, list_stock_handler,
     list_variants_handler, update_product_handler, update_recipe_handler, update_variant_handler,
 };
 use crate::middleware::auth_middleware;
@@ -116,15 +118,24 @@ pub fn recipes_router(state: AppState) -> Router<AppState> {
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }
 
-/// Creates the inventory router with stock query endpoints.
+/// Creates the inventory router with stock and reservation endpoints.
 ///
 /// All routes require authentication via JWT token.
-/// All operations require inventory:read permission.
+/// Stock operations require inventory:read permission.
+/// Reservation operations require various permissions based on the action.
 ///
 /// # Routes
 ///
+/// ## Stock Routes
 /// - `GET /stock` - List stock with pagination and filters
 /// - `GET /stock/{stock_id}` - Get stock details
+///
+/// ## Reservation Routes
+/// - `POST /reservations` - Create a reservation (requires cart:add or sales:create)
+/// - `GET /reservations` - List reservations (requires inventory:read)
+/// - `PUT /reservations/{id}/confirm` - Confirm a reservation (requires sales:create)
+/// - `PUT /reservations/{id}/cancel` - Cancel a reservation (requires cart:remove or sales:void)
+/// - `POST /reservations/expire` - Expire all expired reservations (requires system:admin)
 ///
 /// # Usage
 ///
@@ -139,6 +150,16 @@ pub fn inventory_router(state: AppState) -> Router<AppState> {
         .route("/stock", get(list_stock_handler))
         // Individual stock routes
         .route("/stock/{stock_id}", get(get_stock_handler))
+        // Reservation collection routes
+        .route(
+            "/reservations",
+            post(create_reservation_handler).get(list_reservations_handler),
+        )
+        // Reservation action routes
+        .route("/reservations/{id}/confirm", put(confirm_reservation_handler))
+        .route("/reservations/{id}/cancel", put(cancel_reservation_handler))
+        // Reservation batch operations
+        .route("/reservations/expire", post(expire_reservations_handler))
         // Apply authentication middleware to all routes
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }
