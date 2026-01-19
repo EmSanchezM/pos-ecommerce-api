@@ -166,11 +166,11 @@ impl RecipeRepository for PgRecipeRepository {
             r#"
             SELECT id, product_id, variant_id, name, description, version, yield_quantity, preparation_time_minutes,
                    calculate_cost_from_ingredients, notes, metadata, is_active, created_at, updated_at
-            FROM recipes
+            FROM product_recipes
             WHERE ($1::bool IS NULL OR is_active = $1)
               AND ($2::text IS NULL OR name ILIKE '%' || $2 || '%' OR description ILIKE '%' || $2 || '%')
             ORDER BY created_at DESC
-            LIMIT $4 OFFSET $5
+            LIMIT $3 OFFSET $4
             "#,
         )
         .bind(is_active)
@@ -197,7 +197,7 @@ impl RecipeRepository for PgRecipeRepository {
         let count: (i64,) = sqlx::query_as(
             r#"
             SELECT COUNT(*)
-            FROM recipes
+            FROM product_recipes
             WHERE ($1::bool IS NULL OR is_active = $1)
               AND ($2::text IS NULL OR name ILIKE '%' || $2 || '%' OR description ILIKE '%' || $2 || '%')
             "#,
