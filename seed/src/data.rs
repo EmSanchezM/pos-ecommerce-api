@@ -107,9 +107,9 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     // Reports permissions
     ("reports:sales", "Access sales reports"),
     ("reports:inventory", "Access inventory reports"),
-    ("reports:inventory:kardex", "Access kardex reports"),
-    ("reports:inventory:valuation", "Access inventory valuation reports"),
-    ("reports:inventory:low_stock", "Access low stock reports"),
+    ("reports:inventory_kardex", "Access kardex reports"),
+    ("reports:inventory_valuation", "Access inventory valuation reports"),
+    ("reports:inventory_low_stock", "Access low stock reports"),
     ("reports:purchases", "Access purchasing reports"),
     ("reports:financial", "Access financial reports"),
     
@@ -208,7 +208,7 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "purchases:create", "purchases:read", "purchases:update", "purchases:approve", "purchases:receive", "purchases:list",
             "suppliers:create", "suppliers:read", "suppliers:update", "suppliers:delete", "suppliers:list",
             // Reports
-            "reports:sales", "reports:inventory", "reports:inventory:kardex", "reports:inventory:valuation", "reports:inventory:low_stock",
+            "reports:sales", "reports:inventory", "reports:inventory_kardex", "reports:inventory_valuation", "reports:inventory_low_stock",
             "reports:purchases", "reports:financial",
             // System
             "system:admin", "system:settings", "system:audit_log", "system:backup",
@@ -242,11 +242,11 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "purchases:create", "purchases:read", "purchases:update", "purchases:approve", "purchases:receive", "purchases:list",
             "suppliers:create", "suppliers:read", "suppliers:update", "suppliers:delete", "suppliers:list",
             // Reports
-            "reports:sales", "reports:inventory", "reports:inventory:kardex", "reports:inventory:valuation", "reports:inventory:low_stock",
+            "reports:sales", "reports:inventory", "reports:inventory_kardex", "reports:inventory_valuation", "reports:inventory_low_stock",
             "reports:purchases",
         ],
     ),
-    
+
     // Store manager
     (
         "store_manager",
@@ -273,10 +273,10 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "purchases:create", "purchases:read", "purchases:update", "purchases:list",
             "suppliers:read", "suppliers:list",
             // Reports
-            "reports:sales", "reports:inventory", "reports:inventory:kardex", "reports:inventory:valuation", "reports:inventory:low_stock",
+            "reports:sales", "reports:inventory", "reports:inventory_kardex", "reports:inventory_valuation", "reports:inventory_low_stock",
         ],
     ),
-    
+
     // Cashier
     (
         "cashier",
@@ -312,10 +312,10 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "purchases:read", "purchases:receive", "purchases:list",
             "suppliers:read", "suppliers:list",
             // Reports
-            "reports:inventory", "reports:inventory:kardex", "reports:inventory:low_stock",
+            "reports:inventory", "reports:inventory_kardex", "reports:inventory_low_stock",
         ],
     ),
-    
+
     // Purchasing agent
     (
         "purchasing_agent",
