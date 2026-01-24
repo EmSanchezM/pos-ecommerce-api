@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 use inventory::{
     CreateVariantCommand, CreateVariantUseCase, DeleteVariantUseCase, GetVariantUseCase,
-    ListVariantsUseCase, UpdateVariantCommand, UpdateVariantUseCase, VariantResponse,
+    ListResponse, ListVariantsUseCase, UpdateVariantCommand, UpdateVariantUseCase, VariantResponse,
 };
 
 use crate::error::AppError;
@@ -92,14 +92,14 @@ pub async fn create_variant_handler(
 ///
 /// # Response
 ///
-/// - 200 OK: List of variants
+/// - 200 OK: List of variants with total count
 /// - 401 Unauthorized: Missing or invalid token
 /// - 404 Not Found: Product doesn't exist
 pub async fn list_variants_handler(
     State(state): State<AppState>,
     CurrentUser(_ctx): CurrentUser,
     Path(product_id): Path<Uuid>,
-) -> Result<Json<Vec<VariantResponse>>, Response> {
+) -> Result<Json<ListResponse<VariantResponse>>, Response> {
     let use_case = ListVariantsUseCase::new(state.product_repo());
 
     let response = use_case
