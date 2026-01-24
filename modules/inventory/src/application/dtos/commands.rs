@@ -150,7 +150,8 @@ pub struct UpdateProductCommand {
 /// Requirements: 2.1, 2.2, 2.3, 2.4, 2.6
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateVariantCommand {
-    /// Parent product ID
+    /// Parent product ID (set from URL path, not from request body)
+    #[serde(default)]
     pub product_id: Uuid,
     /// Variant name (e.g., "Large", "Red", "Vanilla")
     pub name: String,
