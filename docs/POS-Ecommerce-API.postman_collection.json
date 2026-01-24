@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "pos-ecommerce-api-collection",
 		"name": "POS Ecommerce API",
-		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI\n\n### Products (requiere autenticación)\n- POST /api/v1/products - Crear producto (products:create)\n- GET /api/v1/products - Listar productos con paginación\n- GET /api/v1/products/:id - Obtener detalle de producto\n- PUT /api/v1/products/:id - Actualizar producto (products:update)\n- DELETE /api/v1/products/:id - Eliminar producto (products:delete)\n- POST /api/v1/products/:id/variants - Crear variante (products:create)\n- GET /api/v1/products/:id/variants - Listar variantes\n- GET /api/v1/products/:id/variants/:variant_id - Obtener variante\n- PUT /api/v1/products/:id/variants/:variant_id - Actualizar variante (products:update)\n- DELETE /api/v1/products/:id/variants/:variant_id - Eliminar variante (products:delete)\n- GET /api/v1/products/:id/recipe - Obtener receta activa del producto\n- GET /api/v1/products/:id/stock - Obtener stock del producto\n\n### Recipes (requiere autenticación)\n- POST /api/v1/recipes - Crear receta (recipes:create)\n- GET /api/v1/recipes - Listar recetas con paginación\n- GET /api/v1/recipes/:id - Obtener detalle de receta\n- PUT /api/v1/recipes/:id - Actualizar receta (recipes:update)\n- POST /api/v1/recipes/:id/calculate-cost - Calcular costo de receta\n\n### Inventory (requiere autenticación)\n- GET /api/v1/inventory/stock - Listar stock con paginación\n- GET /api/v1/inventory/stock/:stock_id - Obtener detalle de stock\n- POST /api/v1/inventory/reservations - Crear reserva\n- GET /api/v1/inventory/reservations - Listar reservas\n- PUT /api/v1/inventory/reservations/:id/confirm - Confirmar reserva\n- PUT /api/v1/inventory/reservations/:id/cancel - Cancelar reserva\n- POST /api/v1/inventory/reservations/expire - Expirar reservas vencidas",
+		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI\n\n### Products (requiere autenticación)\n- POST /api/v1/products - Crear producto (products:create)\n- GET /api/v1/products - Listar productos con paginación\n- GET /api/v1/products/:id - Obtener detalle de producto\n- PUT /api/v1/products/:id - Actualizar producto (products:update)\n- DELETE /api/v1/products/:id - Eliminar producto (products:delete)\n- POST /api/v1/products/:id/variants - Crear variante (products:create)\n- GET /api/v1/products/:id/variants - Listar variantes\n- GET /api/v1/products/:id/variants/:variant_id - Obtener variante\n- PUT /api/v1/products/:id/variants/:variant_id - Actualizar variante (products:update)\n- DELETE /api/v1/products/:id/variants/:variant_id - Eliminar variante (products:delete)\n- GET /api/v1/products/:id/recipe - Obtener receta activa del producto\n- GET /api/v1/products/:id/stock - Obtener stock del producto\n\n### Recipes (requiere autenticación)\n- POST /api/v1/recipes - Crear receta (recipes:create)\n- GET /api/v1/recipes - Listar recetas con paginación\n- GET /api/v1/recipes/:id - Obtener detalle de receta\n- PUT /api/v1/recipes/:id - Actualizar receta (recipes:update)\n- POST /api/v1/recipes/:id/calculate-cost - Calcular costo de receta\n\n### Inventory (requiere autenticación)\n- GET /api/v1/inventory/stock - Listar stock con paginación\n- GET /api/v1/inventory/stock/:stock_id - Obtener detalle de stock\n- POST /api/v1/inventory/reservations - Crear reserva\n- GET /api/v1/inventory/reservations - Listar reservas\n- PUT /api/v1/inventory/reservations/:id/confirm - Confirmar reserva\n- PUT /api/v1/inventory/reservations/:id/cancel - Cancelar reserva\n- POST /api/v1/inventory/reservations/expire - Expirar reservas vencidas\n\n### Adjustments (requiere autenticación)\n- POST /api/v1/inventory/adjustments - Crear ajuste de stock (inventory:adjustments:create)\n- GET /api/v1/inventory/adjustments - Listar ajustes con paginación (inventory:adjustments:read)\n- GET /api/v1/inventory/adjustments/:id - Obtener detalle de ajuste (inventory:adjustments:read)\n- PUT /api/v1/inventory/adjustments/:id/submit - Enviar ajuste para aprobación (inventory:adjustments:submit)\n- PUT /api/v1/inventory/adjustments/:id/approve - Aprobar ajuste (inventory:adjustments:approve)\n- PUT /api/v1/inventory/adjustments/:id/reject - Rechazar ajuste (inventory:adjustments:approve)\n- POST /api/v1/inventory/adjustments/:id/apply - Aplicar ajuste al stock (inventory:adjustments:apply)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -53,6 +53,11 @@
 		},
 		{
 			"key": "reservation_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "adjustment_id",
 			"value": "",
 			"type": "string"
 		}
@@ -1394,9 +1399,204 @@
 						"description": "Proceso batch para expirar todas las reservas pendientes que han pasado su fecha de expiración. Requiere permiso system:admin.\n\nTípicamente llamado por un job programado.\n\n## Response\n\n| Campo | Tipo | Descripción |\n|-------|------|-------------|\n| expired_count | number | Reservas expiradas exitosamente |\n| failed_count | number | Reservas que fallaron al expirar |\n| expired_reservations | array | Detalles de reservas expiradas |\n| errors | array | Errores encontrados |"
 					},
 					"response": []
+				},
+				{
+					"name": "Create Adjustment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('adjustment_id', jsonData.id);",
+									"    pm.test('Adjustment created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.status).to.equal('draft');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"adjustment_type\": \"decrease\",\n    \"adjustment_reason\": \"damage\",\n    \"notes\": \"Productos dañados durante el almacenamiento\",\n    \"items\": [\n        {\n            \"stock_id\": \"{{stock_id}}\",\n            \"quantity\": 5,\n            \"unit_cost\": 10.00,\n            \"notes\": \"Caja dañada por humedad\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/adjustments",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "adjustments"]
+						},
+						"description": "Crea un nuevo ajuste de stock en estado borrador. Requiere permiso inventory:adjustments:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda |\n| adjustment_type | string | Sí | increase o decrease |\n| adjustment_reason | string | Sí | damage, theft, loss, found, correction, expiration |\n| notes | string | No | Notas generales del ajuste |\n| items | array | Sí | Lista de items a ajustar |\n\n## Item Fields\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| stock_id | uuid | Sí | ID del registro de stock |\n| quantity | decimal | Sí | Cantidad a ajustar |\n| unit_cost | decimal | No | Costo unitario |\n| notes | string | No | Notas del item |"
+					},
+					"response": []
+				},
+				{
+					"name": "List Adjustments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/adjustments?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "adjustments"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "store_id",
+									"value": "{{store_id}}",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "draft",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista ajustes de stock con paginación y filtros. Requiere permiso inventory:adjustments:read.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20, max: 100) |\n| store_id | uuid | Filtrar por tienda |\n| status | string | Filtrar por estado: draft, pending_approval, approved, rejected, applied |"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Adjustment",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/adjustments/{{adjustment_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "adjustments", "{{adjustment_id}}"]
+						},
+						"description": "Obtiene el detalle de un ajuste incluyendo todos sus items. Requiere permiso inventory:adjustments:read."
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Adjustment",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/adjustments/{{adjustment_id}}/submit",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "adjustments", "{{adjustment_id}}", "submit"]
+						},
+						"description": "Envía un ajuste en borrador para aprobación. Requiere permiso inventory:adjustments:submit.\n\nEl ajuste debe:\n- Estar en estado 'draft'\n- Tener al menos un item"
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Adjustment",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"notes\": \"Aprobado - verificado físicamente\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/adjustments/{{adjustment_id}}/approve",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "adjustments", "{{adjustment_id}}", "approve"]
+						},
+						"description": "Aprueba un ajuste pendiente de aprobación. Requiere permiso inventory:adjustments:approve.\n\nEl ajuste debe estar en estado 'pending_approval'.\n\n## Request Body (opcional)\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| notes | string | No | Notas del aprobador |"
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Adjustment",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"notes\": \"Rechazado - cantidades incorrectas, favor revisar\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/adjustments/{{adjustment_id}}/reject",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "adjustments", "{{adjustment_id}}", "reject"]
+						},
+						"description": "Rechaza un ajuste pendiente de aprobación. Requiere permiso inventory:adjustments:approve.\n\nEl ajuste debe estar en estado 'pending_approval'.\n\n## Request Body (opcional)\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| notes | string | No | Motivo del rechazo |"
+					},
+					"response": []
+				},
+				{
+					"name": "Apply Adjustment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/adjustments/{{adjustment_id}}/apply",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "adjustments", "{{adjustment_id}}", "apply"]
+						},
+						"description": "Aplica un ajuste aprobado al inventario, actualizando los niveles de stock. Requiere permiso inventory:adjustments:apply.\n\nEl ajuste debe estar en estado 'approved'.\n\nEsta operación:\n1. Actualiza las cantidades de stock para cada item\n2. Registra los movimientos de inventario (Kardex)\n3. Cambia el estado del ajuste a 'applied'\n4. Registra los balances antes/después en cada item"
+					},
+					"response": []
 				}
 			],
-			"description": "Endpoints de gestión de inventario (stock y reservas). Requieren autenticación."
+			"description": "Endpoints de gestión de inventario (stock, reservas y ajustes). Requieren autenticación."
 		}
 	]
 }
