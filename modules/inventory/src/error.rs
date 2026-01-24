@@ -104,6 +104,14 @@ pub enum InventoryError {
     #[error("Optimistic lock error: record was modified by another process")]
     OptimisticLockError,
 
+    /// A stock record already exists for this store and product/variant combination.
+    #[error("Stock already exists for store {store_id} and product/variant")]
+    StockAlreadyExists {
+        store_id: Uuid,
+        product_id: Option<Uuid>,
+        variant_id: Option<Uuid>,
+    },
+
     // -------------------------------------------------------------------------
     // Reservation errors
     // -------------------------------------------------------------------------

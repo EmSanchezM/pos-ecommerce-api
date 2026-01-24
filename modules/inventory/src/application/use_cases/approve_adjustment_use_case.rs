@@ -187,6 +187,16 @@ mod tests {
         ) -> Result<String, InventoryError> {
             Ok("ADJ-TEST-00001".to_string())
         }
+
+        async fn find_paginated(
+            &self,
+            _store_id: Option<StoreId>,
+            _status: Option<&str>,
+            _page: i64,
+            _page_size: i64,
+        ) -> Result<(Vec<StockAdjustment>, i64), InventoryError> {
+            unimplemented!()
+        }
     }
 
     fn create_pending_adjustment() -> StockAdjustment {

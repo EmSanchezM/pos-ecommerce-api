@@ -14,13 +14,15 @@ use axum::{
 };
 
 use crate::handlers::{
-    calculate_recipe_cost_handler, cancel_reservation_handler, confirm_reservation_handler,
+    apply_adjustment_handler, approve_adjustment_handler, calculate_recipe_cost_handler,
+    cancel_reservation_handler, confirm_reservation_handler, create_adjustment_handler,
     create_product_handler, create_recipe_handler, create_reservation_handler,
     create_variant_handler, delete_product_handler, delete_variant_handler,
-    expire_reservations_handler, get_product_handler, get_product_recipe_handler,
-    get_product_stock_handler, get_recipe_handler, get_stock_handler, get_variant_handler,
-    list_products_handler, list_recipes_handler, list_reservations_handler, list_stock_handler,
-    list_variants_handler, update_product_handler, update_recipe_handler, update_variant_handler,
+    expire_reservations_handler, get_adjustment_handler, get_product_handler,
+    get_product_recipe_handler, get_product_stock_handler, get_recipe_handler, get_stock_handler,
+    get_variant_handler, list_adjustments_handler, list_products_handler, list_recipes_handler,
+    list_reservations_handler, list_stock_handler, list_variants_handler, reject_adjustment_handler,
+    submit_adjustment_handler, update_product_handler, update_recipe_handler, update_variant_handler,
 };
 use crate::middleware::auth_middleware;
 use crate::state::AppState;
@@ -118,11 +120,12 @@ pub fn recipes_router(state: AppState) -> Router<AppState> {
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }
 
-/// Creates the inventory router with stock and reservation endpoints.
+/// Creates the inventory router with stock, reservation, and adjustment endpoints.
 ///
 /// All routes require authentication via JWT token.
 /// Stock operations require inventory:read permission.
 /// Reservation operations require various permissions based on the action.
+/// Adjustment operations require inventory:adjustments:* permissions.
 ///
 /// # Routes
 ///
@@ -136,6 +139,15 @@ pub fn recipes_router(state: AppState) -> Router<AppState> {
 /// - `PUT /reservations/{id}/confirm` - Confirm a reservation (requires sales:create)
 /// - `PUT /reservations/{id}/cancel` - Cancel a reservation (requires cart:remove or sales:void)
 /// - `POST /reservations/expire` - Expire all expired reservations (requires system:admin)
+///
+/// ## Adjustment Routes
+/// - `POST /adjustments` - Create an adjustment (requires inventory:adjustments:create)
+/// - `GET /adjustments` - List adjustments (requires inventory:adjustments:read)
+/// - `GET /adjustments/{id}` - Get adjustment details (requires inventory:adjustments:read)
+/// - `PUT /adjustments/{id}/submit` - Submit for approval (requires inventory:adjustments:submit)
+/// - `PUT /adjustments/{id}/approve` - Approve adjustment (requires inventory:adjustments:approve)
+/// - `PUT /adjustments/{id}/reject` - Reject adjustment (requires inventory:adjustments:approve)
+/// - `POST /adjustments/{id}/apply` - Apply to stock (requires inventory:adjustments:apply)
 ///
 /// # Usage
 ///
@@ -160,6 +172,18 @@ pub fn inventory_router(state: AppState) -> Router<AppState> {
         .route("/reservations/{id}/cancel", put(cancel_reservation_handler))
         // Reservation batch operations
         .route("/reservations/expire", post(expire_reservations_handler))
+        // Adjustment collection routes
+        .route(
+            "/adjustments",
+            post(create_adjustment_handler).get(list_adjustments_handler),
+        )
+        // Individual adjustment routes
+        .route("/adjustments/{id}", get(get_adjustment_handler))
+        // Adjustment workflow routes
+        .route("/adjustments/{id}/submit", put(submit_adjustment_handler))
+        .route("/adjustments/{id}/approve", put(approve_adjustment_handler))
+        .route("/adjustments/{id}/reject", put(reject_adjustment_handler))
+        .route("/adjustments/{id}/apply", post(apply_adjustment_handler))
         // Apply authentication middleware to all routes
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }
