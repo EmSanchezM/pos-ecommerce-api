@@ -48,7 +48,11 @@ mod update_variant_use_case;
 mod delete_variant_use_case;
 
 // Stock use cases
+mod initialize_stock_use_case;
+mod bulk_initialize_stock_use_case;
 mod update_stock_use_case;
+mod update_stock_levels_use_case;
+mod get_low_stock_alerts_use_case;
 mod list_stock_use_case;
 mod get_stock_use_case;
 mod get_store_inventory_use_case;
@@ -72,6 +76,8 @@ mod create_adjustment_use_case;
 mod submit_adjustment_use_case;
 mod approve_adjustment_use_case;
 mod apply_adjustment_use_case;
+mod list_adjustments_use_case;
+mod get_adjustment_use_case;
 
 // Transfer use cases
 mod create_transfer_use_case;
@@ -91,7 +97,11 @@ pub use update_variant_use_case::UpdateVariantUseCase;
 pub use delete_variant_use_case::DeleteVariantUseCase;
 
 // Stock use cases exports
+pub use initialize_stock_use_case::InitializeStockUseCase;
+pub use bulk_initialize_stock_use_case::{BulkInitializeStockUseCase, BulkInitializeStockResult, BulkInitializeStockError};
 pub use update_stock_use_case::UpdateStockUseCase;
+pub use update_stock_levels_use_case::UpdateStockLevelsUseCase;
+pub use get_low_stock_alerts_use_case::GetLowStockAlertsUseCase;
 pub use list_stock_use_case::{ListStockUseCase, ListStockQuery};
 pub use get_stock_use_case::GetStockUseCase;
 pub use get_store_inventory_use_case::GetStoreInventoryUseCase;
@@ -115,6 +125,8 @@ pub use create_adjustment_use_case::CreateAdjustmentUseCase;
 pub use submit_adjustment_use_case::SubmitAdjustmentUseCase;
 pub use approve_adjustment_use_case::ApproveAdjustmentUseCase;
 pub use apply_adjustment_use_case::ApplyAdjustmentUseCase;
+pub use list_adjustments_use_case::{ListAdjustmentsUseCase, ListAdjustmentsQuery};
+pub use get_adjustment_use_case::GetAdjustmentUseCase;
 
 // Transfer use cases exports
 pub use create_transfer_use_case::CreateTransferUseCase;

@@ -415,6 +415,24 @@ impl From<InventoryError> for AppError {
                     "Record was modified by another process, please retry",
                 ),
             ),
+            InventoryError::StockAlreadyExists {
+                store_id,
+                product_id,
+                variant_id,
+            } => {
+                let item_type = if product_id.is_some() { "product" } else { "variant" };
+                let item_id = product_id.or(*variant_id).unwrap_or(*store_id);
+                (
+                    StatusCode::CONFLICT,
+                    ErrorResponse::new(
+                        "STOCK_ALREADY_EXISTS",
+                        format!(
+                            "Stock already exists for {} {} in store {}",
+                            item_type, item_id, store_id
+                        ),
+                    ),
+                )
+            }
 
             // -----------------------------------------------------------------
             // 400 Bad Request - Validation and business rule violations
