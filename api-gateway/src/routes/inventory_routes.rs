@@ -14,15 +14,17 @@ use axum::{
 };
 
 use crate::handlers::{
-    apply_adjustment_handler, approve_adjustment_handler, calculate_recipe_cost_handler,
-    cancel_reservation_handler, confirm_reservation_handler, create_adjustment_handler,
-    create_product_handler, create_recipe_handler, create_reservation_handler,
-    create_variant_handler, delete_product_handler, delete_variant_handler,
-    expire_reservations_handler, get_adjustment_handler, get_product_handler,
-    get_product_recipe_handler, get_product_stock_handler, get_recipe_handler, get_stock_handler,
-    get_variant_handler, list_adjustments_handler, list_products_handler, list_recipes_handler,
-    list_reservations_handler, list_stock_handler, list_variants_handler, reject_adjustment_handler,
-    submit_adjustment_handler, update_product_handler, update_recipe_handler, update_variant_handler,
+    apply_adjustment_handler, approve_adjustment_handler, bulk_initialize_stock_handler,
+    calculate_recipe_cost_handler, cancel_reservation_handler, confirm_reservation_handler,
+    create_adjustment_handler, create_product_handler, create_recipe_handler,
+    create_reservation_handler, create_variant_handler, delete_product_handler,
+    delete_variant_handler, expire_reservations_handler, get_adjustment_handler,
+    get_product_handler, get_product_recipe_handler, get_product_stock_handler, get_recipe_handler,
+    get_stock_handler, get_variant_handler, initialize_stock_handler, list_adjustments_handler,
+    list_products_handler, list_recipes_handler, list_reservations_handler, list_stock_handler,
+    list_variants_handler, reject_adjustment_handler, submit_adjustment_handler,
+    update_product_handler, update_recipe_handler, update_stock_levels_handler,
+    update_variant_handler,
 };
 use crate::middleware::auth_middleware;
 use crate::state::AppState;
@@ -130,8 +132,11 @@ pub fn recipes_router(state: AppState) -> Router<AppState> {
 /// # Routes
 ///
 /// ## Stock Routes
+/// - `POST /stock` - Initialize stock for a product in a store (requires inventory:write)
+/// - `POST /stock/bulk` - Bulk initialize stock for multiple products (requires inventory:write)
 /// - `GET /stock` - List stock with pagination and filters
 /// - `GET /stock/{stock_id}` - Get stock details
+/// - `PUT /stock/{stock_id}/levels` - Update stock level thresholds (requires inventory:write)
 ///
 /// ## Reservation Routes
 /// - `POST /reservations` - Create a reservation (requires cart:add or sales:create)
@@ -159,9 +164,13 @@ pub fn recipes_router(state: AppState) -> Router<AppState> {
 pub fn inventory_router(state: AppState) -> Router<AppState> {
     Router::new()
         // Stock collection routes
-        .route("/stock", get(list_stock_handler))
+        .route("/stock", post(initialize_stock_handler).get(list_stock_handler))
+        // Bulk stock initialization
+        .route("/stock/bulk", post(bulk_initialize_stock_handler))
         // Individual stock routes
         .route("/stock/{stock_id}", get(get_stock_handler))
+        // Stock levels update
+        .route("/stock/{stock_id}/levels", put(update_stock_levels_handler))
         // Reservation collection routes
         .route(
             "/reservations",

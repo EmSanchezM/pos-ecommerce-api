@@ -230,6 +230,45 @@ pub struct UpdateStockCommand {
     pub expected_version: i32,
 }
 
+/// Command to update stock level thresholds (min/max)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateStockLevelsCommand {
+    /// Stock record ID
+    pub stock_id: Uuid,
+    /// Minimum stock level for low stock alerts
+    pub min_stock_level: Decimal,
+    /// Maximum stock level (optional)
+    pub max_stock_level: Option<Decimal>,
+    /// Expected version for optimistic locking
+    pub expected_version: i32,
+}
+
+/// Command to initialize stock for multiple products at once
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkInitializeStockCommand {
+    /// Store ID where stock will be tracked
+    pub store_id: Uuid,
+    /// List of products to initialize
+    pub items: Vec<BulkInitializeStockItem>,
+}
+
+/// Individual item for bulk stock initialization
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BulkInitializeStockItem {
+    /// Product ID (mutually exclusive with variant_id)
+    pub product_id: Option<Uuid>,
+    /// Variant ID (mutually exclusive with product_id)
+    pub variant_id: Option<Uuid>,
+    /// Initial quantity (defaults to 0)
+    #[serde(default)]
+    pub initial_quantity: Decimal,
+    /// Minimum stock level for low stock alerts
+    #[serde(default)]
+    pub min_stock_level: Decimal,
+    /// Maximum stock level (optional)
+    pub max_stock_level: Option<Decimal>,
+}
+
 // =============================================================================
 // Reservation Commands
 // =============================================================================

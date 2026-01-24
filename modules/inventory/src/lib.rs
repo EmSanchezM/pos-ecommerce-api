@@ -151,13 +151,19 @@ pub use application::use_cases::UpdateVariantUseCase;
 pub use application::use_cases::DeleteVariantUseCase;
 
 // Stock management use cases
+pub use application::use_cases::BulkInitializeStockError;
+pub use application::use_cases::BulkInitializeStockResult;
+pub use application::use_cases::BulkInitializeStockUseCase;
 pub use application::use_cases::CancelReservationUseCase;
 pub use application::use_cases::ConfirmReservationUseCase;
 pub use application::use_cases::CreateReservationUseCase;
 pub use application::use_cases::ExpireReservationsResult;
 pub use application::use_cases::ExpireReservationsUseCase;
+pub use application::use_cases::GetLowStockAlertsUseCase;
+pub use application::use_cases::InitializeStockUseCase;
 pub use application::use_cases::ListReservationsUseCase;
 pub use application::use_cases::ListReservationsQuery;
+pub use application::use_cases::UpdateStockLevelsUseCase;
 pub use application::use_cases::UpdateStockUseCase;
 pub use application::use_cases::ListStockUseCase;
 pub use application::use_cases::ListStockQuery;
@@ -204,7 +210,11 @@ pub use application::dtos::UpdateProductCommand;
 pub use application::dtos::UpdateVariantCommand;
 
 // Stock commands
+pub use application::dtos::BulkInitializeStockCommand;
+pub use application::dtos::BulkInitializeStockItem;
+pub use application::dtos::InitializeStockCommand;
 pub use application::dtos::UpdateStockCommand;
+pub use application::dtos::UpdateStockLevelsCommand;
 
 // Reservation commands
 pub use application::dtos::CancelReservationCommand;
