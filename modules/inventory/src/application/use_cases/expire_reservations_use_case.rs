@@ -220,6 +220,17 @@ mod tests {
         async fn delete(&self, _id: ReservationId) -> Result<(), InventoryError> {
             unimplemented!()
         }
+
+        async fn find_paginated(
+            &self,
+            _stock_id: Option<StockId>,
+            _status: Option<&str>,
+            _reference_type: Option<&str>,
+            _page: i64,
+            _page_size: i64,
+        ) -> Result<(Vec<InventoryReservation>, i64), InventoryError> {
+            unimplemented!()
+        }
     }
 
     struct MockStockRepository {

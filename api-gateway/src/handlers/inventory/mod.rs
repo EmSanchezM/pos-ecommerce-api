@@ -6,7 +6,9 @@
 // - recipes: Recipe management and cost calculation
 // - stock: Inventory stock operations
 // - reservations: Inventory reservation operations
+// - adjustments: Stock adjustment operations
 
+pub mod adjustments;
 pub mod products;
 pub mod recipes;
 pub mod reservations;
@@ -14,6 +16,7 @@ pub mod stock;
 pub mod variants;
 
 // Re-export all handlers for easy access
+pub use adjustments::*;
 pub use products::*;
 pub use recipes::*;
 pub use reservations::*;
