@@ -180,6 +180,9 @@ pub use application::use_cases::ApplyAdjustmentUseCase;
 pub use application::use_cases::ApproveAdjustmentUseCase;
 pub use application::use_cases::CreateAdjustmentUseCase;
 pub use application::use_cases::SubmitAdjustmentUseCase;
+pub use application::use_cases::ListAdjustmentsUseCase;
+pub use application::use_cases::ListAdjustmentsQuery;
+pub use application::use_cases::GetAdjustmentUseCase;
 
 // Transfer use cases
 pub use application::use_cases::CreateTransferUseCase;

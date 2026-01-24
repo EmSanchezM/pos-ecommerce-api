@@ -186,6 +186,26 @@ pub struct UpdateVariantCommand {
 // Stock Commands
 // =============================================================================
 
+/// Command to initialize stock for a product or variant in a store
+/// Creates a new inventory_stock record associating the product/variant with a store
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InitializeStockCommand {
+    /// Store ID where stock will be tracked
+    pub store_id: Uuid,
+    /// Product ID (mutually exclusive with variant_id)
+    pub product_id: Option<Uuid>,
+    /// Variant ID (mutually exclusive with product_id)
+    pub variant_id: Option<Uuid>,
+    /// Initial quantity (defaults to 0)
+    #[serde(default)]
+    pub initial_quantity: Decimal,
+    /// Minimum stock level for low stock alerts
+    #[serde(default)]
+    pub min_stock_level: Decimal,
+    /// Maximum stock level (optional)
+    pub max_stock_level: Option<Decimal>,
+}
+
 /// Command to update stock quantity
 /// Requirements: 3.3, 3.4, 5.1, 5.3
 #[derive(Debug, Clone, Serialize, Deserialize)]

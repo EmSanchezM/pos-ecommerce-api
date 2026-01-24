@@ -220,6 +220,16 @@ mod tests {
             *counter += 1;
             Ok(format!("ADJ-TEST-{:05}", *counter))
         }
+
+        async fn find_paginated(
+            &self,
+            _store_id: Option<StoreId>,
+            _status: Option<&str>,
+            _page: i64,
+            _page_size: i64,
+        ) -> Result<(Vec<StockAdjustment>, i64), InventoryError> {
+            unimplemented!()
+        }
     }
 
     #[tokio::test]

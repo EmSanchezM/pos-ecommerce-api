@@ -240,6 +240,82 @@ impl AdjustmentRepository for PgAdjustmentRepository {
         let store_short = &store_id.as_uuid().to_string()[..8];
         Ok(format!("ADJ-{}-{:06}", store_short.to_uppercase(), sequence))
     }
+
+    async fn find_paginated(
+        &self,
+        store_id: Option<StoreId>,
+        status: Option<&str>,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<StockAdjustment>, i64), InventoryError> {
+        // Build dynamic query based on filters
+        let offset = (page - 1) * page_size;
+
+        // Count total matching records
+        let mut count_query = String::from("SELECT COUNT(*) FROM stock_adjustments WHERE 1=1");
+        let mut param_idx = 1;
+
+        if store_id.is_some() {
+            count_query.push_str(&format!(" AND store_id = ${}", param_idx));
+            param_idx += 1;
+        }
+        if status.is_some() {
+            count_query.push_str(&format!(" AND status = ${}", param_idx));
+        }
+
+        // Execute count query
+        let mut count_builder = sqlx::query_scalar::<_, i64>(&count_query);
+        if let Some(sid) = &store_id {
+            count_builder = count_builder.bind(sid.as_uuid());
+        }
+        if let Some(s) = status {
+            count_builder = count_builder.bind(s);
+        }
+        let total_count = count_builder.fetch_one(&self.pool).await?;
+
+        // Build data query
+        let mut data_query = String::from(
+            r#"SELECT id, store_id, adjustment_number, adjustment_type, adjustment_reason, status,
+                   created_by_id, approved_by_id, approved_at, applied_at, notes, attachments,
+                   created_at, updated_at
+            FROM stock_adjustments
+            WHERE 1=1"#,
+        );
+
+        param_idx = 1;
+        if store_id.is_some() {
+            data_query.push_str(&format!(" AND store_id = ${}", param_idx));
+            param_idx += 1;
+        }
+        if status.is_some() {
+            data_query.push_str(&format!(" AND status = ${}", param_idx));
+            param_idx += 1;
+        }
+        data_query.push_str(&format!(
+            " ORDER BY created_at DESC LIMIT ${} OFFSET ${}",
+            param_idx,
+            param_idx + 1
+        ));
+
+        // Execute data query
+        let mut data_builder = sqlx::query_as::<_, AdjustmentRow>(&data_query);
+        if let Some(sid) = &store_id {
+            data_builder = data_builder.bind(sid.as_uuid());
+        }
+        if let Some(s) = status {
+            data_builder = data_builder.bind(s);
+        }
+        data_builder = data_builder.bind(page_size).bind(offset);
+
+        let rows = data_builder.fetch_all(&self.pool).await?;
+
+        let adjustments: Result<Vec<StockAdjustment>, InventoryError> = rows
+            .into_iter()
+            .map(|r| r.try_into_without_items())
+            .collect();
+
+        Ok((adjustments?, total_count))
+    }
 }
 
 
