@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "pos-ecommerce-api-collection",
 		"name": "POS Ecommerce API",
-		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI\n\n### Products (requiere autenticación)\n- POST /api/v1/products - Crear producto (products:create)\n- GET /api/v1/products - Listar productos con paginación\n- GET /api/v1/products/:id - Obtener detalle de producto\n- PUT /api/v1/products/:id - Actualizar producto (products:update)\n- DELETE /api/v1/products/:id - Eliminar producto (products:delete)\n- POST /api/v1/products/:id/variants - Crear variante (products:create)\n- GET /api/v1/products/:id/variants - Listar variantes\n- GET /api/v1/products/:id/variants/:variant_id - Obtener variante\n- PUT /api/v1/products/:id/variants/:variant_id - Actualizar variante (products:update)\n- DELETE /api/v1/products/:id/variants/:variant_id - Eliminar variante (products:delete)\n- GET /api/v1/products/:id/recipe - Obtener receta activa del producto\n- GET /api/v1/products/:id/stock - Obtener stock del producto\n\n### Recipes (requiere autenticación)\n- POST /api/v1/recipes - Crear receta (recipes:create)\n- GET /api/v1/recipes - Listar recetas con paginación\n- GET /api/v1/recipes/:id - Obtener detalle de receta\n- PUT /api/v1/recipes/:id - Actualizar receta (recipes:update)\n- POST /api/v1/recipes/:id/calculate-cost - Calcular costo de receta\n\n### Inventory (requiere autenticación)\n- GET /api/v1/inventory/stock - Listar stock con paginación\n- GET /api/v1/inventory/stock/:stock_id - Obtener detalle de stock\n- POST /api/v1/inventory/reservations - Crear reserva\n- GET /api/v1/inventory/reservations - Listar reservas\n- PUT /api/v1/inventory/reservations/:id/confirm - Confirmar reserva\n- PUT /api/v1/inventory/reservations/:id/cancel - Cancelar reserva\n- POST /api/v1/inventory/reservations/expire - Expirar reservas vencidas\n\n### Adjustments (requiere autenticación)\n- POST /api/v1/inventory/adjustments - Crear ajuste de stock (inventory:adjustments:create)\n- GET /api/v1/inventory/adjustments - Listar ajustes con paginación (inventory:adjustments:read)\n- GET /api/v1/inventory/adjustments/:id - Obtener detalle de ajuste (inventory:adjustments:read)\n- PUT /api/v1/inventory/adjustments/:id/submit - Enviar ajuste para aprobación (inventory:adjustments:submit)\n- PUT /api/v1/inventory/adjustments/:id/approve - Aprobar ajuste (inventory:adjustments:approve)\n- PUT /api/v1/inventory/adjustments/:id/reject - Rechazar ajuste (inventory:adjustments:approve)\n- POST /api/v1/inventory/adjustments/:id/apply - Aplicar ajuste al stock (inventory:adjustments:apply)",
+		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n- GET /api/v1/stores/:id/inventory - Obtener inventario de tienda (inventory:read)\n- GET /api/v1/stores/:id/low-stock - Obtener alertas de stock bajo (inventory:read)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI\n\n### Products (requiere autenticación)\n- POST /api/v1/products - Crear producto (products:create)\n- GET /api/v1/products - Listar productos con paginación\n- GET /api/v1/products/:id - Obtener detalle de producto\n- PUT /api/v1/products/:id - Actualizar producto (products:update)\n- DELETE /api/v1/products/:id - Eliminar producto (products:delete)\n- POST /api/v1/products/:id/variants - Crear variante (products:create)\n- GET /api/v1/products/:id/variants - Listar variantes\n- GET /api/v1/products/:id/variants/:variant_id - Obtener variante\n- PUT /api/v1/products/:id/variants/:variant_id - Actualizar variante (products:update)\n- DELETE /api/v1/products/:id/variants/:variant_id - Eliminar variante (products:delete)\n- GET /api/v1/products/:id/recipe - Obtener receta activa del producto\n- GET /api/v1/products/:id/stock - Obtener stock del producto\n\n### Recipes (requiere autenticación)\n- POST /api/v1/recipes - Crear receta (recipes:create)\n- GET /api/v1/recipes - Listar recetas con paginación\n- GET /api/v1/recipes/:id - Obtener detalle de receta\n- PUT /api/v1/recipes/:id - Actualizar receta (recipes:update)\n- POST /api/v1/recipes/:id/calculate-cost - Calcular costo de receta\n\n### Inventory (requiere autenticación)\n- POST /api/v1/inventory/stock - Inicializar stock (inventory:write)\n- POST /api/v1/inventory/stock/bulk - Inicializar stock masivo (inventory:write)\n- GET /api/v1/inventory/stock - Listar stock con paginación\n- GET /api/v1/inventory/stock/:stock_id - Obtener detalle de stock\n- PUT /api/v1/inventory/stock/:stock_id/levels - Actualizar niveles de stock (inventory:write)\n- POST /api/v1/inventory/reservations - Crear reserva\n- GET /api/v1/inventory/reservations - Listar reservas\n- PUT /api/v1/inventory/reservations/:id/confirm - Confirmar reserva\n- PUT /api/v1/inventory/reservations/:id/cancel - Cancelar reserva\n- POST /api/v1/inventory/reservations/expire - Expirar reservas vencidas\n\n### Adjustments (requiere autenticación)\n- POST /api/v1/inventory/adjustments - Crear ajuste de stock (inventory:adjustments:create)\n- GET /api/v1/inventory/adjustments - Listar ajustes con paginación (inventory:adjustments:read)\n- GET /api/v1/inventory/adjustments/:id - Obtener detalle de ajuste (inventory:adjustments:read)\n- PUT /api/v1/inventory/adjustments/:id/submit - Enviar ajuste para aprobación (inventory:adjustments:submit)\n- PUT /api/v1/inventory/adjustments/:id/approve - Aprobar ajuste (inventory:adjustments:approve)\n- PUT /api/v1/inventory/adjustments/:id/reject - Rechazar ajuste (inventory:adjustments:approve)\n- POST /api/v1/inventory/adjustments/:id/apply - Aplicar ajuste al stock (inventory:adjustments:apply)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -426,6 +426,44 @@
 							"path": ["api", "v1", "stores", "{{store_id}}", "deactivate"]
 						},
 						"description": "Desactiva una tienda. Requiere rol super_admin.\n\nCuando se desactiva una tienda, todas sus terminales también se desactivan."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Store Inventory",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/inventory",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stores", "{{store_id}}", "inventory"]
+						},
+						"description": "Obtiene todo el inventario de una tienda específica. Requiere permiso inventory:read.\n\n## Path Parameters\n\n- `store_id`: UUID de la tienda\n\n## Respuestas\n\n- **200 OK**: Lista de registros de stock de la tienda\n- **401 Unauthorized**: Token inválido o faltante\n- **403 Forbidden**: Usuario sin permiso inventory:read"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Low Stock Alerts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/low-stock",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "stores", "{{store_id}}", "low-stock"]
+						},
+						"description": "Obtiene todos los productos con stock bajo para una tienda específica. Útil para generar alertas de reorden y notificaciones. Requiere permiso inventory:read.\n\n## Path Parameters\n\n- `store_id`: UUID de la tienda\n\n## Respuestas\n\n- **200 OK**: Lista de registros de stock con niveles bajos (quantity <= min_stock_level)\n- **401 Unauthorized**: Token inválido o faltante\n- **403 Forbidden**: Usuario sin permiso inventory:read\n\n## Response Fields\n\n| Campo | Tipo | Descripción |\n|-------|------|-------------|\n| id | uuid | ID del registro de stock |\n| store_id | uuid | ID de la tienda |\n| product_id | uuid | ID del producto |\n| variant_id | uuid | ID de la variante (si aplica) |\n| quantity | decimal | Cantidad actual |\n| min_stock_level | decimal | Nivel mínimo configurado |\n| max_stock_level | decimal | Nivel máximo configurado |"
 					},
 					"response": []
 				}
@@ -1251,6 +1289,105 @@
 							"path": ["api", "v1", "inventory", "stock", "{{stock_id}}"]
 						},
 						"description": "Obtiene el detalle de un registro de stock con información del producto/variante. Requiere permiso inventory:read."
+					},
+					"response": []
+				},
+				{
+					"name": "Initialize Stock",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('stock_id', jsonData.id);",
+									"    pm.test('Stock initialized successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.store_id).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"product_id\": \"{{product_id}}\",\n    \"initial_quantity\": 100,\n    \"min_stock_level\": 10,\n    \"max_stock_level\": 500\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/stock",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "stock"]
+						},
+						"description": "Inicializa el stock de un producto o variante en una tienda específica. Requiere permiso inventory:write.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda |\n| product_id | uuid | Sí* | ID del producto (excluyente con variant_id) |\n| variant_id | uuid | Sí* | ID de la variante (excluyente con product_id) |\n| initial_quantity | decimal | No | Cantidad inicial (default: 0) |\n| min_stock_level | decimal | No | Nivel mínimo para alertas (default: 0) |\n| max_stock_level | decimal | No | Nivel máximo de stock |\n\n*Debe especificar product_id O variant_id, no ambos.\n\n## Respuestas\n\n- **201 Created**: Stock inicializado exitosamente\n- **400 Bad Request**: Error de validación\n- **404 Not Found**: Producto/variante no existe\n- **409 Conflict**: Stock ya existe para esta combinación tienda/producto"
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Initialize Stock",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"items\": [\n        {\n            \"product_id\": \"{{product_id}}\",\n            \"initial_quantity\": 50,\n            \"min_stock_level\": 10,\n            \"max_stock_level\": 200\n        },\n        {\n            \"variant_id\": \"{{variant_id}}\",\n            \"initial_quantity\": 25,\n            \"min_stock_level\": 5\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/stock/bulk",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "stock", "bulk"]
+						},
+						"description": "Inicializa stock para múltiples productos/variantes a la vez. Útil para configuración inicial de tienda o importaciones masivas. Requiere permiso inventory:write.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda |\n| items | array | Sí | Lista de productos a inicializar |\n\n## Item Fields\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| product_id | uuid | Sí* | ID del producto (excluyente con variant_id) |\n| variant_id | uuid | Sí* | ID de la variante (excluyente con product_id) |\n| initial_quantity | decimal | No | Cantidad inicial (default: 0) |\n| min_stock_level | decimal | No | Nivel mínimo para alertas (default: 0) |\n| max_stock_level | decimal | No | Nivel máximo de stock |\n\n## Response\n\n| Campo | Tipo | Descripción |\n|-------|------|-------------|\n| successful | array | Items inicializados exitosamente |\n| failed | array | Items que fallaron con mensaje de error |"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Stock Levels",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"stock_id\": \"{{stock_id}}\",\n    \"min_stock_level\": 20,\n    \"max_stock_level\": 500,\n    \"expected_version\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/inventory/stock/{{stock_id}}/levels",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inventory", "stock", "{{stock_id}}", "levels"]
+						},
+						"description": "Actualiza los niveles de stock mínimo/máximo para un registro de stock. No modifica la cantidad actual. Requiere permiso inventory:write.\n\n## Path Parameters\n\n- `stock_id`: UUID del registro de stock\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| stock_id | uuid | Sí | ID del registro de stock |\n| min_stock_level | decimal | Sí | Nivel mínimo para alertas |\n| max_stock_level | decimal | No | Nivel máximo de stock |\n| expected_version | number | Sí | Versión esperada (optimistic locking) |\n\n## Respuestas\n\n- **200 OK**: Niveles actualizados exitosamente\n- **404 Not Found**: Registro de stock no existe\n- **409 Conflict**: Conflicto de versión (optimistic locking)"
 					},
 					"response": []
 				},
