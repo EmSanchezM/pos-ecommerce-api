@@ -10,8 +10,9 @@ use axum::{
 };
 
 use crate::handlers::{
-    activate_store_handler, create_store_handler, deactivate_store_handler, get_store_handler,
-    get_store_inventory_handler, list_stores_handler, update_store_handler,
+    activate_store_handler, create_store_handler, deactivate_store_handler,
+    get_low_stock_alerts_handler, get_store_handler, get_store_inventory_handler,
+    list_stores_handler, update_store_handler,
 };
 use crate::middleware::auth_middleware;
 use crate::state::AppState;
@@ -30,6 +31,7 @@ use crate::state::AppState;
 /// - `POST /:id/activate` - Activate store (requires super_admin) - Requirement 1.4, 1.5
 /// - `POST /:id/deactivate` - Deactivate store and cascade to terminals (requires super_admin) - Requirement 1.3, 1.5
 /// - `GET /:id/inventory` - Get store inventory (requires inventory:read)
+/// - `GET /:id/low-stock` - Get low stock alerts for store (requires inventory:read)
 ///
 /// # Usage
 ///
@@ -49,6 +51,8 @@ pub fn store_router(state: AppState) -> Router<AppState> {
         .route("/{id}/deactivate", post(deactivate_store_handler))
         // Store inventory route
         .route("/{id}/inventory", get(get_store_inventory_handler))
+        // Store low stock alerts route
+        .route("/{id}/low-stock", get(get_low_stock_alerts_handler))
         // Apply authentication middleware to all routes
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }
