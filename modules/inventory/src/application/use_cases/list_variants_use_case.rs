@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::application::dtos::responses::VariantResponse;
+use crate::application::dtos::responses::{ListResponse, VariantResponse};
 use crate::domain::repositories::ProductRepository;
 use crate::domain::value_objects::ProductId;
 use crate::InventoryError;
@@ -30,14 +30,14 @@ where
     /// * `product_id` - The product's UUID
     ///
     /// # Returns
-    /// Vec of VariantResponse on success
+    /// ListResponse containing variants on success
     ///
     /// # Errors
     /// * `InventoryError::ProductNotFound` - If product doesn't exist
     pub async fn execute(
         &self,
         product_id: uuid::Uuid,
-    ) -> Result<Vec<VariantResponse>, InventoryError> {
+    ) -> Result<ListResponse<VariantResponse>, InventoryError> {
         let id = ProductId::from_uuid(product_id);
 
         // Validate product exists
@@ -74,6 +74,6 @@ where
             })
             .collect();
 
-        Ok(variant_responses)
+        Ok(ListResponse::new(variant_responses))
     }
 }
