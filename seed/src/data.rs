@@ -46,6 +46,7 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     
     // Inventory module permissions
     ("inventory:read", "View inventory levels"),
+    ("inventory:write", "Create inventory stocks"),
     ("inventory:update", "Update inventory levels"),
     ("inventory:transfer", "Transfer inventory between stores"),
     ("inventory:adjust", "Create and manage inventory adjustments"),
@@ -196,7 +197,7 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "variants:create", "variants:read", "variants:update", "variants:delete",
             "recipes:create", "recipes:read", "recipes:update", "recipes:delete", "recipes:calculate_cost",
             // Inventory
-            "inventory:read", "inventory:update", "inventory:transfer", "inventory:adjust", "inventory:approve_adjustments", "inventory:reserve",
+            "inventory:read", "inventory:write", "inventory:update", "inventory:transfer", "inventory:adjust", "inventory:approve_adjustments", "inventory:reserve",
             "reservations:create", "reservations:read", "reservations:confirm", "reservations:cancel", "reservations:expire",
             "adjustments:create", "adjustments:read", "adjustments:submit", "adjustments:approve", "adjustments:reject", "adjustments:apply",
             "transfers:create", "transfers:read", "transfers:ship", "transfers:receive", "transfers:cancel",
@@ -230,7 +231,7 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "variants:create", "variants:read", "variants:update", "variants:delete",
             "recipes:create", "recipes:read", "recipes:update", "recipes:delete", "recipes:calculate_cost",
             // Inventory
-            "inventory:read", "inventory:update", "inventory:transfer", "inventory:adjust", "inventory:approve_adjustments", "inventory:reserve",
+            "inventory:read", "inventory:write", "inventory:update", "inventory:transfer", "inventory:adjust", "inventory:approve_adjustments", "inventory:reserve",
             "reservations:create", "reservations:read", "reservations:confirm", "reservations:cancel",
             "adjustments:create", "adjustments:read", "adjustments:submit", "adjustments:approve", "adjustments:reject", "adjustments:apply",
             "transfers:create", "transfers:read", "transfers:ship", "transfers:receive", "transfers:cancel",
@@ -261,7 +262,7 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "variants:create", "variants:read", "variants:update",
             "recipes:create", "recipes:read", "recipes:update", "recipes:calculate_cost",
             // Inventory
-            "inventory:read", "inventory:update", "inventory:adjust", "inventory:approve_adjustments", "inventory:transfer", "inventory:reserve",
+            "inventory:read", "inventory:write", "inventory:update", "inventory:adjust", "inventory:approve_adjustments", "inventory:transfer", "inventory:reserve",
             "reservations:create", "reservations:read", "reservations:confirm", "reservations:cancel",
             "adjustments:create", "adjustments:read", "adjustments:submit", "adjustments:approve",
             "transfers:create", "transfers:read", "transfers:ship", "transfers:receive", "transfers:cancel",
@@ -305,7 +306,7 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "recipes:read",
             "categories:read", "categories:list",
             // Inventory
-            "inventory:read", "inventory:update", "inventory:adjust",
+            "inventory:read", "inventory:write", "inventory:update", "inventory:adjust",
             "adjustments:create", "adjustments:read", "adjustments:submit",
             "transfers:read",
             // Purchasing
