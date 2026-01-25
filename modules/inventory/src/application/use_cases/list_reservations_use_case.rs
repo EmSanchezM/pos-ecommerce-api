@@ -250,7 +250,7 @@ mod tests {
         assert!(result.is_ok());
 
         let response = result.unwrap();
-        assert_eq!(response.data.len(), 5);
+        assert_eq!(response.items.len(), 5);
         assert_eq!(response.total_items, 5);
     }
 
@@ -283,7 +283,7 @@ mod tests {
         assert!(result.is_ok());
 
         let response = result.unwrap();
-        assert_eq!(response.data.len(), 1);
-        assert_eq!(response.data[0].status, "pending");
+        assert_eq!(response.items.len(), 1);
+        assert_eq!(response.items[0].status, "pending");
     }
 }

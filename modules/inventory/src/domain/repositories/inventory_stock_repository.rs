@@ -65,4 +65,13 @@ pub trait InventoryStockRepository: Send + Sync {
 
     /// Finds all stock records for a specific product across all stores
     async fn find_by_product(&self, product_id: ProductId) -> Result<Vec<InventoryStock>, InventoryError>;
+
+    /// Finds all stock records across all stores
+    async fn find_all(&self) -> Result<Vec<InventoryStock>, InventoryError>;
+
+    /// Finds all stock records with low stock across all stores
+    async fn find_all_low_stock(&self) -> Result<Vec<InventoryStock>, InventoryError>;
+
+    /// Finds all stock records with low stock for a specific store
+    async fn find_low_stock_by_store(&self, store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError>;
 }

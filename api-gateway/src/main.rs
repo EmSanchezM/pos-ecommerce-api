@@ -9,7 +9,7 @@ pub mod middleware;
 mod routes;
 mod state;
 
-use routes::{auth_router, inventory_router, products_router, recipes_router, store_router, store_terminals_router, terminals_router};
+use routes::{auth_router, inventory_router, products_router, recipes_router, reports_router, store_router, store_terminals_router, terminals_router};
 use state::AppState;
 
 #[tokio::main]
@@ -45,6 +45,7 @@ async fn main() {
         .nest("/api/v1/products", products_router(app_state.clone()))
         .nest("/api/v1/recipes", recipes_router(app_state.clone()))
         .nest("/api/v1/inventory", inventory_router(app_state.clone()))
+        .nest("/api/v1/reports", reports_router(app_state.clone()))
         .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();

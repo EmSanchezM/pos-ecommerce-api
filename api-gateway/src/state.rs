@@ -47,7 +47,7 @@ pub struct AppState {
     stock_repo: Arc<PgInventoryStockRepository>,
     /// Reservation repository for stock reservations
     reservation_repo: Arc<PgReservationRepository>,
-    /// Movement repository for inventory movement history (kardex)
+    /// Movement repository for inventory movement history (stock ledger)
     movement_repo: Arc<PgInventoryMovementRepository>,
     /// Recipe repository for recipe/BOM management
     recipe_repo: Arc<PgRecipeRepository>,

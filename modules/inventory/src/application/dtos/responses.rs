@@ -206,9 +206,9 @@ pub struct MovementResponse {
     pub created_at: DateTime<Utc>,
 }
 
-/// Response for Kardex report (movement history)
+/// Response for Stock History report (movement history / ledger)
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct KardexResponse {
+pub struct StockHistoryResponse {
     pub stock_id: Uuid,
     pub product_id: Option<Uuid>,
     pub variant_id: Option<Uuid>,
@@ -479,7 +479,7 @@ impl<T> PaginatedResponse<T> {
         } else {
             (total_items + page_size - 1) / page_size
         };
-        
+
         Self {
             items,
             page,
@@ -490,4 +490,59 @@ impl<T> PaginatedResponse<T> {
             has_previous: page > 1,
         }
     }
+}
+
+// =============================================================================
+// Report Responses
+// =============================================================================
+
+/// Response for a single item in the inventory valuation report
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValuationItemResponse {
+    pub stock_id: Uuid,
+    pub store_id: Uuid,
+    pub product_id: Option<Uuid>,
+    pub variant_id: Option<Uuid>,
+    pub product_name: Option<String>,
+    pub variant_name: Option<String>,
+    pub sku: Option<String>,
+    pub quantity: Decimal,
+    pub unit_cost: Decimal,
+    pub total_value: Decimal,
+    pub currency: String,
+}
+
+/// Response for inventory valuation report
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValuationReportResponse {
+    pub items: Vec<ValuationItemResponse>,
+    pub total_items: i64,
+    pub total_value: Decimal,
+    pub currency: String,
+    pub generated_at: DateTime<Utc>,
+}
+
+/// Response for a single item in the low stock report
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LowStockItemResponse {
+    pub stock_id: Uuid,
+    pub store_id: Uuid,
+    pub product_id: Option<Uuid>,
+    pub variant_id: Option<Uuid>,
+    pub product_name: Option<String>,
+    pub variant_name: Option<String>,
+    pub sku: Option<String>,
+    pub current_quantity: Decimal,
+    pub available_quantity: Decimal,
+    pub min_stock_level: Decimal,
+    pub shortage: Decimal,
+    pub reorder_suggestion: Decimal,
+}
+
+/// Response for low stock report
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LowStockReportResponse {
+    pub items: Vec<LowStockItemResponse>,
+    pub total_items: i64,
+    pub generated_at: DateTime<Utc>,
 }

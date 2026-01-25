@@ -63,6 +63,12 @@ mod cancel_reservation_use_case;
 mod expire_reservations_use_case;
 mod list_reservations_use_case;
 
+// Stock history and report use cases
+mod get_stock_history_use_case;
+mod get_valuation_report_use_case;
+mod get_low_stock_report_use_case;
+mod get_movements_report_use_case;
+
 // Recipe use cases
 mod create_recipe_use_case;
 mod calculate_recipe_cost_use_case;
@@ -111,6 +117,12 @@ pub use confirm_reservation_use_case::ConfirmReservationUseCase;
 pub use cancel_reservation_use_case::CancelReservationUseCase;
 pub use expire_reservations_use_case::{ExpireReservationsUseCase, ExpireReservationsResult};
 pub use list_reservations_use_case::{ListReservationsUseCase, ListReservationsQuery};
+
+// Stock history and report use cases exports
+pub use get_stock_history_use_case::{GetStockHistoryUseCase, StockHistoryQuery};
+pub use get_valuation_report_use_case::{GetValuationReportUseCase, ValuationReportQuery};
+pub use get_low_stock_report_use_case::{GetLowStockReportUseCase, LowStockReportQuery};
+pub use get_movements_report_use_case::{GetMovementsReportUseCase, MovementsReportQuery};
 
 // Recipe use cases exports
 pub use create_recipe_use_case::CreateRecipeUseCase;

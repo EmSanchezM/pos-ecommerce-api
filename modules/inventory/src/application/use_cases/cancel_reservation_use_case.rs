@@ -286,6 +286,18 @@ mod tests {
         ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
+
+        async fn find_all(&self) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_all_low_stock(&self) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_low_stock_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
     }
 
     fn future_time() -> chrono::DateTime<Utc> {

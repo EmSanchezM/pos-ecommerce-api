@@ -302,6 +302,54 @@ impl InventoryStockRepository for PgInventoryStockRepository {
 
         rows.into_iter().map(|r| r.try_into()).collect()
     }
+
+    async fn find_all(&self) -> Result<Vec<InventoryStock>, InventoryError> {
+        let rows = sqlx::query_as::<_, StockRow>(
+            r#"
+            SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
+                   version, min_stock_level, max_stock_level, created_at, updated_at
+            FROM inventory_stock
+            ORDER BY store_id, created_at DESC
+            "#,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        rows.into_iter().map(|r| r.try_into()).collect()
+    }
+
+    async fn find_all_low_stock(&self) -> Result<Vec<InventoryStock>, InventoryError> {
+        let rows = sqlx::query_as::<_, StockRow>(
+            r#"
+            SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
+                   version, min_stock_level, max_stock_level, created_at, updated_at
+            FROM inventory_stock
+            WHERE (quantity - reserved_quantity) <= min_stock_level
+            ORDER BY (quantity - reserved_quantity) ASC
+            "#,
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        rows.into_iter().map(|r| r.try_into()).collect()
+    }
+
+    async fn find_low_stock_by_store(&self, store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        let rows = sqlx::query_as::<_, StockRow>(
+            r#"
+            SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
+                   version, min_stock_level, max_stock_level, created_at, updated_at
+            FROM inventory_stock
+            WHERE store_id = $1 AND (quantity - reserved_quantity) <= min_stock_level
+            ORDER BY (quantity - reserved_quantity) ASC
+            "#,
+        )
+        .bind(store_id.as_uuid())
+        .fetch_all(&self.pool)
+        .await?;
+
+        rows.into_iter().map(|r| r.try_into()).collect()
+    }
 }
 
 /// Internal row type for mapping stock database results
