@@ -19,8 +19,10 @@ use crate::handlers::{
     create_adjustment_handler, create_product_handler, create_recipe_handler,
     create_reservation_handler, create_variant_handler, delete_product_handler,
     delete_variant_handler, expire_reservations_handler, get_adjustment_handler,
-    get_product_handler, get_product_recipe_handler, get_product_stock_handler, get_recipe_handler,
-    get_stock_handler, get_variant_handler, initialize_stock_handler, list_adjustments_handler,
+    get_low_stock_report_handler, get_movements_report_handler, get_product_handler,
+    get_product_recipe_handler, get_product_stock_handler, get_recipe_handler,
+    get_stock_handler, get_stock_history_handler, get_valuation_report_handler,
+    get_variant_handler, initialize_stock_handler, list_adjustments_handler,
     list_products_handler, list_recipes_handler, list_reservations_handler, list_stock_handler,
     list_variants_handler, reject_adjustment_handler, submit_adjustment_handler,
     update_product_handler, update_recipe_handler, update_stock_levels_handler,
@@ -137,6 +139,7 @@ pub fn recipes_router(state: AppState) -> Router<AppState> {
 /// - `GET /stock` - List stock with pagination and filters
 /// - `GET /stock/{stock_id}` - Get stock details
 /// - `PUT /stock/{stock_id}/levels` - Update stock level thresholds (requires inventory:write)
+/// - `GET /stock/{stock_id}/history` - Get stock movement history (requires inventory:read)
 ///
 /// ## Reservation Routes
 /// - `POST /reservations` - Create a reservation (requires cart:add or sales:create)
@@ -171,6 +174,8 @@ pub fn inventory_router(state: AppState) -> Router<AppState> {
         .route("/stock/{stock_id}", get(get_stock_handler))
         // Stock levels update
         .route("/stock/{stock_id}/levels", put(update_stock_levels_handler))
+        // Stock history route
+        .route("/stock/{stock_id}/history", get(get_stock_history_handler))
         // Reservation collection routes
         .route(
             "/reservations",
@@ -193,6 +198,34 @@ pub fn inventory_router(state: AppState) -> Router<AppState> {
         .route("/adjustments/{id}/approve", put(approve_adjustment_handler))
         .route("/adjustments/{id}/reject", put(reject_adjustment_handler))
         .route("/adjustments/{id}/apply", post(apply_adjustment_handler))
+        // Apply authentication middleware to all routes
+        .layer(middleware::from_fn_with_state(state, auth_middleware))
+}
+
+/// Creates the inventory reports router with all report endpoints.
+///
+/// All routes require authentication via JWT token.
+/// Report operations require reports:inventory permission.
+///
+/// # Routes
+///
+/// - `GET /inventory/valuation` - Get inventory valuation report (requires reports:inventory)
+/// - `GET /inventory/low-stock` - Get low stock report (requires reports:inventory)
+/// - `GET /inventory/movements` - Get movements report (requires reports:inventory)
+///
+/// # Usage
+///
+/// ```rust,ignore
+/// let app = Router::new()
+///     .nest("/api/v1/reports", reports_router(app_state.clone()))
+///     .with_state(app_state);
+/// ```
+pub fn reports_router(state: AppState) -> Router<AppState> {
+    Router::new()
+        // Inventory reports
+        .route("/inventory/valuation", get(get_valuation_report_handler))
+        .route("/inventory/low-stock", get(get_low_stock_report_handler))
+        .route("/inventory/movements", get(get_movements_report_handler))
         // Apply authentication middleware to all routes
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }

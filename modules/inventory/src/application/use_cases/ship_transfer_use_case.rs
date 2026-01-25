@@ -409,6 +409,18 @@ mod tests {
         ) -> Result<Vec<InventoryStock>, InventoryError> {
             Ok(vec![])
         }
+
+        async fn find_all(&self) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_all_low_stock(&self) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_low_stock_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
     }
 
     struct MockMovementRepository {
@@ -457,6 +469,41 @@ mod tests {
             _stock_id: StockId,
         ) -> Result<Option<Decimal>, InventoryError> {
             Ok(None)
+        }
+
+        async fn count_by_stock_id(&self, _stock_id: StockId) -> Result<i64, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_by_stock_id_and_date_range(
+            &self,
+            _stock_id: StockId,
+            _from_date: Option<chrono::DateTime<chrono::Utc>>,
+            _to_date: Option<chrono::DateTime<chrono::Utc>>,
+            _limit: i64,
+            _offset: i64,
+        ) -> Result<Vec<InventoryMovement>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn count_by_stock_id_and_date_range(
+            &self,
+            _stock_id: StockId,
+            _from_date: Option<chrono::DateTime<chrono::Utc>>,
+            _to_date: Option<chrono::DateTime<chrono::Utc>>,
+        ) -> Result<i64, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_with_filters(
+            &self,
+            _query: &crate::domain::repositories::MovementQuery,
+        ) -> Result<Vec<InventoryMovement>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn count_with_filters(&self, _query: &crate::domain::repositories::MovementQuery) -> Result<i64, InventoryError> {
+            unimplemented!()
         }
     }
 
