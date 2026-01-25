@@ -127,6 +127,7 @@ pub use domain::repositories::AdjustmentRepository;
 pub use domain::repositories::CategoryRepository;
 pub use domain::repositories::InventoryMovementRepository;
 pub use domain::repositories::InventoryStockRepository;
+pub use domain::repositories::MovementQuery;
 pub use domain::repositories::ProductRepository;
 pub use domain::repositories::RecipeRepository;
 pub use domain::repositories::ReservationRepository;
@@ -170,6 +171,16 @@ pub use application::use_cases::ListStockQuery;
 pub use application::use_cases::GetStockUseCase;
 pub use application::use_cases::GetStoreInventoryUseCase;
 pub use application::use_cases::GetProductStockUseCase;
+
+// Stock history and report use cases
+pub use application::use_cases::GetLowStockReportUseCase;
+pub use application::use_cases::GetMovementsReportUseCase;
+pub use application::use_cases::GetStockHistoryUseCase;
+pub use application::use_cases::GetValuationReportUseCase;
+pub use application::use_cases::LowStockReportQuery;
+pub use application::use_cases::MovementsReportQuery;
+pub use application::use_cases::StockHistoryQuery;
+pub use application::use_cases::ValuationReportQuery;
 
 // Recipe use cases
 pub use application::use_cases::CalculateRecipeCostUseCase;
@@ -263,8 +274,14 @@ pub use application::dtos::StockResponse;
 pub use application::dtos::ReservationResponse;
 
 // Movement responses
-pub use application::dtos::KardexResponse;
 pub use application::dtos::MovementResponse;
+pub use application::dtos::StockHistoryResponse;
+
+// Report responses
+pub use application::dtos::LowStockItemResponse;
+pub use application::dtos::LowStockReportResponse;
+pub use application::dtos::ValuationItemResponse;
+pub use application::dtos::ValuationReportResponse;
 
 // Recipe responses
 pub use application::dtos::IngredientSubstituteResponse;

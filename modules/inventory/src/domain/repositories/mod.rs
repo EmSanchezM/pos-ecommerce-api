@@ -8,7 +8,7 @@
 //! - [`CategoryRepository`]: CRUD operations for product categories
 //! - [`ProductRepository`]: Product catalog persistence
 //! - [`InventoryStockRepository`]: Stock records with optimistic locking support
-//! - [`InventoryMovementRepository`]: Kardex movement history
+//! - [`InventoryMovementRepository`]: Stock history movement records
 //! - [`ReservationRepository`]: Stock reservation management
 //! - [`RecipeRepository`]: Recipe/BOM persistence
 //! - [`AdjustmentRepository`]: Stock adjustment documents
@@ -32,7 +32,7 @@ mod transfer_repository;
 pub use category_repository::CategoryRepository;
 pub use product_repository::ProductRepository;
 pub use inventory_stock_repository::InventoryStockRepository;
-pub use inventory_movement_repository::InventoryMovementRepository;
+pub use inventory_movement_repository::{InventoryMovementRepository, MovementQuery};
 pub use reservation_repository::ReservationRepository;
 pub use recipe_repository::RecipeRepository;
 pub use adjustment_repository::AdjustmentRepository;
