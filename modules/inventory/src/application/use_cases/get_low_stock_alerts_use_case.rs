@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::application::dtos::responses::StockResponse;
+use crate::application::dtos::responses::{ListResponse, StockResponse};
 use crate::domain::repositories::InventoryStockRepository;
 use crate::InventoryError;
 use identity::StoreId;
@@ -33,18 +33,18 @@ where
     /// * `store_id` - The store ID to check for low stock
     ///
     /// # Returns
-    /// Vector of StockResponse for items with low stock
+    /// ListResponse containing StockResponse items with low stock
     pub async fn execute(
         &self,
         store_id: uuid::Uuid,
-    ) -> Result<Vec<StockResponse>, InventoryError> {
+    ) -> Result<ListResponse<StockResponse>, InventoryError> {
         let store_id = StoreId::from_uuid(store_id);
 
         // Fetch low stock items
         let stocks = self.stock_repo.find_low_stock(store_id).await?;
 
         // Convert to response DTOs
-        let responses = stocks
+        let responses: Vec<StockResponse> = stocks
             .into_iter()
             .map(|s| StockResponse {
                 id: s.id().into_uuid(),
@@ -63,6 +63,6 @@ where
             })
             .collect();
 
-        Ok(responses)
+        Ok(ListResponse::new(responses))
     }
 }

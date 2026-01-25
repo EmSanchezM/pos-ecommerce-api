@@ -1,9 +1,8 @@
 // Permission use cases - Application layer business logic for permission management
 //
-// Requirements: 1.1, 1.2, 1.3, 1.4, 1.5
-
 use std::sync::Arc;
 
+use crate::application::dtos::ListResponse;
 use crate::domain::entities::{AuditEntry, Permission};
 use crate::domain::repositories::{AuditRepository, PermissionRepository, RoleRepository};
 use crate::domain::value_objects::{PermissionCode, PermissionId, UserId};
@@ -195,15 +194,16 @@ where
     /// * `module_filter` - Optional module prefix to filter by (e.g., "sales")
     ///
     /// # Returns
-    /// List of permissions, optionally filtered by module
+    /// ListResponse containing permissions, optionally filtered by module
     pub async fn execute(
         &self,
         module_filter: Option<&str>,
-    ) -> Result<Vec<Permission>, IdentityError> {
-        match module_filter {
-            Some(module) => self.permission_repo.find_by_module(module).await,
-            None => self.permission_repo.find_all().await,
-        }
+    ) -> Result<ListResponse<Permission>, IdentityError> {
+        let permissions = match module_filter {
+            Some(module) => self.permission_repo.find_by_module(module).await?,
+            None => self.permission_repo.find_all().await?,
+        };
+        Ok(ListResponse::new(permissions))
     }
 }
 
@@ -520,8 +520,9 @@ mod tests {
         let result = use_case.execute(None).await;
 
         assert!(result.is_ok());
-        let permissions = result.unwrap();
-        assert_eq!(permissions.len(), 2);
+        let response = result.unwrap();
+        assert_eq!(response.data.len(), 2);
+        assert_eq!(response.total, 2);
     }
 
     #[tokio::test]
@@ -541,9 +542,10 @@ mod tests {
         let result = use_case.execute(Some("sales")).await;
 
         assert!(result.is_ok());
-        let permissions = result.unwrap();
-        assert_eq!(permissions.len(), 2);
-        assert!(permissions.iter().all(|p| p.module() == "sales"));
+        let response = result.unwrap();
+        assert_eq!(response.data.len(), 2);
+        assert_eq!(response.total, 2);
+        assert!(response.data.iter().all(|p| p.module() == "sales"));
     }
 
     #[tokio::test]
@@ -559,7 +561,8 @@ mod tests {
         let result = use_case.execute(Some("nonexistent")).await;
 
         assert!(result.is_ok());
-        let permissions = result.unwrap();
-        assert!(permissions.is_empty());
+        let response = result.unwrap();
+        assert!(response.data.is_empty());
+        assert_eq!(response.total, 0);
     }
 }

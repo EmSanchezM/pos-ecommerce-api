@@ -83,7 +83,7 @@ pub use application::dtos::{
 // -----------------------------------------------------------------------------
 // Application Layer - DTOs (Responses)
 // -----------------------------------------------------------------------------
-pub use application::dtos::{ErrorResponse, LoginResponse, RegisterResponse};
+pub use application::dtos::{ErrorResponse, ListResponse, LoginResponse, RegisterResponse};
 
 // -----------------------------------------------------------------------------
 // Application Layer - Validators
