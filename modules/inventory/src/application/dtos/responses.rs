@@ -437,15 +437,15 @@ pub struct TransferItemResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ListResponse<T> {
     /// The data items
-    pub data: Vec<T>,
+    pub items: Vec<T>,
     /// Total number of items
     pub total: i64,
 }
 
 impl<T> ListResponse<T> {
-    pub fn new(data: Vec<T>) -> Self {
-        let total = data.len() as i64;
-        Self { data, total }
+    pub fn new(items: Vec<T>) -> Self {
+        let total = items.len() as i64;
+        Self { items, total }
     }
 }
 
@@ -457,7 +457,7 @@ impl<T> ListResponse<T> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PaginatedResponse<T> {
     /// The data items for this page
-    pub data: Vec<T>,
+    pub items: Vec<T>,
     /// Current page number (1-indexed)
     pub page: i64,
     /// Number of items per page
@@ -473,7 +473,7 @@ pub struct PaginatedResponse<T> {
 }
 
 impl<T> PaginatedResponse<T> {
-    pub fn new(data: Vec<T>, page: i64, page_size: i64, total_items: i64) -> Self {
+    pub fn new(items: Vec<T>, page: i64, page_size: i64, total_items: i64) -> Self {
         let total_pages = if total_items == 0 {
             1
         } else {
@@ -481,7 +481,7 @@ impl<T> PaginatedResponse<T> {
         };
         
         Self {
-            data,
+            items,
             page,
             page_size,
             total_items,
