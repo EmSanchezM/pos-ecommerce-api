@@ -22,7 +22,7 @@ use uuid::Uuid;
 use inventory::{
     BulkInitializeStockCommand, BulkInitializeStockResult, BulkInitializeStockUseCase,
     GetLowStockAlertsUseCase, GetProductStockUseCase, GetStockUseCase, GetStoreInventoryUseCase,
-    InitializeStockCommand, InitializeStockUseCase, ListStockQuery, ListStockUseCase,
+    InitializeStockCommand, InitializeStockUseCase, ListResponse, ListStockQuery, ListStockUseCase,
     PaginatedResponse, StockDetailResponse, StockResponse, UpdateStockLevelsCommand,
     UpdateStockLevelsUseCase,
 };
@@ -163,7 +163,7 @@ pub async fn get_store_inventory_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(store_id): Path<Uuid>,
-) -> Result<Json<Vec<StockResponse>>, Response> {
+) -> Result<Json<ListResponse<StockResponse>>, Response> {
     require_permission(&ctx, "inventory:read")?;
 
     let use_case = GetStoreInventoryUseCase::new(state.stock_repo());
@@ -394,7 +394,7 @@ pub async fn get_low_stock_alerts_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(store_id): Path<Uuid>,
-) -> Result<Json<Vec<StockResponse>>, Response> {
+) -> Result<Json<ListResponse<StockResponse>>, Response> {
     require_permission(&ctx, "inventory:read")?;
 
     let use_case = GetLowStockAlertsUseCase::new(state.stock_repo());

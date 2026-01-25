@@ -15,7 +15,6 @@ use uuid::Uuid;
 // =============================================================================
 
 /// Command to create a new product category
-/// Requirements: 1A.1, 1A.2
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateCategoryCommand {
     /// Category name
@@ -34,7 +33,6 @@ pub struct CreateCategoryCommand {
 }
 
 /// Command to update an existing category
-/// Requirements: 1A.1
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateCategoryCommand {
     /// New name (if changing)
@@ -58,7 +56,6 @@ pub struct UpdateCategoryCommand {
 // =============================================================================
 
 /// Command to create a new product
-/// Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateProductCommand {
     /// Product name (required)
@@ -105,7 +102,6 @@ fn default_true() -> bool {
 }
 
 /// Command to update an existing product
-/// Requirements: 1.1, 1.9
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateProductCommand {
     /// New name (if changing)
@@ -147,7 +143,6 @@ pub struct UpdateProductCommand {
 // =============================================================================
 
 /// Command to create a product variant
-/// Requirements: 2.1, 2.2, 2.3, 2.4, 2.6
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateVariantCommand {
     /// Parent product ID (set from URL path, not from request body)
@@ -166,7 +161,6 @@ pub struct CreateVariantCommand {
 }
 
 /// Command to update a product variant
-/// Requirements: 2.1, 2.6
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateVariantCommand {
     /// New name (if changing)
@@ -275,7 +269,6 @@ pub struct BulkInitializeStockItem {
 // =============================================================================
 
 /// Command to create an inventory reservation
-/// Requirements: 4.1, 4.2, 4.3
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateReservationCommand {
     /// Stock record ID to reserve from
@@ -291,7 +284,6 @@ pub struct CreateReservationCommand {
 }
 
 /// Command to confirm a reservation
-/// Requirements: 4.5
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConfirmReservationCommand {
     /// Reservation ID to confirm
@@ -299,7 +291,6 @@ pub struct ConfirmReservationCommand {
 }
 
 /// Command to cancel a reservation
-/// Requirements: 4.6
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CancelReservationCommand {
     /// Reservation ID to cancel
@@ -311,7 +302,6 @@ pub struct CancelReservationCommand {
 // =============================================================================
 
 /// Command to create a recipe
-/// Requirements: 6.1, 6.2, 6.3, 6.4, 6.5
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateRecipeCommand {
     /// Product ID this recipe produces (mutually exclusive with variant_id)
@@ -345,7 +335,6 @@ fn default_version() -> i32 {
 }
 
 /// Command to update a recipe
-/// Requirements: 6.1, 6.6
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateRecipeCommand {
     /// New name (if changing)
@@ -369,7 +358,6 @@ pub struct UpdateRecipeCommand {
 }
 
 /// Recipe ingredient within CreateRecipeCommand
-/// Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.7
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecipeIngredientCommand {
     /// Ingredient product ID (mutually exclusive with ingredient_variant_id)
@@ -404,7 +392,6 @@ pub struct RecipeIngredientCommand {
 }
 
 /// Ingredient substitute within RecipeIngredientCommand
-/// Requirements: 8.1, 8.2, 8.3, 8.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IngredientSubstituteCommand {
     /// Substitute product ID (mutually exclusive with substitute_variant_id)
@@ -425,7 +412,6 @@ pub struct IngredientSubstituteCommand {
 // =============================================================================
 
 /// Command to create a stock adjustment
-/// Requirements: 9.1, 9.2, 9.3, 9.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateAdjustmentCommand {
     /// Store ID where adjustment occurs
@@ -443,7 +429,6 @@ pub struct CreateAdjustmentCommand {
 }
 
 /// Adjustment item within CreateAdjustmentCommand
-/// Requirements: 10.1, 10.2, 10.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AdjustmentItemCommand {
     /// Stock record ID
@@ -457,7 +442,6 @@ pub struct AdjustmentItemCommand {
 }
 
 /// Command to submit adjustment for approval
-/// Requirements: 9.5
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SubmitAdjustmentCommand {
     /// Adjustment ID to submit
@@ -465,7 +449,6 @@ pub struct SubmitAdjustmentCommand {
 }
 
 /// Command to approve or reject an adjustment
-/// Requirements: 9.6
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApproveAdjustmentCommand {
     /// Adjustment ID to approve/reject
@@ -477,7 +460,6 @@ pub struct ApproveAdjustmentCommand {
 }
 
 /// Command to apply an approved adjustment
-/// Requirements: 9.7
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApplyAdjustmentCommand {
     /// Adjustment ID to apply
@@ -489,7 +471,6 @@ pub struct ApplyAdjustmentCommand {
 // =============================================================================
 
 /// Command to create a stock transfer
-/// Requirements: 11.1, 11.2, 11.3
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateTransferCommand {
     /// Source store ID
@@ -505,7 +486,6 @@ pub struct CreateTransferCommand {
 }
 
 /// Transfer item within CreateTransferCommand
-/// Requirements: 12.1, 12.2, 12.3, 12.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransferItemCommand {
     /// Product ID to transfer (mutually exclusive with variant_id)
@@ -521,7 +501,6 @@ pub struct TransferItemCommand {
 }
 
 /// Command to ship a transfer
-/// Requirements: 11.4, 11.5
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShipTransferCommand {
     /// Transfer ID to ship
@@ -542,7 +521,6 @@ pub struct ShipTransferItemCommand {
 }
 
 /// Command to receive a transfer
-/// Requirements: 11.6, 11.7
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReceiveTransferCommand {
     /// Transfer ID to receive
