@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::application::dtos::responses::StockResponse;
+use crate::application::dtos::responses::{ListResponse, StockResponse};
 use crate::domain::repositories::InventoryStockRepository;
 use crate::InventoryError;
 use identity::StoreId;
@@ -30,11 +30,11 @@ where
     /// * `store_id` - The UUID of the store
     ///
     /// # Returns
-    /// List of stock records for the store
+    /// ListResponse containing stock records for the store
     pub async fn execute(
         &self,
         store_id: uuid::Uuid,
-    ) -> Result<Vec<StockResponse>, InventoryError> {
+    ) -> Result<ListResponse<StockResponse>, InventoryError> {
         let store_id_vo = StoreId::from_uuid(store_id);
 
         // Find all stock for this store
@@ -64,6 +64,6 @@ where
             })
             .collect();
 
-        Ok(stock_responses)
+        Ok(ListResponse::new(stock_responses))
     }
 }
