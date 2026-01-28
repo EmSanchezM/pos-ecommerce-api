@@ -12,6 +12,7 @@ use inventory::{
     PgTransferRepository,
 };
 use pos_core::PgTerminalRepository;
+use purchasing::{PgGoodsReceiptRepository, PgPurchaseOrderRepository, PgVendorRepository};
 use sqlx::PgPool;
 
 /// Application state shared across all HTTP handlers.
@@ -55,6 +56,15 @@ pub struct AppState {
     adjustment_repo: Arc<PgAdjustmentRepository>,
     /// Transfer repository for inter-store transfers
     transfer_repo: Arc<PgTransferRepository>,
+    // -------------------------------------------------------------------------
+    // Purchasing repositories
+    // -------------------------------------------------------------------------
+    /// Vendor repository for vendor/supplier management
+    vendor_repo: Arc<PgVendorRepository>,
+    /// Purchase order repository for purchase order management
+    purchase_order_repo: Arc<PgPurchaseOrderRepository>,
+    /// Goods receipt repository for goods receipt management
+    goods_receipt_repo: Arc<PgGoodsReceiptRepository>,
 }
 
 impl AppState {
@@ -75,6 +85,9 @@ impl AppState {
     /// * `recipe_repo` - Recipe repository implementation
     /// * `adjustment_repo` - Adjustment repository implementation
     /// * `transfer_repo` - Transfer repository implementation
+    /// * `vendor_repo` - Vendor repository implementation
+    /// * `purchase_order_repo` - Purchase order repository implementation
+    /// * `goods_receipt_repo` - Goods receipt repository implementation
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_repo: Arc<PgUserRepository>,
@@ -90,6 +103,9 @@ impl AppState {
         recipe_repo: Arc<PgRecipeRepository>,
         adjustment_repo: Arc<PgAdjustmentRepository>,
         transfer_repo: Arc<PgTransferRepository>,
+        vendor_repo: Arc<PgVendorRepository>,
+        purchase_order_repo: Arc<PgPurchaseOrderRepository>,
+        goods_receipt_repo: Arc<PgGoodsReceiptRepository>,
     ) -> Self {
         Self {
             user_repo,
@@ -105,6 +121,9 @@ impl AppState {
             recipe_repo,
             adjustment_repo,
             transfer_repo,
+            vendor_repo,
+            purchase_order_repo,
+            goods_receipt_repo,
         }
     }
 
@@ -138,6 +157,11 @@ impl AppState {
         let adjustment_repo = Arc::new(PgAdjustmentRepository::new((*pool_arc).clone()));
         let transfer_repo = Arc::new(PgTransferRepository::new((*pool_arc).clone()));
 
+        // Purchasing repositories
+        let vendor_repo = Arc::new(PgVendorRepository::new((*pool_arc).clone()));
+        let purchase_order_repo = Arc::new(PgPurchaseOrderRepository::new((*pool_arc).clone()));
+        let goods_receipt_repo = Arc::new(PgGoodsReceiptRepository::new((*pool_arc).clone()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -155,6 +179,9 @@ impl AppState {
             recipe_repo,
             adjustment_repo,
             transfer_repo,
+            vendor_repo,
+            purchase_order_repo,
+            goods_receipt_repo,
         }
     }
 
@@ -225,5 +252,24 @@ impl AppState {
     /// Returns a reference to the transfer repository.
     pub fn transfer_repo(&self) -> Arc<PgTransferRepository> {
         self.transfer_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Purchasing repository accessors
+    // -------------------------------------------------------------------------
+
+    /// Returns a reference to the vendor repository.
+    pub fn vendor_repo(&self) -> Arc<PgVendorRepository> {
+        self.vendor_repo.clone()
+    }
+
+    /// Returns a reference to the purchase order repository.
+    pub fn purchase_order_repo(&self) -> Arc<PgPurchaseOrderRepository> {
+        self.purchase_order_repo.clone()
+    }
+
+    /// Returns a reference to the goods receipt repository.
+    pub fn goods_receipt_repo(&self) -> Arc<PgGoodsReceiptRepository> {
+        self.goods_receipt_repo.clone()
     }
 }
