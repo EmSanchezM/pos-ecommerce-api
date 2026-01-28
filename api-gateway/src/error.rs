@@ -11,6 +11,7 @@ use axum::{
 use identity::{AuthError, ErrorResponse, IdentityError};
 use inventory::InventoryError;
 use pos_core::CoreError;
+use purchasing::PurchasingError;
 
 // =============================================================================
 // AppError - Unified API Gateway Error Type
@@ -581,6 +582,226 @@ impl From<InventoryError> for AppError {
                 ErrorResponse::internal_error(),
             ),
             InventoryError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<PurchasingError> Implementation
+// =============================================================================
+
+impl From<PurchasingError> for AppError {
+    fn from(err: PurchasingError) -> Self {
+        let (status, response) = match &err {
+            // -----------------------------------------------------------------
+            // 404 Not Found - Resource not found errors
+            // -----------------------------------------------------------------
+            PurchasingError::VendorNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("VENDOR_NOT_FOUND", format!("Vendor not found: {}", id)),
+            ),
+            PurchasingError::PurchaseOrderNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "PURCHASE_ORDER_NOT_FOUND",
+                    format!("Purchase order not found: {}", id),
+                ),
+            ),
+            PurchasingError::PurchaseOrderItemNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "PURCHASE_ORDER_ITEM_NOT_FOUND",
+                    format!("Purchase order item not found: {}", id),
+                ),
+            ),
+            PurchasingError::GoodsReceiptNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "GOODS_RECEIPT_NOT_FOUND",
+                    format!("Goods receipt not found: {}", id),
+                ),
+            ),
+            PurchasingError::GoodsReceiptItemNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "GOODS_RECEIPT_ITEM_NOT_FOUND",
+                    format!("Goods receipt item not found: {}", id),
+                ),
+            ),
+            PurchasingError::ProductNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PRODUCT_NOT_FOUND", format!("Product not found: {}", id)),
+            ),
+            PurchasingError::StoreNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("STORE_NOT_FOUND", format!("Store not found: {}", id)),
+            ),
+
+            // -----------------------------------------------------------------
+            // 409 Conflict - Duplicate resources
+            // -----------------------------------------------------------------
+            PurchasingError::DuplicateVendorCode(code) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_VENDOR_CODE",
+                    format!("Vendor code '{}' already exists", code),
+                ),
+            ),
+            PurchasingError::DuplicateVendorTaxId(tax_id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_VENDOR_TAX_ID",
+                    format!("Vendor tax ID '{}' already exists", tax_id),
+                ),
+            ),
+            PurchasingError::DuplicateOrderNumber(number) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_ORDER_NUMBER",
+                    format!("Order number '{}' already exists", number),
+                ),
+            ),
+            PurchasingError::DuplicateReceiptNumber(number) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_RECEIPT_NUMBER",
+                    format!("Receipt number '{}' already exists", number),
+                ),
+            ),
+
+            // -----------------------------------------------------------------
+            // 400 Bad Request - Business rule violations
+            // -----------------------------------------------------------------
+            PurchasingError::VendorNotActive(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("VENDOR_NOT_ACTIVE", format!("Vendor is not active: {}", id)),
+            ),
+            PurchasingError::OrderNotEditable => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "ORDER_NOT_EDITABLE",
+                    "Cannot modify purchase order: not in draft status",
+                ),
+            ),
+            PurchasingError::EmptyPurchaseOrder => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Purchase order has no items"),
+            ),
+            PurchasingError::CannotApproveSelfCreatedOrder => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "CANNOT_APPROVE_OWN_ORDER",
+                    "User cannot approve their own purchase order",
+                ),
+            ),
+            PurchasingError::OrderAlreadyCancelled => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "ORDER_ALREADY_CANCELLED",
+                    "Purchase order has already been cancelled",
+                ),
+            ),
+            PurchasingError::OrderAlreadyClosed => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "ORDER_ALREADY_CLOSED",
+                    "Purchase order has already been closed",
+                ),
+            ),
+            PurchasingError::OrderNotApproved => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "ORDER_NOT_APPROVED",
+                    "Cannot receive goods: purchase order not approved",
+                ),
+            ),
+            PurchasingError::OrderHasReceivedGoods => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "ORDER_HAS_RECEIVED_GOODS",
+                    "Cannot cancel: purchase order has received goods",
+                ),
+            ),
+            PurchasingError::InvalidQuantityOrdered => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Quantity ordered must be positive"),
+            ),
+            PurchasingError::InvalidUnitCost => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Unit cost must be non-negative"),
+            ),
+            PurchasingError::ExceedsOrderedQuantity => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "EXCEEDS_ORDERED_QUANTITY",
+                    "Cannot receive more than ordered quantity",
+                ),
+            ),
+            PurchasingError::ReceiptNotEditable => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "RECEIPT_NOT_EDITABLE",
+                    "Cannot modify goods receipt: not in draft status",
+                ),
+            ),
+            PurchasingError::EmptyGoodsReceipt => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Goods receipt has no items"),
+            ),
+            PurchasingError::ReceiptAlreadyConfirmed => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "RECEIPT_ALREADY_CONFIRMED",
+                    "Goods receipt has already been confirmed",
+                ),
+            ),
+            PurchasingError::ReceiptAlreadyCancelled => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "RECEIPT_ALREADY_CANCELLED",
+                    "Goods receipt has already been cancelled",
+                ),
+            ),
+            PurchasingError::InvalidQuantityReceived => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Quantity received must be positive"),
+            ),
+            PurchasingError::InvalidStatusTransition => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_STATUS_TRANSITION", "Invalid status transition"),
+            ),
+            PurchasingError::InvalidCurrency => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(
+                    "Invalid currency code: must be 3 uppercase letters (ISO 4217)",
+                ),
+            ),
+            PurchasingError::InvalidUnitOfMeasure => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid unit of measure"),
+            ),
+            PurchasingError::InvalidPurchaseOrderStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid purchase order status"),
+            ),
+            PurchasingError::InvalidGoodsReceiptStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid goods receipt status"),
+            ),
+
+            // -----------------------------------------------------------------
+            // 500 Internal Server Error - Database and system errors
+            // -----------------------------------------------------------------
+            PurchasingError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+            PurchasingError::NotImplemented => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
             ),
