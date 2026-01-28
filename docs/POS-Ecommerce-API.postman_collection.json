@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "pos-ecommerce-api-collection",
 		"name": "POS Ecommerce API",
-		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n- GET /api/v1/stores/:id/inventory - Obtener inventario de tienda (inventory:read)\n- GET /api/v1/stores/:id/low-stock - Obtener alertas de stock bajo (inventory:read)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI\n\n### Products (requiere autenticación)\n- POST /api/v1/products - Crear producto (products:create)\n- GET /api/v1/products - Listar productos con paginación\n- GET /api/v1/products/:id - Obtener detalle de producto\n- PUT /api/v1/products/:id - Actualizar producto (products:update)\n- DELETE /api/v1/products/:id - Eliminar producto (products:delete)\n- POST /api/v1/products/:id/variants - Crear variante (products:create)\n- GET /api/v1/products/:id/variants - Listar variantes\n- GET /api/v1/products/:id/variants/:variant_id - Obtener variante\n- PUT /api/v1/products/:id/variants/:variant_id - Actualizar variante (products:update)\n- DELETE /api/v1/products/:id/variants/:variant_id - Eliminar variante (products:delete)\n- GET /api/v1/products/:id/recipe - Obtener receta activa del producto\n- GET /api/v1/products/:id/stock - Obtener stock del producto\n\n### Recipes (requiere autenticación)\n- POST /api/v1/recipes - Crear receta (recipes:create)\n- GET /api/v1/recipes - Listar recetas con paginación\n- GET /api/v1/recipes/:id - Obtener detalle de receta\n- PUT /api/v1/recipes/:id - Actualizar receta (recipes:update)\n- POST /api/v1/recipes/:id/calculate-cost - Calcular costo de receta\n\n### Inventory (requiere autenticación)\n- POST /api/v1/inventory/stock - Inicializar stock (inventory:write)\n- POST /api/v1/inventory/stock/bulk - Inicializar stock masivo (inventory:write)\n- GET /api/v1/inventory/stock - Listar stock con paginación\n- GET /api/v1/inventory/stock/:stock_id - Obtener detalle de stock\n- PUT /api/v1/inventory/stock/:stock_id/levels - Actualizar niveles de stock (inventory:write)\n- POST /api/v1/inventory/reservations - Crear reserva\n- GET /api/v1/inventory/reservations - Listar reservas\n- PUT /api/v1/inventory/reservations/:id/confirm - Confirmar reserva\n- PUT /api/v1/inventory/reservations/:id/cancel - Cancelar reserva\n- POST /api/v1/inventory/reservations/expire - Expirar reservas vencidas\n\n### Adjustments (requiere autenticación)\n- POST /api/v1/inventory/adjustments - Crear ajuste de stock (inventory:adjustments:create)\n- GET /api/v1/inventory/adjustments - Listar ajustes con paginación (inventory:adjustments:read)\n- GET /api/v1/inventory/adjustments/:id - Obtener detalle de ajuste (inventory:adjustments:read)\n- PUT /api/v1/inventory/adjustments/:id/submit - Enviar ajuste para aprobación (inventory:adjustments:submit)\n- PUT /api/v1/inventory/adjustments/:id/approve - Aprobar ajuste (inventory:adjustments:approve)\n- PUT /api/v1/inventory/adjustments/:id/reject - Rechazar ajuste (inventory:adjustments:approve)\n- POST /api/v1/inventory/adjustments/:id/apply - Aplicar ajuste al stock (inventory:adjustments:apply)",
+		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n- GET /api/v1/stores/:id/inventory - Obtener inventario de tienda (inventory:read)\n- GET /api/v1/stores/:id/low-stock - Obtener alertas de stock bajo (inventory:read)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI\n\n### Products (requiere autenticación)\n- POST /api/v1/products - Crear producto (products:create)\n- GET /api/v1/products - Listar productos con paginación\n- GET /api/v1/products/:id - Obtener detalle de producto\n- PUT /api/v1/products/:id - Actualizar producto (products:update)\n- DELETE /api/v1/products/:id - Eliminar producto (products:delete)\n- POST /api/v1/products/:id/variants - Crear variante (products:create)\n- GET /api/v1/products/:id/variants - Listar variantes\n- GET /api/v1/products/:id/variants/:variant_id - Obtener variante\n- PUT /api/v1/products/:id/variants/:variant_id - Actualizar variante (products:update)\n- DELETE /api/v1/products/:id/variants/:variant_id - Eliminar variante (products:delete)\n- GET /api/v1/products/:id/recipe - Obtener receta activa del producto\n- GET /api/v1/products/:id/stock - Obtener stock del producto\n\n### Recipes (requiere autenticación)\n- POST /api/v1/recipes - Crear receta (recipes:create)\n- GET /api/v1/recipes - Listar recetas con paginación\n- GET /api/v1/recipes/:id - Obtener detalle de receta\n- PUT /api/v1/recipes/:id - Actualizar receta (recipes:update)\n- POST /api/v1/recipes/:id/calculate-cost - Calcular costo de receta\n\n### Inventory (requiere autenticación)\n- POST /api/v1/inventory/stock - Inicializar stock (inventory:write)\n- POST /api/v1/inventory/stock/bulk - Inicializar stock masivo (inventory:write)\n- GET /api/v1/inventory/stock - Listar stock con paginación\n- GET /api/v1/inventory/stock/:stock_id - Obtener detalle de stock\n- PUT /api/v1/inventory/stock/:stock_id/levels - Actualizar niveles de stock (inventory:write)\n- POST /api/v1/inventory/reservations - Crear reserva\n- GET /api/v1/inventory/reservations - Listar reservas\n- PUT /api/v1/inventory/reservations/:id/confirm - Confirmar reserva\n- PUT /api/v1/inventory/reservations/:id/cancel - Cancelar reserva\n- POST /api/v1/inventory/reservations/expire - Expirar reservas vencidas\n\n### Adjustments (requiere autenticación)\n- POST /api/v1/inventory/adjustments - Crear ajuste de stock (inventory:adjustments:create)\n- GET /api/v1/inventory/adjustments - Listar ajustes con paginación (inventory:adjustments:read)\n- GET /api/v1/inventory/adjustments/:id - Obtener detalle de ajuste (inventory:adjustments:read)\n- PUT /api/v1/inventory/adjustments/:id/submit - Enviar ajuste para aprobación (inventory:adjustments:submit)\n- PUT /api/v1/inventory/adjustments/:id/approve - Aprobar ajuste (inventory:adjustments:approve)\n- PUT /api/v1/inventory/adjustments/:id/reject - Rechazar ajuste (inventory:adjustments:approve)\n- POST /api/v1/inventory/adjustments/:id/apply - Aplicar ajuste al stock (inventory:adjustments:apply)\n\n### Vendors (requiere autenticación)\n- POST /api/v1/vendors - Crear proveedor (vendors:create)\n- GET /api/v1/vendors - Listar proveedores con paginación (vendors:read)\n- GET /api/v1/vendors/:id - Obtener detalle de proveedor (vendors:read)\n- PUT /api/v1/vendors/:id - Actualizar proveedor (vendors:update)\n- PUT /api/v1/vendors/:id/activate - Activar proveedor (vendors:update)\n- PUT /api/v1/vendors/:id/deactivate - Desactivar proveedor (vendors:update)\n\n### Purchase Orders (requiere autenticación)\n- POST /api/v1/purchase-orders - Crear orden de compra (purchase_orders:create)\n- GET /api/v1/purchase-orders - Listar órdenes de compra (purchase_orders:read)\n- GET /api/v1/purchase-orders/:id - Obtener detalle de orden (purchase_orders:read)\n- PUT /api/v1/purchase-orders/:id/submit - Enviar para aprobación (purchase_orders:submit)\n- PUT /api/v1/purchase-orders/:id/approve - Aprobar orden (purchase_orders:approve)\n- PUT /api/v1/purchase-orders/:id/reject - Rechazar orden (purchase_orders:approve)\n- PUT /api/v1/purchase-orders/:id/cancel - Cancelar orden (purchase_orders:cancel)\n- PUT /api/v1/purchase-orders/:id/close - Cerrar orden (purchase_orders:close)\n\n### Goods Receipts (requiere autenticación)\n- POST /api/v1/goods-receipts - Crear recepción de mercancía (goods_receipts:create)\n- GET /api/v1/goods-receipts - Listar recepciones (goods_receipts:read)\n- GET /api/v1/goods-receipts/:id - Obtener detalle de recepción (goods_receipts:read)\n- PUT /api/v1/goods-receipts/:id/confirm - Confirmar recepción (goods_receipts:confirm)\n- PUT /api/v1/goods-receipts/:id/cancel - Cancelar recepción (goods_receipts:cancel)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -58,6 +58,21 @@
 		},
 		{
 			"key": "adjustment_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "vendor_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "purchase_order_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "goods_receipt_id",
 			"value": "",
 			"type": "string"
 		}
@@ -1734,6 +1749,564 @@
 				}
 			],
 			"description": "Endpoints de gestión de inventario (stock, reservas y ajustes). Requieren autenticación."
+		},
+		{
+			"name": "Vendors",
+			"item": [
+				{
+					"name": "Create Vendor",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('vendor_id', jsonData.id);",
+									"    pm.test('Vendor created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.code).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"VENDOR001\",\n    \"name\": \"Proveedor Principal\",\n    \"legal_name\": \"Proveedor Principal S.A. de C.V.\",\n    \"tax_id\": \"RTN-12345678901234\",\n    \"email\": \"contacto@proveedor.com\",\n    \"phone\": \"+504 2234-5678\",\n    \"address\": \"Av. Principal #123, Tegucigalpa\",\n    \"payment_terms_days\": 30,\n    \"currency\": \"HNL\",\n    \"notes\": \"Proveedor de productos varios\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/vendors",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vendors"]
+						},
+						"description": "Crea un nuevo proveedor. Requiere permiso vendors:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| code | string | Sí | Código único del proveedor |\n| name | string | Sí | Nombre comercial |\n| legal_name | string | No | Razón social |\n| tax_id | string | No | RTN o identificación fiscal |\n| email | string | No | Email de contacto |\n| phone | string | No | Teléfono de contacto |\n| address | string | No | Dirección |\n| payment_terms_days | number | No | Días de crédito (default: 0) |\n| currency | string | No | Moneda (default: HNL) |\n| notes | string | No | Notas adicionales |"
+					},
+					"response": []
+				},
+				{
+					"name": "List Vendors",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vendors?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vendors"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista proveedores con paginación y filtros. Requiere permiso vendors:read.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20, max: 100) |\n| is_active | boolean | Filtrar por estado activo |\n| search | string | Buscar por nombre o código |"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Vendor",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vendors/{{vendor_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vendors", "{{vendor_id}}"]
+						},
+						"description": "Obtiene el detalle de un proveedor. Requiere permiso vendors:read."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Vendor",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Proveedor Actualizado\",\n    \"email\": \"nuevo@proveedor.com\",\n    \"payment_terms_days\": 45\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/vendors/{{vendor_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vendors", "{{vendor_id}}"]
+						},
+						"description": "Actualiza los datos de un proveedor. Requiere permiso vendors:update. Todos los campos son opcionales."
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Vendor",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vendors/{{vendor_id}}/activate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vendors", "{{vendor_id}}", "activate"]
+						},
+						"description": "Activa un proveedor desactivado. Requiere permiso vendors:update."
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Vendor",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/vendors/{{vendor_id}}/deactivate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "vendors", "{{vendor_id}}", "deactivate"]
+						},
+						"description": "Desactiva un proveedor. Requiere permiso vendors:update.\n\nNo se puede desactivar si tiene órdenes de compra pendientes."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de proveedores. Requieren autenticación."
+		},
+		{
+			"name": "Purchase Orders",
+			"item": [
+				{
+					"name": "Create Purchase Order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('purchase_order_id', jsonData.id);",
+									"    pm.test('Purchase order created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.order_number).to.not.be.empty;",
+									"        pm.expect(jsonData.status).to.equal('draft');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"vendor_id\": \"{{vendor_id}}\",\n    \"order_date\": \"2026-01-28\",\n    \"expected_delivery_date\": \"2026-02-04\",\n    \"currency\": \"HNL\",\n    \"payment_terms_days\": 30,\n    \"notes\": \"Orden de compra de prueba\",\n    \"items\": [\n        {\n            \"product_id\": \"{{product_id}}\",\n            \"quantity\": 100,\n            \"unit_cost\": 50.00,\n            \"tax_rate\": 0.15,\n            \"discount_percent\": 0,\n            \"notes\": \"Primera línea de la orden\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/purchase-orders",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "purchase-orders"]
+						},
+						"description": "Crea una nueva orden de compra en estado borrador. Requiere permiso purchase_orders:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda destino |\n| vendor_id | uuid | Sí | ID del proveedor |\n| order_date | date | Sí | Fecha de la orden (YYYY-MM-DD) |\n| expected_delivery_date | date | No | Fecha esperada de entrega |\n| currency | string | No | Moneda (default: HNL) |\n| payment_terms_days | number | No | Días de crédito |\n| notes | string | No | Notas de la orden |\n| items | array | Sí | Lista de items |\n\n## Item Fields\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| product_id | uuid | Sí* | ID del producto |\n| variant_id | uuid | Sí* | ID de la variante (excluyente) |\n| quantity | decimal | Sí | Cantidad a ordenar |\n| unit_cost | decimal | Sí | Costo unitario |\n| tax_rate | decimal | No | Tasa de impuesto |\n| discount_percent | decimal | No | Porcentaje de descuento |\n| notes | string | No | Notas del item |"
+					},
+					"response": []
+				},
+				{
+					"name": "List Purchase Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/purchase-orders?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "purchase-orders"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "store_id",
+									"value": "{{store_id}}",
+									"disabled": true
+								},
+								{
+									"key": "vendor_id",
+									"value": "{{vendor_id}}",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "draft",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista órdenes de compra con paginación y filtros. Requiere permiso purchase_orders:read.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20, max: 100) |\n| store_id | uuid | Filtrar por tienda |\n| vendor_id | uuid | Filtrar por proveedor |\n| status | string | Filtrar por estado: draft, submitted, approved, partially_received, received, closed, cancelled |\n| search | string | Buscar por número de orden |"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Purchase Order",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}"]
+						},
+						"description": "Obtiene el detalle de una orden de compra incluyendo todos sus items. Requiere permiso purchase_orders:read."
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Purchase Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}/submit",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}", "submit"]
+						},
+						"description": "Envía una orden de compra en borrador para aprobación. Requiere permiso purchase_orders:submit.\n\nLa orden debe:\n- Estar en estado 'draft'\n- Tener al menos un item"
+					},
+					"response": []
+				},
+				{
+					"name": "Approve Purchase Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}/approve",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}", "approve"]
+						},
+						"description": "Aprueba una orden de compra pendiente. Requiere permiso purchase_orders:approve.\n\nLa orden debe estar en estado 'submitted'."
+					},
+					"response": []
+				},
+				{
+					"name": "Reject Purchase Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Precios no acordados con el proveedor\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}/reject",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}", "reject"]
+						},
+						"description": "Rechaza una orden de compra pendiente. Requiere permiso purchase_orders:approve.\n\nLa orden debe estar en estado 'submitted'.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| reason | string | Sí | Motivo del rechazo |"
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Purchase Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Proveedor no puede entregar a tiempo\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}", "cancel"]
+						},
+						"description": "Cancela una orden de compra. Requiere permiso purchase_orders:cancel.\n\nSolo se pueden cancelar órdenes en estado: draft, submitted, approved.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| reason | string | Sí | Motivo de la cancelación |"
+					},
+					"response": []
+				},
+				{
+					"name": "Close Purchase Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}/close",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}", "close"]
+						},
+						"description": "Cierra manualmente una orden de compra. Requiere permiso purchase_orders:close.\n\nLa orden debe estar en estado 'approved', 'partially_received' o 'received'.\n\nÚtil cuando no se esperan más recepciones o hay items que no se van a recibir."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de órdenes de compra. Requieren autenticación."
+		},
+		{
+			"name": "Goods Receipts",
+			"item": [
+				{
+					"name": "Create Goods Receipt",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('goods_receipt_id', jsonData.id);",
+									"    pm.test('Goods receipt created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.receipt_number).to.not.be.empty;",
+									"        pm.expect(jsonData.status).to.equal('draft');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"purchase_order_id\": \"{{purchase_order_id}}\",\n    \"store_id\": \"{{store_id}}\",\n    \"receipt_date\": \"2026-02-04\",\n    \"notes\": \"Recepción parcial de mercancía\",\n    \"items\": [\n        {\n            \"purchase_order_item_id\": \"uuid-del-item-de-orden\",\n            \"product_id\": \"{{product_id}}\",\n            \"quantity_received\": 50,\n            \"unit_cost\": 50.00,\n            \"lot_number\": \"LOT-2026-001\",\n            \"expiry_date\": \"2027-02-04\",\n            \"notes\": \"Producto en buen estado\"\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/goods-receipts",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "goods-receipts"]
+						},
+						"description": "Crea una nueva recepción de mercancía para una orden de compra. Requiere permiso goods_receipts:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| purchase_order_id | uuid | Sí | ID de la orden de compra |\n| store_id | uuid | Sí | ID de la tienda donde se recibe |\n| receipt_date | date | Sí | Fecha de recepción (YYYY-MM-DD) |\n| notes | string | No | Notas de la recepción |\n| items | array | Sí | Lista de items recibidos |\n\n## Item Fields\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| purchase_order_item_id | uuid | No | ID del item de la orden |\n| product_id | uuid | Sí* | ID del producto |\n| variant_id | uuid | Sí* | ID de la variante (excluyente) |\n| quantity_received | decimal | Sí | Cantidad recibida |\n| unit_cost | decimal | Sí | Costo unitario |\n| lot_number | string | No | Número de lote |\n| expiry_date | date | No | Fecha de vencimiento |\n| notes | string | No | Notas del item |"
+					},
+					"response": []
+				},
+				{
+					"name": "List Goods Receipts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/goods-receipts?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "goods-receipts"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "store_id",
+									"value": "{{store_id}}",
+									"disabled": true
+								},
+								{
+									"key": "purchase_order_id",
+									"value": "{{purchase_order_id}}",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "draft",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista recepciones de mercancía con paginación y filtros. Requiere permiso goods_receipts:read.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20, max: 100) |\n| store_id | uuid | Filtrar por tienda |\n| purchase_order_id | uuid | Filtrar por orden de compra |\n| status | string | Filtrar por estado: draft, confirmed, cancelled |"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Goods Receipt",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/goods-receipts/{{goods_receipt_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "goods-receipts", "{{goods_receipt_id}}"]
+						},
+						"description": "Obtiene el detalle de una recepción de mercancía incluyendo todos sus items. Requiere permiso goods_receipts:read."
+					},
+					"response": []
+				},
+				{
+					"name": "Confirm Goods Receipt",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/goods-receipts/{{goods_receipt_id}}/confirm",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "goods-receipts", "{{goods_receipt_id}}", "confirm"]
+						},
+						"description": "Confirma una recepción de mercancía y actualiza el inventario. Requiere permiso goods_receipts:confirm.\n\nLa recepción debe estar en estado 'draft'.\n\nEsta operación:\n1. Actualiza las cantidades de stock para cada item\n2. Registra los movimientos de inventario (Kardex)\n3. Actualiza el estado de la orden de compra\n4. Cambia el estado de la recepción a 'confirmed'"
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Goods Receipt",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/goods-receipts/{{goods_receipt_id}}/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "goods-receipts", "{{goods_receipt_id}}", "cancel"]
+						},
+						"description": "Cancela una recepción de mercancía. Requiere permiso goods_receipts:cancel.\n\nLa recepción debe estar en estado 'draft'.\n\nNo se pueden cancelar recepciones ya confirmadas."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de recepciones de mercancía (Goods Receipts). Requieren autenticación."
 		}
 	]
 }
