@@ -68,4 +68,16 @@ pub trait VendorRepository: Send + Sync {
         tax_id: &str,
         exclude_id: VendorId,
     ) -> Result<bool, PurchasingError>;
+
+    /// Counts vendors whose code starts with the given prefix.
+    ///
+    /// Used for generating sequential vendor codes based on legal name.
+    /// The prefix is matched with a pattern like "{prefix}-%".
+    ///
+    /// # Arguments
+    /// * `prefix` - The code prefix to count (e.g., "DISTRIBU")
+    ///
+    /// # Returns
+    /// The count of vendors with codes matching the prefix pattern
+    async fn count_by_code_prefix(&self, prefix: &str) -> Result<i64, PurchasingError>;
 }
