@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use crate::application::dtos::commands::CreateVendorCommand;
 use crate::application::dtos::responses::VendorResponse;
+use crate::application::utils::generate_vendor_code_prefix;
 use crate::domain::entities::Vendor;
 use crate::domain::repositories::VendorRepository;
 use crate::PurchasingError;
@@ -39,15 +40,16 @@ where
     /// * `PurchasingError::DuplicateVendorTaxId` - If vendor tax ID already exists
     /// * `PurchasingError::InvalidCurrency` - If currency code is invalid
     pub async fn execute(&self, command: CreateVendorCommand) -> Result<VendorResponse, PurchasingError> {
-        // Check for duplicate code
-        if self.vendor_repo.exists_by_code(&command.code).await? {
-            return Err(PurchasingError::DuplicateVendorCode(command.code));
-        }
-
         // Check for duplicate tax ID
         if self.vendor_repo.exists_by_tax_id(&command.tax_id).await? {
             return Err(PurchasingError::DuplicateVendorTaxId(command.tax_id));
         }
+
+        // Generate vendor code from legal name
+        // Format: {PREFIX}-{SEQUENCE} e.g., "DISTRIBU-0001"
+        let prefix = generate_vendor_code_prefix(&command.legal_name);
+        let count = self.vendor_repo.count_by_code_prefix(&prefix).await?;
+        let vendor_code = format!("{}-{:04}", prefix, count + 1);
 
         // Parse currency (default to HNL)
         let currency_str = command.currency.as_deref().unwrap_or("HNL");
@@ -56,7 +58,7 @@ where
 
         // Create vendor entity
         let mut vendor = Vendor::create(
-            command.code,
+            vendor_code,
             command.name,
             command.legal_name,
             command.tax_id,
