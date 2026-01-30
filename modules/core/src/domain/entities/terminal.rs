@@ -42,6 +42,7 @@ impl Terminal {
     }
 
     /// Reconstructs a Terminal from persisted data
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: TerminalId,
         store_id: StoreId,

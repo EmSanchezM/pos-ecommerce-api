@@ -35,6 +35,7 @@ use identity::{ErrorResponse, UserContext};
 /// ```
 ///
 /// - Return 403 Forbidden if permission is missing
+#[allow(clippy::result_large_err)]
 pub fn require_permission(ctx: &UserContext, permission: &str) -> Result<(), Response> {
     if ctx.has_permission(permission) {
         Ok(())
@@ -74,6 +75,7 @@ pub fn require_permission(ctx: &UserContext, permission: &str) -> Result<(), Res
 /// ```
 ///
 /// - Return 403 Forbidden if any permission is missing
+#[allow(clippy::result_large_err)]
 pub fn require_all_permissions(ctx: &UserContext, permissions: &[&str]) -> Result<(), Response> {
     let missing: Vec<&str> = permissions
         .iter()
@@ -119,6 +121,7 @@ pub fn require_all_permissions(ctx: &UserContext, permissions: &[&str]) -> Resul
 /// ```
 ///
 /// - Return 403 Forbidden if no permission matches
+#[allow(clippy::result_large_err)]
 pub fn require_any_permission(ctx: &UserContext, permissions: &[&str]) -> Result<(), Response> {
     if permissions.is_empty() {
         return Err(forbidden_response("No permissions specified"));
@@ -163,6 +166,7 @@ pub fn require_any_permission(ctx: &UserContext, permissions: &[&str]) -> Result
 /// - Return 403 Forbidden with descriptive message if not super_admin
 /// - Only super_admin can create stores
 /// - Only super_admin can create terminals
+#[allow(clippy::result_large_err)]
 pub fn require_super_admin(ctx: &UserContext) -> Result<(), Response> {
     // super_admin is identified by having the "system:admin" permission
     // This permission is only granted to users with the super_admin role

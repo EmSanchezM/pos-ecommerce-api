@@ -113,7 +113,7 @@ pub async fn create_adjustment_handler(
 
     let use_case = CreateAdjustmentUseCase::new(state.adjustment_repo());
 
-    let actor_id = ctx.user_id().clone();
+    let actor_id = *ctx.user_id();
     let response = use_case
         .execute(command, actor_id)
         .await
@@ -274,7 +274,7 @@ pub async fn approve_adjustment_handler(
         approve: true,
         notes: body.and_then(|b| b.notes),
     };
-    let approver_id = ctx.user_id().clone();
+    let approver_id = *ctx.user_id();
 
     let response = use_case
         .execute(command, approver_id)
@@ -326,7 +326,7 @@ pub async fn reject_adjustment_handler(
         approve: false,
         notes: body.and_then(|b| b.notes),
     };
-    let approver_id = ctx.user_id().clone();
+    let approver_id = *ctx.user_id();
 
     let response = use_case
         .execute(command, approver_id)
@@ -369,7 +369,7 @@ pub async fn apply_adjustment_handler(
     );
 
     let command = ApplyAdjustmentCommand { adjustment_id: id };
-    let actor_id = ctx.user_id().clone();
+    let actor_id = *ctx.user_id();
 
     let response = use_case
         .execute(command, actor_id)

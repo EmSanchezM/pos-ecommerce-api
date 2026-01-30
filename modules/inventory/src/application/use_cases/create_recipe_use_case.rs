@@ -150,16 +150,14 @@ where
         )?;
 
         // Validate ingredient product/variant exists
-        if let Some(pid) = ing_product_id {
-            if self.product_repo.find_by_id(pid).await?.is_none() {
+        if let Some(pid) = ing_product_id
+            && self.product_repo.find_by_id(pid).await?.is_none() {
                 return Err(InventoryError::ProductNotFound(pid.into_uuid()));
             }
-        }
-        if let Some(vid) = ing_variant_id {
-            if self.product_repo.find_variant_by_id(vid).await?.is_none() {
+        if let Some(vid) = ing_variant_id
+            && self.product_repo.find_variant_by_id(vid).await?.is_none() {
                 return Err(InventoryError::VariantNotFound(vid.into_uuid()));
             }
-        }
 
         // Parse unit of measure
         let unit_of_measure = UnitOfMeasure::from_str(&cmd.unit_of_measure)?;

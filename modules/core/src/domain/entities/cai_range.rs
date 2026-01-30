@@ -25,6 +25,7 @@ pub struct CaiRange {
 
 impl CaiRange {
     /// Creates a new CaiRange
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: Uuid,
         cai_number: CaiNumber,
