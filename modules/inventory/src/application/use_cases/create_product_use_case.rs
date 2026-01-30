@@ -17,7 +17,6 @@ use identity::domain::value_objects::UserId;
 ///
 /// Auto-generates SKU, validates barcode uniqueness, validates category existence,
 /// and creates an audit entry.
-
 pub struct CreateProductUseCase<P, C, A>
 where
     P: ProductRepository,
@@ -95,7 +94,7 @@ where
         };
 
         // Get category code for SKU generation
-        let category_code = category_id.and_then(|_| {
+        let category_code = category_id.and({
             // Extract first 3 chars of category name if available
             // For now, we'll use None and let the SKU generator use "GEN"
             // In a real implementation, we'd fetch the category and extract its code

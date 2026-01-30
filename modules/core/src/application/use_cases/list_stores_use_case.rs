@@ -56,17 +56,15 @@ where
             .into_iter()
             .filter(|store| {
                 // Filter by is_active if specified
-                if let Some(is_active) = query.is_active {
-                    if store.is_active() != is_active {
+                if let Some(is_active) = query.is_active
+                    && store.is_active() != is_active {
                         return false;
                     }
-                }
                 // Filter by is_ecommerce if specified
-                if let Some(is_ecommerce) = query.is_ecommerce {
-                    if store.is_ecommerce() != is_ecommerce {
+                if let Some(is_ecommerce) = query.is_ecommerce
+                    && store.is_ecommerce() != is_ecommerce {
                         return false;
                     }
-                }
                 true
             })
             .collect();
@@ -74,7 +72,7 @@ where
         // 3. Calculate pagination
         let total = filtered_stores.len() as i64;
         let page = query.page.unwrap_or(1).max(1);
-        let page_size = query.page_size.unwrap_or(DEFAULT_PAGE_SIZE).min(MAX_PAGE_SIZE).max(1);
+        let page_size = query.page_size.unwrap_or(DEFAULT_PAGE_SIZE).clamp(1, MAX_PAGE_SIZE);
         let total_pages = ((total as f64) / (page_size as f64)).ceil() as u32;
         
         // 4. Apply pagination

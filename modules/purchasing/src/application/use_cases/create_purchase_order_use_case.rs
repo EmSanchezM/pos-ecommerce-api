@@ -119,7 +119,7 @@ where
                 order.id(),
                 (index + 1) as i32,
                 ProductId::from_uuid(item_cmd.product_id),
-                item_cmd.variant_id.map(|v| inventory::VariantId::from_uuid(v)),
+                item_cmd.variant_id.map(inventory::VariantId::from_uuid),
                 item_cmd.description,
                 item_cmd.quantity_ordered,
                 unit_of_measure,

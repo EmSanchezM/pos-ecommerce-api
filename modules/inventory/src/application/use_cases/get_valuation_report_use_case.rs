@@ -118,26 +118,23 @@ where
         let mut variant_name = None;
         let mut sku = None;
 
-        if let Some(product_id) = stock.product_id() {
-            if let Some(product) = self.product_repo.find_by_id(product_id).await? {
+        if let Some(product_id) = stock.product_id()
+            && let Some(product) = self.product_repo.find_by_id(product_id).await? {
                 product_name = Some(product.name().to_string());
                 sku = Some(product.sku().to_string());
             }
-        }
 
-        if let Some(variant_id) = stock.variant_id() {
-            if let Some(variant) = self.product_repo.find_variant_by_id(variant_id).await? {
+        if let Some(variant_id) = stock.variant_id()
+            && let Some(variant) = self.product_repo.find_variant_by_id(variant_id).await? {
                 variant_name = Some(variant.name().to_string());
                 sku = Some(variant.sku().to_string());
 
                 // Also get parent product name if not already set
-                if product_name.is_none() {
-                    if let Some(product) = self.product_repo.find_by_id(variant.product_id()).await? {
+                if product_name.is_none()
+                    && let Some(product) = self.product_repo.find_by_id(variant.product_id()).await? {
                         product_name = Some(product.name().to_string());
                     }
-                }
             }
-        }
 
         Ok((product_name, variant_name, sku))
     }
