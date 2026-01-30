@@ -267,6 +267,15 @@ impl VendorRepository for PgVendorRepository {
                 .await?;
         Ok(count.0 > 0)
     }
+
+    async fn count_by_code_prefix(&self, prefix: &str) -> Result<i64, PurchasingError> {
+        let pattern = format!("{}-%", prefix);
+        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM vendors WHERE code LIKE $1")
+            .bind(pattern)
+            .fetch_one(&self.pool)
+            .await?;
+        Ok(count.0)
+    }
 }
 
 // =============================================================================
