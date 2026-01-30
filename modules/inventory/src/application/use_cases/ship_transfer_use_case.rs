@@ -134,7 +134,7 @@ where
             let movement = InventoryMovement::create(
                 stock.id(),
                 MovementType::TransferOut,
-                Some(format!("Transfer to store")),
+                Some("Transfer to store".to_string()),
                 -quantity_shipped,
                 item.unit_cost(),
                 Currency::hnl(),

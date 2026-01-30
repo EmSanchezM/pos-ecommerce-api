@@ -57,11 +57,10 @@ where
             .into_iter()
             .filter(|terminal| {
                 // Filter by is_active if specified
-                if let Some(is_active) = query.is_active {
-                    if terminal.is_active() != is_active {
+                if let Some(is_active) = query.is_active
+                    && terminal.is_active() != is_active {
                         return false;
                     }
-                }
                 true
             })
             .collect();
@@ -72,8 +71,7 @@ where
         let page_size = query
             .page_size
             .unwrap_or(DEFAULT_PAGE_SIZE)
-            .min(MAX_PAGE_SIZE)
-            .max(1);
+            .clamp(1, MAX_PAGE_SIZE);
         let total_pages = if total == 0 {
             0
         } else {

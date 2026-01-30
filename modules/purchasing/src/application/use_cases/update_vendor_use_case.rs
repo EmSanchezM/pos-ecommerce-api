@@ -55,8 +55,8 @@ where
             .ok_or(PurchasingError::VendorNotFound(vendor_id))?;
 
         // Check for duplicate tax ID if changing
-        if let Some(ref new_tax_id) = command.tax_id {
-            if new_tax_id != vendor.tax_id()
+        if let Some(ref new_tax_id) = command.tax_id
+            && new_tax_id != vendor.tax_id()
                 && self
                     .vendor_repo
                     .exists_by_tax_id_excluding(new_tax_id, id)
@@ -64,7 +64,6 @@ where
             {
                 return Err(PurchasingError::DuplicateVendorTaxId(new_tax_id.clone()));
             }
-        }
 
         // Apply updates
         if let Some(name) = command.name {

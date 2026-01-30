@@ -130,11 +130,10 @@ where
             let barcode = Barcode::new(&barcode_str)?;
 
             // Check if barcode is already used by another product
-            if let Some(existing) = self.product_repo.find_by_barcode(&barcode).await? {
-                if existing.id() != product.id() {
+            if let Some(existing) = self.product_repo.find_by_barcode(&barcode).await?
+                && existing.id() != product.id() {
                     return Err(InventoryError::DuplicateBarcode(barcode_str));
                 }
-            }
             product.set_barcode(Some(barcode));
         }
 

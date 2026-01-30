@@ -94,6 +94,7 @@ pub async fn auth_middleware(
 ///
 /// * `Ok(String)` - The token string if successfully extracted
 /// * `Err(Response)` - A 401 Unauthorized response if extraction fails
+#[allow(clippy::result_large_err)]
 fn extract_bearer_token(request: &Request<Body>) -> Result<String, Response> {
     // Get Authorization header
     let auth_header = request
@@ -133,13 +134,11 @@ fn extract_bearer_token(request: &Request<Body>) -> Result<String, Response> {
 /// The StoreId extracted from the request or a default value
 fn extract_store_id(request: &Request<Body>) -> StoreId {
     // Try to get store_id from X-Store-Id header
-    if let Some(store_id_header) = request.headers().get("X-Store-Id") {
-        if let Ok(store_id_str) = store_id_header.to_str() {
-            if let Ok(uuid) = uuid::Uuid::parse_str(store_id_str) {
+    if let Some(store_id_header) = request.headers().get("X-Store-Id")
+        && let Ok(store_id_str) = store_id_header.to_str()
+            && let Ok(uuid) = uuid::Uuid::parse_str(store_id_str) {
                 return StoreId::from_uuid(uuid);
             }
-        }
-    }
 
     // Default to nil UUID for system-wide operations
     // In a real application, you might want to require a store_id

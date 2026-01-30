@@ -104,11 +104,9 @@ where
             // Check against other variants
             if let Some(existing_variant) =
                 self.product_repo.find_variant_by_barcode(&barcode).await?
-            {
-                if existing_variant.id() != variant.id() {
+                && existing_variant.id() != variant.id() {
                     return Err(InventoryError::DuplicateBarcode(barcode_str));
                 }
-            }
 
             variant.set_barcode(Some(barcode));
         }
