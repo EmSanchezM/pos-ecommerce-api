@@ -81,7 +81,6 @@ impl From<ListVendorsQueryParams> for ListVendorsQuery {
 ///
 /// ```json
 /// {
-///   "code": "VENDOR001",
 ///   "name": "Vendor Name",
 ///   "legal_name": "Vendor Legal Name Inc.",
 ///   "tax_id": "RTN12345678",
@@ -93,6 +92,9 @@ impl From<ListVendorsQueryParams> for ListVendorsQuery {
 ///   "notes": "Optional notes"
 /// }
 /// ```
+///
+/// Note: The vendor code is auto-generated from the legal name.
+/// Example: "Vendor Legal Name Inc." → "VENDORLE-0001"
 ///
 /// # Response
 ///
