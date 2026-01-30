@@ -25,3 +25,6 @@ chrono = { workspace = true }
 thiserror = { workspace = true }
 rust_decimal = { workspace = true }
 rust_decimal_macros = { workspace = true }
+
+# Text processing
+unidecode = "0.3"
