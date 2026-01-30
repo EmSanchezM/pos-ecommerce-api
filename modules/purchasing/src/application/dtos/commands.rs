@@ -15,11 +15,9 @@ use uuid::Uuid;
 /// Command to create a new vendor
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateVendorCommand {
-    /// Vendor code (must be unique)
-    pub code: String,
     /// Vendor display name
     pub name: String,
-    /// Legal/registered name
+    /// Legal/registered name (used to auto-generate vendor code)
     pub legal_name: String,
     /// Tax identification number (must be unique)
     pub tax_id: String,
