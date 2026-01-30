@@ -1787,14 +1787,14 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"code\": \"VENDOR001\",\n    \"name\": \"Proveedor Principal\",\n    \"legal_name\": \"Proveedor Principal S.A. de C.V.\",\n    \"tax_id\": \"RTN-12345678901234\",\n    \"email\": \"contacto@proveedor.com\",\n    \"phone\": \"+504 2234-5678\",\n    \"address\": \"Av. Principal #123, Tegucigalpa\",\n    \"payment_terms_days\": 30,\n    \"currency\": \"HNL\",\n    \"notes\": \"Proveedor de productos varios\"\n}"
+							"raw": "{\n \"name\": \"Proveedor Principal\",\n    \"legal_name\": \"Proveedor Principal S.A. de C.V.\",\n    \"tax_id\": \"RTN-12345678901234\",\n    \"email\": \"contacto@proveedor.com\",\n    \"phone\": \"+504 2234-5678\",\n    \"address\": \"Av. Principal #123, Tegucigalpa\",\n    \"payment_terms_days\": 30,\n    \"currency\": \"HNL\",\n    \"notes\": \"Proveedor de productos varios\"\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/vendors",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "vendors"]
 						},
-						"description": "Crea un nuevo proveedor. Requiere permiso vendors:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| code | string | Sí | Código único del proveedor |\n| name | string | Sí | Nombre comercial |\n| legal_name | string | No | Razón social |\n| tax_id | string | No | RTN o identificación fiscal |\n| email | string | No | Email de contacto |\n| phone | string | No | Teléfono de contacto |\n| address | string | No | Dirección |\n| payment_terms_days | number | No | Días de crédito (default: 0) |\n| currency | string | No | Moneda (default: HNL) |\n| notes | string | No | Notas adicionales |"
+						"description": "Crea un nuevo proveedor. Requiere permiso vendors:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | Sí | Nombre comercial |\n| legal_name | string | No | Razón social |\n| tax_id | string | No | RTN o identificación fiscal |\n| email | string | No | Email de contacto |\n| phone | string | No | Teléfono de contacto |\n| address | string | No | Dirección |\n| payment_terms_days | number | No | Días de crédito (default: 0) |\n| currency | string | No | Moneda (default: HNL) |\n| notes | string | No | Notas adicionales |"
 					},
 					"response": []
 				},
