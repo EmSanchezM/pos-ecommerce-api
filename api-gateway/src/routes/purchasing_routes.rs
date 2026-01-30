@@ -13,7 +13,7 @@ use axum::{
     Router,
 };
 
-use crate::handlers::purchasing::{
+use crate::handlers::{
     activate_vendor_handler, approve_purchase_order_handler, cancel_goods_receipt_handler,
     cancel_purchase_order_handler, close_purchase_order_handler, confirm_goods_receipt_handler,
     create_goods_receipt_handler, create_purchase_order_handler, create_vendor_handler,
