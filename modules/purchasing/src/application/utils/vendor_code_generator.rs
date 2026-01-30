@@ -50,12 +50,12 @@ mod tests {
 
     #[test]
     fn test_basic_name() {
-        assert_eq!(generate_vendor_code_prefix("Distribuidora"), "DISTRIBUI");
+        assert_eq!(generate_vendor_code_prefix("Distribuidora"), "DISTRIBU");
     }
 
     #[test]
     fn test_name_with_accents() {
-        assert_eq!(generate_vendor_code_prefix("Distribuidora López"), "DISTRIBUI");
+        assert_eq!(generate_vendor_code_prefix("Distribuidora López"), "DISTRIBU");
         assert_eq!(generate_vendor_code_prefix("Café Express"), "CAFEEXPR");
         assert_eq!(generate_vendor_code_prefix("Señor Tacos"), "SENORTAC");
     }
