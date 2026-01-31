@@ -1728,7 +1728,20 @@ checksum = "a50f4cf475b65d88e057964e0e9bb1f0aa9bbb2036dc65c64596b42932536984"
 name = "sales"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "chrono",
  "common",
+ "identity",
+ "inventory",
+ "pos_core",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]

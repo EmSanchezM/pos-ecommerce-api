@@ -4,4 +4,26 @@ version = { workspace = true }
 edition = { workspace = true }
 
 [dependencies]
+# Inter-module dependencies
 common = { path = "../common" }
+identity = { path = "../identity" }
+pos_core = { path = "../core" }
+inventory = { path = "../inventory" }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Types and utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+rust_decimal = { workspace = true }
+rust_decimal_macros = { workspace = true }
