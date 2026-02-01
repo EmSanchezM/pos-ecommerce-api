@@ -77,6 +77,7 @@ pub struct ListSalesQuery {
     pub date_to: Option<String>,
     pub min_total: Option<Decimal>,
     pub max_total: Option<Decimal>,
+    pub search: Option<String>,
     pub page: Option<i64>,
     pub page_size: Option<i64>,
 }
