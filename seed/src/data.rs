@@ -80,32 +80,25 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     
     // Sales module permissions
     ("sales:create", "Create sales transactions"),
+    ("sales:update", "Update sales transactions"),
+    ("sales:process_payment", "Process payments for sales"),
+    ("sales:apply_discount", "Apply discounts to sales"),
     ("sales:read", "View sales transactions"),
     ("sales:void", "Void sales transactions"),
     ("sales:list", "List sales transactions"),
+    ("sales:complete", "Complete sales transactions"),
     ("sales:reports", "View sales reports"),
-    
-    ("customers:create", "Create customers"),
-    ("customers:read", "View customer information"),
-    ("customers:update", "Update customer information"),
-    ("customers:delete", "Delete customers"),
-    ("customers:list", "List all customers"),
-    
-    // Purchasing module permissions (legacy - for backwards compatibility)
-    ("purchases:create", "Create purchase orders"),
-    ("purchases:read", "View purchase orders"),
-    ("purchases:update", "Update purchase orders"),
-    ("purchases:approve", "Approve purchase orders"),
-    ("purchases:receive", "Receive purchase orders"),
-    ("purchases:list", "List purchase orders"),
+    ("sales:manage_cart", "Manage shopping carts"),
+    ("sales:manage_credit_note", "Manage credit notes"),
+    ("sales:manage_shift", "Manage cashier shifts"),
+    ("sales:read_shift", "View cashier shift details"),
+    ("sales:approve_credit_note", "Approve credit notes"),
+    ("sales:read_credit_note", "View credit note details"),
+    ("sales:create_customer", "Create customers"),
+    ("sales:read_customer", "View customer information"),
+    ("sales:update_customer", "Update customer information"),
 
-    ("suppliers:create", "Create suppliers"),
-    ("suppliers:read", "View supplier information"),
-    ("suppliers:update", "Update supplier information"),
-    ("suppliers:delete", "Delete suppliers"),
-    ("suppliers:list", "List all suppliers"),
-
-    // Purchasing module permissions (new - matching API handlers)
+    // Purchasing module permissions
     ("vendors:create", "Create new vendors/suppliers"),
     ("vendors:read", "View vendor information"),
     ("vendors:update", "Update vendor information"),
@@ -220,12 +213,13 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "transfers:create", "transfers:read", "transfers:ship", "transfers:receive", "transfers:cancel",
             "categories:create", "categories:read", "categories:update", "categories:delete", "categories:list",
             // Sales
-            "sales:create", "sales:read", "sales:void", "sales:list", "sales:reports",
-            "customers:create", "customers:read", "customers:update", "customers:delete", "customers:list",
-            // Purchasing (legacy)
-            "purchases:create", "purchases:read", "purchases:update", "purchases:approve", "purchases:receive", "purchases:list",
-            "suppliers:create", "suppliers:read", "suppliers:update", "suppliers:delete", "suppliers:list",
-            // Purchasing (new)
+            "sales:create", "sales:read", "sales:update", "sales:void", "sales:list", "sales:complete", "sales:reports",
+            "sales:process_payment", "sales:apply_discount",
+            "sales:create_customer", "sales:read_customer", "sales:update_customer",
+            "sales:manage_shift", "sales:read_shift",
+            "sales:manage_cart",
+            "sales:manage_credit_note", "sales:read_credit_note", "sales:approve_credit_note",
+            // Purchasing
             "vendors:create", "vendors:read", "vendors:update",
             "purchase_orders:create", "purchase_orders:read", "purchase_orders:submit", "purchase_orders:approve", "purchase_orders:cancel", "purchase_orders:close",
             "goods_receipts:create", "goods_receipts:read", "goods_receipts:confirm", "goods_receipts:cancel",
@@ -258,12 +252,13 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "transfers:create", "transfers:read", "transfers:ship", "transfers:receive", "transfers:cancel",
             "categories:create", "categories:read", "categories:update", "categories:delete", "categories:list",
             // Sales
-            "sales:create", "sales:read", "sales:void", "sales:list", "sales:reports",
-            "customers:create", "customers:read", "customers:update", "customers:delete", "customers:list",
-            // Purchasing (legacy)
-            "purchases:create", "purchases:read", "purchases:update", "purchases:approve", "purchases:receive", "purchases:list",
-            "suppliers:create", "suppliers:read", "suppliers:update", "suppliers:delete", "suppliers:list",
-            // Purchasing (new)
+            "sales:create", "sales:read", "sales:update", "sales:void", "sales:list", "sales:complete", "sales:reports",
+            "sales:process_payment", "sales:apply_discount",
+            "sales:create_customer", "sales:read_customer", "sales:update_customer",
+            "sales:manage_shift", "sales:read_shift",
+            "sales:manage_cart",
+            "sales:manage_credit_note", "sales:read_credit_note", "sales:approve_credit_note",
+            // Purchasing
             "vendors:create", "vendors:read", "vendors:update",
             "purchase_orders:create", "purchase_orders:read", "purchase_orders:submit", "purchase_orders:approve", "purchase_orders:cancel", "purchase_orders:close",
             "goods_receipts:create", "goods_receipts:read", "goods_receipts:confirm", "goods_receipts:cancel",
@@ -293,12 +288,13 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "transfers:create", "transfers:read", "transfers:ship", "transfers:receive", "transfers:cancel",
             "categories:read", "categories:list",
             // Sales
-            "sales:create", "sales:read", "sales:void", "sales:list", "sales:reports",
-            "customers:create", "customers:read", "customers:update", "customers:list",
-            // Purchasing (legacy)
-            "purchases:create", "purchases:read", "purchases:update", "purchases:list",
-            "suppliers:read", "suppliers:list",
-            // Purchasing (new)
+            "sales:create", "sales:read", "sales:update", "sales:void", "sales:list", "sales:complete", "sales:reports",
+            "sales:process_payment", "sales:apply_discount",
+            "sales:create_customer", "sales:read_customer", "sales:update_customer",
+            "sales:manage_shift", "sales:read_shift",
+            "sales:manage_cart",
+            "sales:manage_credit_note", "sales:read_credit_note", "sales:approve_credit_note",
+            // Purchasing
             "vendors:read",
             "purchase_orders:create", "purchase_orders:read", "purchase_orders:submit",
             "goods_receipts:create", "goods_receipts:read",
@@ -320,8 +316,12 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "inventory:read", "inventory:reserve",
             "reservations:create", "reservations:confirm", "reservations:cancel",
             // Sales
-            "sales:create", "sales:read", "sales:list",
-            "customers:create", "customers:read", "customers:update", "customers:list",
+            "sales:create", "sales:read", "sales:update", "sales:list", "sales:complete",
+            "sales:process_payment", "sales:apply_discount",
+            "sales:create_customer", "sales:read_customer", "sales:update_customer",
+            "sales:manage_shift", "sales:read_shift",
+            "sales:manage_cart",
+            "sales:manage_credit_note", "sales:read_credit_note",
         ],
     ),
     
@@ -338,10 +338,7 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "inventory:read", "inventory:write", "inventory:update", "inventory:adjust",
             "adjustments:create", "adjustments:read", "adjustments:submit",
             "transfers:read",
-            // Purchasing (legacy)
-            "purchases:read", "purchases:receive", "purchases:list",
-            "suppliers:read", "suppliers:list",
-            // Purchasing (new)
+            // Purchasing
             "vendors:read",
             "purchase_orders:read",
             "goods_receipts:create", "goods_receipts:read", "goods_receipts:confirm",
@@ -360,10 +357,7 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "categories:read", "categories:list",
             // Inventory
             "inventory:read",
-            // Purchasing (legacy)
-            "purchases:create", "purchases:read", "purchases:update", "purchases:list",
-            "suppliers:create", "suppliers:read", "suppliers:update", "suppliers:list",
-            // Purchasing (new)
+            // Purchasing
             "vendors:create", "vendors:read", "vendors:update",
             "purchase_orders:create", "purchase_orders:read", "purchase_orders:submit",
             "goods_receipts:create", "goods_receipts:read",
@@ -387,11 +381,8 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "transfers:read",
             // Sales
             "sales:read", "sales:list",
-            "customers:read", "customers:list",
-            // Purchasing (legacy)
-            "purchases:read", "purchases:list",
-            "suppliers:read", "suppliers:list",
-            // Purchasing (new)
+            "sales:read_customer", "sales:read_shift", "sales:read_credit_note",
+            // Purchasing
             "vendors:read",
             "purchase_orders:read",
             "goods_receipts:read",
