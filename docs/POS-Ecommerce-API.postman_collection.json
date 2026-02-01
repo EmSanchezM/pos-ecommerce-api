@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "pos-ecommerce-api-collection",
 		"name": "POS Ecommerce API",
-		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n- GET /api/v1/stores/:id/inventory - Obtener inventario de tienda (inventory:read)\n- GET /api/v1/stores/:id/low-stock - Obtener alertas de stock bajo (inventory:read)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI\n\n### Products (requiere autenticación)\n- POST /api/v1/products - Crear producto (products:create)\n- GET /api/v1/products - Listar productos con paginación\n- GET /api/v1/products/:id - Obtener detalle de producto\n- PUT /api/v1/products/:id - Actualizar producto (products:update)\n- DELETE /api/v1/products/:id - Eliminar producto (products:delete)\n- POST /api/v1/products/:id/variants - Crear variante (products:create)\n- GET /api/v1/products/:id/variants - Listar variantes\n- GET /api/v1/products/:id/variants/:variant_id - Obtener variante\n- PUT /api/v1/products/:id/variants/:variant_id - Actualizar variante (products:update)\n- DELETE /api/v1/products/:id/variants/:variant_id - Eliminar variante (products:delete)\n- GET /api/v1/products/:id/recipe - Obtener receta activa del producto\n- GET /api/v1/products/:id/stock - Obtener stock del producto\n\n### Recipes (requiere autenticación)\n- POST /api/v1/recipes - Crear receta (recipes:create)\n- GET /api/v1/recipes - Listar recetas con paginación\n- GET /api/v1/recipes/:id - Obtener detalle de receta\n- PUT /api/v1/recipes/:id - Actualizar receta (recipes:update)\n- POST /api/v1/recipes/:id/calculate-cost - Calcular costo de receta\n\n### Inventory (requiere autenticación)\n- POST /api/v1/inventory/stock - Inicializar stock (inventory:write)\n- POST /api/v1/inventory/stock/bulk - Inicializar stock masivo (inventory:write)\n- GET /api/v1/inventory/stock - Listar stock con paginación\n- GET /api/v1/inventory/stock/:stock_id - Obtener detalle de stock\n- PUT /api/v1/inventory/stock/:stock_id/levels - Actualizar niveles de stock (inventory:write)\n- POST /api/v1/inventory/reservations - Crear reserva\n- GET /api/v1/inventory/reservations - Listar reservas\n- PUT /api/v1/inventory/reservations/:id/confirm - Confirmar reserva\n- PUT /api/v1/inventory/reservations/:id/cancel - Cancelar reserva\n- POST /api/v1/inventory/reservations/expire - Expirar reservas vencidas\n\n### Adjustments (requiere autenticación)\n- POST /api/v1/inventory/adjustments - Crear ajuste de stock (inventory:adjustments:create)\n- GET /api/v1/inventory/adjustments - Listar ajustes con paginación (inventory:adjustments:read)\n- GET /api/v1/inventory/adjustments/:id - Obtener detalle de ajuste (inventory:adjustments:read)\n- PUT /api/v1/inventory/adjustments/:id/submit - Enviar ajuste para aprobación (inventory:adjustments:submit)\n- PUT /api/v1/inventory/adjustments/:id/approve - Aprobar ajuste (inventory:adjustments:approve)\n- PUT /api/v1/inventory/adjustments/:id/reject - Rechazar ajuste (inventory:adjustments:approve)\n- POST /api/v1/inventory/adjustments/:id/apply - Aplicar ajuste al stock (inventory:adjustments:apply)\n\n### Vendors (requiere autenticación)\n- POST /api/v1/vendors - Crear proveedor (vendors:create)\n- GET /api/v1/vendors - Listar proveedores con paginación (vendors:read)\n- GET /api/v1/vendors/:id - Obtener detalle de proveedor (vendors:read)\n- PUT /api/v1/vendors/:id - Actualizar proveedor (vendors:update)\n- PUT /api/v1/vendors/:id/activate - Activar proveedor (vendors:update)\n- PUT /api/v1/vendors/:id/deactivate - Desactivar proveedor (vendors:update)\n\n### Purchase Orders (requiere autenticación)\n- POST /api/v1/purchase-orders - Crear orden de compra (purchase_orders:create)\n- GET /api/v1/purchase-orders - Listar órdenes de compra (purchase_orders:read)\n- GET /api/v1/purchase-orders/:id - Obtener detalle de orden (purchase_orders:read)\n- PUT /api/v1/purchase-orders/:id/submit - Enviar para aprobación (purchase_orders:submit)\n- PUT /api/v1/purchase-orders/:id/approve - Aprobar orden (purchase_orders:approve)\n- PUT /api/v1/purchase-orders/:id/reject - Rechazar orden (purchase_orders:approve)\n- PUT /api/v1/purchase-orders/:id/cancel - Cancelar orden (purchase_orders:cancel)\n- PUT /api/v1/purchase-orders/:id/close - Cerrar orden (purchase_orders:close)\n\n### Goods Receipts (requiere autenticación)\n- POST /api/v1/goods-receipts - Crear recepción de mercancía (goods_receipts:create)\n- GET /api/v1/goods-receipts - Listar recepciones (goods_receipts:read)\n- GET /api/v1/goods-receipts/:id - Obtener detalle de recepción (goods_receipts:read)\n- PUT /api/v1/goods-receipts/:id/confirm - Confirmar recepción (goods_receipts:confirm)\n- PUT /api/v1/goods-receipts/:id/cancel - Cancelar recepción (goods_receipts:cancel)",
+		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n- GET /api/v1/stores/:id/inventory - Obtener inventario de tienda (inventory:read)\n- GET /api/v1/stores/:id/low-stock - Obtener alertas de stock bajo (inventory:read)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI\n\n### Products (requiere autenticación)\n- POST /api/v1/products - Crear producto (products:create)\n- GET /api/v1/products - Listar productos con paginación\n- GET /api/v1/products/:id - Obtener detalle de producto\n- PUT /api/v1/products/:id - Actualizar producto (products:update)\n- DELETE /api/v1/products/:id - Eliminar producto (products:delete)\n- POST /api/v1/products/:id/variants - Crear variante (products:create)\n- GET /api/v1/products/:id/variants - Listar variantes\n- GET /api/v1/products/:id/variants/:variant_id - Obtener variante\n- PUT /api/v1/products/:id/variants/:variant_id - Actualizar variante (products:update)\n- DELETE /api/v1/products/:id/variants/:variant_id - Eliminar variante (products:delete)\n- GET /api/v1/products/:id/recipe - Obtener receta activa del producto\n- GET /api/v1/products/:id/stock - Obtener stock del producto\n\n### Recipes (requiere autenticación)\n- POST /api/v1/recipes - Crear receta (recipes:create)\n- GET /api/v1/recipes - Listar recetas con paginación\n- GET /api/v1/recipes/:id - Obtener detalle de receta\n- PUT /api/v1/recipes/:id - Actualizar receta (recipes:update)\n- POST /api/v1/recipes/:id/calculate-cost - Calcular costo de receta\n\n### Inventory (requiere autenticación)\n- POST /api/v1/inventory/stock - Inicializar stock (inventory:write)\n- POST /api/v1/inventory/stock/bulk - Inicializar stock masivo (inventory:write)\n- GET /api/v1/inventory/stock - Listar stock con paginación\n- GET /api/v1/inventory/stock/:stock_id - Obtener detalle de stock\n- PUT /api/v1/inventory/stock/:stock_id/levels - Actualizar niveles de stock (inventory:write)\n- POST /api/v1/inventory/reservations - Crear reserva\n- GET /api/v1/inventory/reservations - Listar reservas\n- PUT /api/v1/inventory/reservations/:id/confirm - Confirmar reserva\n- PUT /api/v1/inventory/reservations/:id/cancel - Cancelar reserva\n- POST /api/v1/inventory/reservations/expire - Expirar reservas vencidas\n\n### Adjustments (requiere autenticación)\n- POST /api/v1/inventory/adjustments - Crear ajuste de stock (inventory:adjustments:create)\n- GET /api/v1/inventory/adjustments - Listar ajustes con paginación (inventory:adjustments:read)\n- GET /api/v1/inventory/adjustments/:id - Obtener detalle de ajuste (inventory:adjustments:read)\n- PUT /api/v1/inventory/adjustments/:id/submit - Enviar ajuste para aprobación (inventory:adjustments:submit)\n- PUT /api/v1/inventory/adjustments/:id/approve - Aprobar ajuste (inventory:adjustments:approve)\n- PUT /api/v1/inventory/adjustments/:id/reject - Rechazar ajuste (inventory:adjustments:approve)\n- POST /api/v1/inventory/adjustments/:id/apply - Aplicar ajuste al stock (inventory:adjustments:apply)\n\n### Vendors (requiere autenticación)\n- POST /api/v1/vendors - Crear proveedor (vendors:create)\n- GET /api/v1/vendors - Listar proveedores con paginación (vendors:read)\n- GET /api/v1/vendors/:id - Obtener detalle de proveedor (vendors:read)\n- PUT /api/v1/vendors/:id - Actualizar proveedor (vendors:update)\n- PUT /api/v1/vendors/:id/activate - Activar proveedor (vendors:update)\n- PUT /api/v1/vendors/:id/deactivate - Desactivar proveedor (vendors:update)\n\n### Purchase Orders (requiere autenticación)\n- POST /api/v1/purchase-orders - Crear orden de compra (purchase_orders:create)\n- GET /api/v1/purchase-orders - Listar órdenes de compra (purchase_orders:read)\n- GET /api/v1/purchase-orders/:id - Obtener detalle de orden (purchase_orders:read)\n- PUT /api/v1/purchase-orders/:id/submit - Enviar para aprobación (purchase_orders:submit)\n- PUT /api/v1/purchase-orders/:id/approve - Aprobar orden (purchase_orders:approve)\n- PUT /api/v1/purchase-orders/:id/reject - Rechazar orden (purchase_orders:approve)\n- PUT /api/v1/purchase-orders/:id/cancel - Cancelar orden (purchase_orders:cancel)\n- PUT /api/v1/purchase-orders/:id/close - Cerrar orden (purchase_orders:close)\n\n### Goods Receipts (requiere autenticación)\n- POST /api/v1/goods-receipts - Crear recepción de mercancía (goods_receipts:create)\n- GET /api/v1/goods-receipts - Listar recepciones (goods_receipts:read)\n- GET /api/v1/goods-receipts/:id - Obtener detalle de recepción (goods_receipts:read)\n- PUT /api/v1/goods-receipts/:id/confirm - Confirmar recepción (goods_receipts:confirm)\n- PUT /api/v1/goods-receipts/:id/cancel - Cancelar recepción (goods_receipts:cancel)\n\n### Customers (requiere autenticación)\n- POST /api/v1/customers - Crear cliente (sales:create_customer)\n- GET /api/v1/customers - Listar clientes (sales:read_customer)\n- GET /api/v1/customers/:id - Obtener detalle de cliente (sales:read_customer)\n- PUT /api/v1/customers/:id - Actualizar cliente (sales:update_customer)\n- PUT /api/v1/customers/:id/activate - Activar cliente (sales:update_customer)\n- PUT /api/v1/customers/:id/deactivate - Desactivar cliente (sales:update_customer)\n\n### Cashier Shifts (requiere autenticación)\n- POST /api/v1/shifts - Abrir turno (sales:manage_shift)\n- GET /api/v1/shifts - Listar turnos (sales:read_shift)\n- GET /api/v1/shifts/current/:terminal_id - Obtener turno actual (sales:read_shift)\n- GET /api/v1/shifts/:id/report - Reporte de turno (sales:read_shift)\n- PUT /api/v1/shifts/:id/close - Cerrar turno (sales:manage_shift)\n- POST /api/v1/shifts/:id/cash-in - Entrada de efectivo (sales:manage_shift)\n- POST /api/v1/shifts/:id/cash-out - Salida de efectivo (sales:manage_shift)\n\n### POS Sales (requiere autenticación)\n- POST /api/v1/sales - Crear venta POS (sales:create)\n- GET /api/v1/sales - Listar ventas (sales:read)\n- GET /api/v1/sales/:id - Obtener detalle de venta (sales:read)\n- POST /api/v1/sales/:id/items - Agregar item a venta (sales:create)\n- PUT /api/v1/sales/:id/items/:item_id - Actualizar item (sales:update)\n- DELETE /api/v1/sales/:id/items/:item_id - Eliminar item (sales:update)\n- POST /api/v1/sales/:id/discount - Aplicar descuento (sales:apply_discount)\n- POST /api/v1/sales/:id/payment - Procesar pago (sales:process_payment)\n- PUT /api/v1/sales/:id/complete - Completar venta (sales:complete)\n- PUT /api/v1/sales/:id/void - Anular venta (sales:void)\n\n### Carts (requiere autenticación)\n- POST /api/v1/carts - Crear carrito (sales:manage_cart)\n- GET /api/v1/carts/:id - Obtener carrito (sales:manage_cart)\n- POST /api/v1/carts/:id/items - Agregar item (sales:manage_cart)\n- PUT /api/v1/carts/:id/items/:item_id - Actualizar item (sales:manage_cart)\n- DELETE /api/v1/carts/:id/items/:item_id - Eliminar item (sales:manage_cart)\n- DELETE /api/v1/carts/:id/items - Limpiar carrito (sales:manage_cart)\n\n### Credit Notes / Returns (requiere autenticación)\n- POST /api/v1/credit-notes - Crear nota de crédito (sales:manage_credit_note)\n- GET /api/v1/credit-notes - Listar notas de crédito (sales:read_credit_note)\n- GET /api/v1/credit-notes/:id - Obtener nota de crédito (sales:read_credit_note)\n- POST /api/v1/credit-notes/:id/items - Agregar item (sales:manage_credit_note)\n- DELETE /api/v1/credit-notes/:id/items/:item_id - Eliminar item (sales:manage_credit_note)\n- PUT /api/v1/credit-notes/:id/submit - Enviar para aprobación (sales:manage_credit_note)\n- PUT /api/v1/credit-notes/:id/approve - Aprobar (sales:approve_credit_note)\n- PUT /api/v1/credit-notes/:id/apply - Aplicar reembolso (sales:manage_credit_note)\n- PUT /api/v1/credit-notes/:id/cancel - Cancelar (sales:manage_credit_note)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -75,6 +75,46 @@
 			"key": "goods_receipt_id",
 			"value": "",
 			"type": "string"
+		},
+		{
+			"key": "customer_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "shift_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "sale_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "sale_item_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cart_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cart_item_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "credit_note_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "credit_note_item_id",
+			"value": "",
+			"type": "string"
 		}
 	],
 	"item": [
@@ -88,8 +128,12 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/health",
-							"host": ["{{base_url}}"],
-							"path": ["health"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
 						},
 						"description": "Verifica que el servidor esté funcionando correctamente."
 					},
@@ -136,8 +180,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/auth/register",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "register"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
 						},
 						"description": "Registra un nuevo usuario de ecommerce (cliente).\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| email | string | Sí | Email válido del usuario |\n| password | string | Sí | Contraseña (mínimo 8 caracteres) |\n| first_name | string | Sí | Nombre del usuario |\n| last_name | string | Sí | Apellido del usuario |\n\n## Respuestas\n\n- **201 Created**: Usuario registrado exitosamente\n- **400 Bad Request**: Error de validación\n- **409 Conflict**: Email ya registrado"
 					},
@@ -179,8 +230,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/auth/login",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "login"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
 						},
 						"description": "Inicia sesión con el usuario super_admin.\n\n## Credenciales\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!"
 					},
@@ -222,8 +280,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/auth/login",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "login"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
 						},
 						"description": "Inicia sesión con email o username y contraseña."
 					},
@@ -263,8 +328,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/auth/refresh",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "auth", "refresh"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"refresh"
+							]
 						},
 						"description": "Refresca el access token usando un refresh token válido."
 					},
@@ -314,8 +386,14 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/stores",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "stores"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores"
+							]
 						},
 						"description": "Crea una nueva tienda. Requiere rol super_admin.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | Sí | Nombre de la tienda |\n| address | string | Sí | Dirección de la tienda |\n| is_ecommerce | boolean | Sí | Si es tienda de e-commerce |"
 					},
@@ -333,8 +411,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/stores?page=1&page_size=20",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "stores"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -372,8 +456,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/stores/{{store_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "stores", "{{store_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{store_id}}"
+							]
 						},
 						"description": "Obtiene el detalle de una tienda incluyendo el conteo de terminales activas."
 					},
@@ -399,8 +490,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/stores/{{store_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "stores", "{{store_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{store_id}}"
+							]
 						},
 						"description": "Actualiza los datos de una tienda. Todos los campos son opcionales."
 					},
@@ -418,8 +516,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/activate",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "stores", "{{store_id}}", "activate"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{store_id}}",
+								"activate"
+							]
 						},
 						"description": "Activa una tienda. Requiere rol super_admin.\n\nNota: Reactivar una tienda NO reactiva automáticamente sus terminales."
 					},
@@ -437,8 +543,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/deactivate",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "stores", "{{store_id}}", "deactivate"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{store_id}}",
+								"deactivate"
+							]
 						},
 						"description": "Desactiva una tienda. Requiere rol super_admin.\n\nCuando se desactiva una tienda, todas sus terminales también se desactivan."
 					},
@@ -456,8 +570,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/inventory",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "stores", "{{store_id}}", "inventory"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{store_id}}",
+								"inventory"
+							]
 						},
 						"description": "Obtiene todo el inventario de una tienda específica. Requiere permiso inventory:read.\n\n## Path Parameters\n\n- `store_id`: UUID de la tienda\n\n## Respuestas\n\n- **200 OK**: Lista de registros de stock de la tienda\n- **401 Unauthorized**: Token inválido o faltante\n- **403 Forbidden**: Usuario sin permiso inventory:read"
 					},
@@ -475,8 +597,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/low-stock",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "stores", "{{store_id}}", "low-stock"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{store_id}}",
+								"low-stock"
+							]
 						},
 						"description": "Obtiene todos los productos con stock bajo para una tienda específica. Útil para generar alertas de reorden y notificaciones. Requiere permiso inventory:read.\n\n## Path Parameters\n\n- `store_id`: UUID de la tienda\n\n## Respuestas\n\n- **200 OK**: Lista de registros de stock con niveles bajos (quantity <= min_stock_level)\n- **401 Unauthorized**: Token inválido o faltante\n- **403 Forbidden**: Usuario sin permiso inventory:read\n\n## Response Fields\n\n| Campo | Tipo | Descripción |\n|-------|------|-------------|\n| id | uuid | ID del registro de stock |\n| store_id | uuid | ID de la tienda |\n| product_id | uuid | ID del producto |\n| variant_id | uuid | ID de la variante (si aplica) |\n| quantity | decimal | Cantidad actual |\n| min_stock_level | decimal | Nivel mínimo configurado |\n| max_stock_level | decimal | Nivel máximo configurado |"
 					},
@@ -526,8 +656,16 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/terminals",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "stores", "{{store_id}}", "terminals"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{store_id}}",
+								"terminals"
+							]
 						},
 						"description": "Crea una nueva terminal para una tienda. Requiere rol super_admin.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| code | string | Sí | Código único de la terminal |\n| name | string | Sí | Nombre de la terminal |"
 					},
@@ -545,8 +683,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/stores/{{store_id}}/terminals?page=1&page_size=20",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "stores", "{{store_id}}", "terminals"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"stores",
+								"{{store_id}}",
+								"terminals"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -579,8 +725,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "terminals", "{{terminal_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"terminals",
+								"{{terminal_id}}"
+							]
 						},
 						"description": "Obtiene el detalle de una terminal incluyendo historial completo de CAI."
 					},
@@ -606,8 +759,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "terminals", "{{terminal_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"terminals",
+								"{{terminal_id}}"
+							]
 						},
 						"description": "Actualiza los datos de una terminal."
 					},
@@ -625,8 +785,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/activate",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "terminals", "{{terminal_id}}", "activate"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"terminals",
+								"{{terminal_id}}",
+								"activate"
+							]
 						},
 						"description": "Activa una terminal."
 					},
@@ -644,8 +812,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/deactivate",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "terminals", "{{terminal_id}}", "deactivate"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"terminals",
+								"{{terminal_id}}",
+								"deactivate"
+							]
 						},
 						"description": "Desactiva una terminal. El historial de CAI se preserva."
 					},
@@ -677,8 +853,16 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/cai",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "terminals", "{{terminal_id}}", "cai"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"terminals",
+								"{{terminal_id}}",
+								"cai"
+							]
 						},
 						"description": "Asigna un rango CAI a una terminal. Requiere rol super_admin.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| cai_number | string | Sí | Número de CAI |\n| range_start | number | Sí | Inicio del rango de facturas |\n| range_end | number | Sí | Fin del rango de facturas |\n| expiration_date | string | Sí | Fecha de expiración (YYYY-MM-DD) |"
 					},
@@ -696,8 +880,17 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/cai/status",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "terminals", "{{terminal_id}}", "cai", "status"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"terminals",
+								"{{terminal_id}}",
+								"cai",
+								"status"
+							]
 						},
 						"description": "Obtiene el estado actual del CAI de una terminal.\n\nIncluye advertencia si el CAI expira en los próximos 30 días."
 					},
@@ -715,8 +908,17 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/cai/next-number",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "terminals", "{{terminal_id}}", "cai", "next-number"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"terminals",
+								"{{terminal_id}}",
+								"cai",
+								"next-number"
+							]
 						},
 						"description": "Obtiene el siguiente número de factura de forma atómica.\n\nEsta operación incrementa el contador y retorna el número actual.\n\n## Errores posibles\n- Terminal inactiva\n- Sin CAI asignado\n- CAI expirado\n- Rango agotado"
 					},
@@ -734,8 +936,17 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/terminals/{{terminal_id}}/cai/history",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "terminals", "{{terminal_id}}", "cai", "history"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"terminals",
+								"{{terminal_id}}",
+								"cai",
+								"history"
+							]
 						},
 						"description": "Obtiene el historial completo de CAI de una terminal, ordenado por fecha de creación."
 					},
@@ -786,8 +997,14 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/products",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products"
+							]
 						},
 						"description": "Crea un nuevo producto. Requiere permiso products:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | Sí | Nombre del producto |\n| unit_of_measure | string | Sí | Unidad: unit, kg, lb, liter, oz |\n| base_price | decimal | No | Precio de venta |\n| cost_price | decimal | No | Precio de costo |\n| barcode | string | No | Código de barras único |\n| description | string | No | Descripción |\n| category_id | uuid | No | ID de categoría |\n| is_trackable | boolean | No | Si se rastrea inventario (default: true) |\n| has_variants | boolean | No | Si tiene variantes (default: false) |\n| tax_rate | decimal | No | Tasa de impuesto |\n| tax_included | boolean | No | Si el precio incluye impuesto |"
 					},
@@ -805,8 +1022,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/products?page=1&page_size=20",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -849,8 +1072,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/products/{{product_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products", "{{product_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{product_id}}"
+							]
 						},
 						"description": "Obtiene el detalle de un producto incluyendo sus variantes."
 					},
@@ -876,8 +1106,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/products/{{product_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products", "{{product_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{product_id}}"
+							]
 						},
 						"description": "Actualiza los datos de un producto. Requiere permiso products:update. Todos los campos son opcionales."
 					},
@@ -895,8 +1132,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/products/{{product_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products", "{{product_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{product_id}}"
+							]
 						},
 						"description": "Elimina un producto (soft delete). Requiere permiso products:delete."
 					},
@@ -940,8 +1184,16 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/products/{{product_id}}/variants",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products", "{{product_id}}", "variants"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{product_id}}",
+								"variants"
+							]
 						},
 						"description": "Crea una variante para un producto. Requiere permiso products:create.\n\nNota: El producto debe tener has_variants=true.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | Sí | Nombre de la variante |\n| variant_attributes | object | Sí | Atributos específicos (color, size, etc.) |\n| price | decimal | No | Precio override |\n| cost_price | decimal | No | Costo override |\n| barcode | string | No | Código de barras único |"
 					},
@@ -959,8 +1211,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/products/{{product_id}}/variants",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products", "{{product_id}}", "variants"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{product_id}}",
+								"variants"
+							]
 						},
 						"description": "Lista todas las variantes de un producto."
 					},
@@ -978,8 +1238,17 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/products/{{product_id}}/variants/{{variant_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products", "{{product_id}}", "variants", "{{variant_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{product_id}}",
+								"variants",
+								"{{variant_id}}"
+							]
 						},
 						"description": "Obtiene el detalle de una variante específica."
 					},
@@ -1005,8 +1274,17 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/products/{{product_id}}/variants/{{variant_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products", "{{product_id}}", "variants", "{{variant_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{product_id}}",
+								"variants",
+								"{{variant_id}}"
+							]
 						},
 						"description": "Actualiza los datos de una variante. Requiere permiso products:update."
 					},
@@ -1024,8 +1302,17 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/products/{{product_id}}/variants/{{variant_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products", "{{product_id}}", "variants", "{{variant_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{product_id}}",
+								"variants",
+								"{{variant_id}}"
+							]
 						},
 						"description": "Elimina una variante (soft delete). Requiere permiso products:delete."
 					},
@@ -1043,8 +1330,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/products/{{product_id}}/recipe",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products", "{{product_id}}", "recipe"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{product_id}}",
+								"recipe"
+							]
 						},
 						"description": "Obtiene la receta activa de un producto con todos sus ingredientes y sustitutos."
 					},
@@ -1062,8 +1357,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/products/{{product_id}}/stock",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "products", "{{product_id}}", "stock"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"products",
+								"{{product_id}}",
+								"stock"
+							]
 						},
 						"description": "Obtiene los niveles de stock del producto en todas las tiendas. Requiere permiso inventory:read."
 					},
@@ -1113,8 +1416,14 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/recipes",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "recipes"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"recipes"
+							]
 						},
 						"description": "Crea una nueva receta con ingredientes. Requiere permiso recipes:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| product_id | uuid | Sí* | ID del producto que produce esta receta |\n| variant_id | uuid | Sí* | O ID de la variante (excluyente con product_id) |\n| name | string | Sí | Nombre de la receta |\n| yield_quantity | decimal | Sí | Cantidad producida |\n| ingredients | array | Sí | Lista de ingredientes |\n\n*Debe especificar product_id O variant_id, no ambos."
 					},
@@ -1132,8 +1441,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/recipes?page=1&page_size=20",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "recipes"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"recipes"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -1171,8 +1486,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "recipes", "{{recipe_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"recipes",
+								"{{recipe_id}}"
+							]
 						},
 						"description": "Obtiene el detalle de una receta con todos sus ingredientes y sustitutos."
 					},
@@ -1198,8 +1520,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "recipes", "{{recipe_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"recipes",
+								"{{recipe_id}}"
+							]
 						},
 						"description": "Actualiza los datos de una receta. Requiere permiso recipes:update. Todos los campos son opcionales."
 					},
@@ -1217,8 +1546,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/recipes/{{recipe_id}}/calculate-cost",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "recipes", "{{recipe_id}}", "calculate-cost"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"recipes",
+								"{{recipe_id}}",
+								"calculate-cost"
+							]
 						},
 						"description": "Calcula el costo de una receta basado en los costos actuales de los ingredientes.\n\n## Response\n\n| Campo | Tipo | Descripción |\n|-------|------|-------------|\n| recipe_id | uuid | ID de la receta |\n| total_ingredient_cost | decimal | Costo total de ingredientes |\n| cost_per_unit | decimal | Costo por unidad producida |\n| yield_quantity | decimal | Cantidad producida |\n| ingredient_count | number | Número total de ingredientes |\n| ingredients_with_cost | number | Ingredientes con costo definido |"
 					},
@@ -1242,8 +1579,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/stock?page=1&page_size=20",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "stock"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"stock"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -1300,8 +1644,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/stock/{{stock_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "stock", "{{stock_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"stock",
+								"{{stock_id}}"
+							]
 						},
 						"description": "Obtiene el detalle de un registro de stock con información del producto/variante. Requiere permiso inventory:read."
 					},
@@ -1345,8 +1697,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/stock",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "stock"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"stock"
+							]
 						},
 						"description": "Inicializa el stock de un producto o variante en una tienda específica. Requiere permiso inventory:write.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda |\n| product_id | uuid | Sí* | ID del producto (excluyente con variant_id) |\n| variant_id | uuid | Sí* | ID de la variante (excluyente con product_id) |\n| initial_quantity | decimal | No | Cantidad inicial (default: 0) |\n| min_stock_level | decimal | No | Nivel mínimo para alertas (default: 0) |\n| max_stock_level | decimal | No | Nivel máximo de stock |\n\n*Debe especificar product_id O variant_id, no ambos.\n\n## Respuestas\n\n- **201 Created**: Stock inicializado exitosamente\n- **400 Bad Request**: Error de validación\n- **404 Not Found**: Producto/variante no existe\n- **409 Conflict**: Stock ya existe para esta combinación tienda/producto"
 					},
@@ -1372,8 +1731,16 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/stock/bulk",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "stock", "bulk"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"stock",
+								"bulk"
+							]
 						},
 						"description": "Inicializa stock para múltiples productos/variantes a la vez. Útil para configuración inicial de tienda o importaciones masivas. Requiere permiso inventory:write.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda |\n| items | array | Sí | Lista de productos a inicializar |\n\n## Item Fields\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| product_id | uuid | Sí* | ID del producto (excluyente con variant_id) |\n| variant_id | uuid | Sí* | ID de la variante (excluyente con product_id) |\n| initial_quantity | decimal | No | Cantidad inicial (default: 0) |\n| min_stock_level | decimal | No | Nivel mínimo para alertas (default: 0) |\n| max_stock_level | decimal | No | Nivel máximo de stock |\n\n## Response\n\n| Campo | Tipo | Descripción |\n|-------|------|-------------|\n| successful | array | Items inicializados exitosamente |\n| failed | array | Items que fallaron con mensaje de error |"
 					},
@@ -1399,8 +1766,17 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/stock/{{stock_id}}/levels",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "stock", "{{stock_id}}", "levels"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"stock",
+								"{{stock_id}}",
+								"levels"
+							]
 						},
 						"description": "Actualiza los niveles de stock mínimo/máximo para un registro de stock. No modifica la cantidad actual. Requiere permiso inventory:write.\n\n## Path Parameters\n\n- `stock_id`: UUID del registro de stock\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| stock_id | uuid | Sí | ID del registro de stock |\n| min_stock_level | decimal | Sí | Nivel mínimo para alertas |\n| max_stock_level | decimal | No | Nivel máximo de stock |\n| expected_version | number | Sí | Versión esperada (optimistic locking) |\n\n## Respuestas\n\n- **200 OK**: Niveles actualizados exitosamente\n- **404 Not Found**: Registro de stock no existe\n- **409 Conflict**: Conflicto de versión (optimistic locking)"
 					},
@@ -1444,8 +1820,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/reservations",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "reservations"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"reservations"
+							]
 						},
 						"description": "Crea una reserva de inventario. Requiere permiso cart:add o sales:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| stock_id | uuid | Sí | ID del registro de stock |\n| reference_type | string | Sí | Tipo: cart, order, quote |\n| reference_id | uuid | Sí | ID de referencia (carrito, orden, etc.) |\n| quantity | decimal | Sí | Cantidad a reservar |\n| expires_at | datetime | Sí | Fecha de expiración (ISO 8601) |"
 					},
@@ -1463,8 +1846,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/reservations?page=1&page_size=20",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "reservations"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"reservations"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -1507,8 +1897,17 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/reservations/{{reservation_id}}/confirm",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "reservations", "{{reservation_id}}", "confirm"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"reservations",
+								"{{reservation_id}}",
+								"confirm"
+							]
 						},
 						"description": "Confirma una reserva pendiente y decrementa el stock. Requiere permiso sales:create.\n\nLa reserva debe estar en estado 'pending'."
 					},
@@ -1526,8 +1925,17 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/reservations/{{reservation_id}}/cancel",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "reservations", "{{reservation_id}}", "cancel"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"reservations",
+								"{{reservation_id}}",
+								"cancel"
+							]
 						},
 						"description": "Cancela una reserva pendiente y libera el stock reservado. Requiere permiso cart:remove o sales:void.\n\nLa reserva debe estar en estado 'pending'."
 					},
@@ -1545,8 +1953,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/reservations/expire",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "reservations", "expire"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"reservations",
+								"expire"
+							]
 						},
 						"description": "Proceso batch para expirar todas las reservas pendientes que han pasado su fecha de expiración. Requiere permiso system:admin.\n\nTípicamente llamado por un job programado.\n\n## Response\n\n| Campo | Tipo | Descripción |\n|-------|------|-------------|\n| expired_count | number | Reservas expiradas exitosamente |\n| failed_count | number | Reservas que fallaron al expirar |\n| expired_reservations | array | Detalles de reservas expiradas |\n| errors | array | Errores encontrados |"
 					},
@@ -1590,8 +2006,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/adjustments",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "adjustments"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"adjustments"
+							]
 						},
 						"description": "Crea un nuevo ajuste de stock en estado borrador. Requiere permiso inventory:adjustments:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda |\n| adjustment_type | string | Sí | increase o decrease |\n| adjustment_reason | string | Sí | damage, theft, loss, found, correction, expiration |\n| notes | string | No | Notas generales del ajuste |\n| items | array | Sí | Lista de items a ajustar |\n\n## Item Fields\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| stock_id | uuid | Sí | ID del registro de stock |\n| quantity | decimal | Sí | Cantidad a ajustar |\n| unit_cost | decimal | No | Costo unitario |\n| notes | string | No | Notas del item |"
 					},
@@ -1609,8 +2032,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/adjustments?page=1&page_size=20",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "adjustments"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"adjustments"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -1648,8 +2078,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/adjustments/{{adjustment_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "adjustments", "{{adjustment_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"adjustments",
+								"{{adjustment_id}}"
+							]
 						},
 						"description": "Obtiene el detalle de un ajuste incluyendo todos sus items. Requiere permiso inventory:adjustments:read."
 					},
@@ -1667,8 +2105,17 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/adjustments/{{adjustment_id}}/submit",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "adjustments", "{{adjustment_id}}", "submit"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"adjustments",
+								"{{adjustment_id}}",
+								"submit"
+							]
 						},
 						"description": "Envía un ajuste en borrador para aprobación. Requiere permiso inventory:adjustments:submit.\n\nEl ajuste debe:\n- Estar en estado 'draft'\n- Tener al menos un item"
 					},
@@ -1694,8 +2141,17 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/adjustments/{{adjustment_id}}/approve",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "adjustments", "{{adjustment_id}}", "approve"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"adjustments",
+								"{{adjustment_id}}",
+								"approve"
+							]
 						},
 						"description": "Aprueba un ajuste pendiente de aprobación. Requiere permiso inventory:adjustments:approve.\n\nEl ajuste debe estar en estado 'pending_approval'.\n\n## Request Body (opcional)\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| notes | string | No | Notas del aprobador |"
 					},
@@ -1721,8 +2177,17 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/adjustments/{{adjustment_id}}/reject",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "adjustments", "{{adjustment_id}}", "reject"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"adjustments",
+								"{{adjustment_id}}",
+								"reject"
+							]
 						},
 						"description": "Rechaza un ajuste pendiente de aprobación. Requiere permiso inventory:adjustments:approve.\n\nEl ajuste debe estar en estado 'pending_approval'.\n\n## Request Body (opcional)\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| notes | string | No | Motivo del rechazo |"
 					},
@@ -1740,8 +2205,17 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/inventory/adjustments/{{adjustment_id}}/apply",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "inventory", "adjustments", "{{adjustment_id}}", "apply"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"inventory",
+								"adjustments",
+								"{{adjustment_id}}",
+								"apply"
+							]
 						},
 						"description": "Aplica un ajuste aprobado al inventario, actualizando los niveles de stock. Requiere permiso inventory:adjustments:apply.\n\nEl ajuste debe estar en estado 'approved'.\n\nEsta operación:\n1. Actualiza las cantidades de stock para cada item\n2. Registra los movimientos de inventario (Kardex)\n3. Cambia el estado del ajuste a 'applied'\n4. Registra los balances antes/después en cada item"
 					},
@@ -1791,8 +2265,14 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/vendors",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "vendors"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors"
+							]
 						},
 						"description": "Crea un nuevo proveedor. Requiere permiso vendors:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | Sí | Nombre comercial |\n| legal_name | string | No | Razón social |\n| tax_id | string | No | RTN o identificación fiscal |\n| email | string | No | Email de contacto |\n| phone | string | No | Teléfono de contacto |\n| address | string | No | Dirección |\n| payment_terms_days | number | No | Días de crédito (default: 0) |\n| currency | string | No | Moneda (default: HNL) |\n| notes | string | No | Notas adicionales |"
 					},
@@ -1810,8 +2290,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/vendors?page=1&page_size=20",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "vendors"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -1849,8 +2335,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/vendors/{{vendor_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "vendors", "{{vendor_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors",
+								"{{vendor_id}}"
+							]
 						},
 						"description": "Obtiene el detalle de un proveedor. Requiere permiso vendors:read."
 					},
@@ -1876,8 +2369,15 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/vendors/{{vendor_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "vendors", "{{vendor_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors",
+								"{{vendor_id}}"
+							]
 						},
 						"description": "Actualiza los datos de un proveedor. Requiere permiso vendors:update. Todos los campos son opcionales."
 					},
@@ -1895,8 +2395,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/vendors/{{vendor_id}}/activate",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "vendors", "{{vendor_id}}", "activate"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors",
+								"{{vendor_id}}",
+								"activate"
+							]
 						},
 						"description": "Activa un proveedor desactivado. Requiere permiso vendors:update."
 					},
@@ -1914,8 +2422,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/vendors/{{vendor_id}}/deactivate",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "vendors", "{{vendor_id}}", "deactivate"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors",
+								"{{vendor_id}}",
+								"deactivate"
+							]
 						},
 						"description": "Desactiva un proveedor. Requiere permiso vendors:update.\n\nNo se puede desactivar si tiene órdenes de compra pendientes."
 					},
@@ -1966,8 +2482,14 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/purchase-orders",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "purchase-orders"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders"
+							]
 						},
 						"description": "Crea una nueva orden de compra en estado borrador. Requiere permiso purchase_orders:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda destino |\n| vendor_id | uuid | Sí | ID del proveedor |\n| order_date | date | Sí | Fecha de la orden (YYYY-MM-DD) |\n| expected_delivery_date | date | No | Fecha esperada de entrega |\n| currency | string | No | Moneda (default: HNL) |\n| payment_terms_days | number | No | Días de crédito |\n| notes | string | No | Notas de la orden |\n| items | array | Sí | Lista de items |\n\n## Item Fields\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| product_id | uuid | Sí* | ID del producto |\n| variant_id | uuid | Sí* | ID de la variante (excluyente) |\n| quantity | decimal | Sí | Cantidad a ordenar |\n| unit_cost | decimal | Sí | Costo unitario |\n| tax_rate | decimal | No | Tasa de impuesto |\n| discount_percent | decimal | No | Porcentaje de descuento |\n| notes | string | No | Notas del item |"
 					},
@@ -1985,8 +2507,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/purchase-orders?page=1&page_size=20",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "purchase-orders"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -2034,8 +2562,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								"{{purchase_order_id}}"
+							]
 						},
 						"description": "Obtiene el detalle de una orden de compra incluyendo todos sus items. Requiere permiso purchase_orders:read."
 					},
@@ -2053,8 +2588,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}/submit",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}", "submit"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								"{{purchase_order_id}}",
+								"submit"
+							]
 						},
 						"description": "Envía una orden de compra en borrador para aprobación. Requiere permiso purchase_orders:submit.\n\nLa orden debe:\n- Estar en estado 'draft'\n- Tener al menos un item"
 					},
@@ -2072,8 +2615,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}/approve",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}", "approve"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								"{{purchase_order_id}}",
+								"approve"
+							]
 						},
 						"description": "Aprueba una orden de compra pendiente. Requiere permiso purchase_orders:approve.\n\nLa orden debe estar en estado 'submitted'."
 					},
@@ -2099,8 +2650,16 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}/reject",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}", "reject"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								"{{purchase_order_id}}",
+								"reject"
+							]
 						},
 						"description": "Rechaza una orden de compra pendiente. Requiere permiso purchase_orders:approve.\n\nLa orden debe estar en estado 'submitted'.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| reason | string | Sí | Motivo del rechazo |"
 					},
@@ -2126,8 +2685,16 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}/cancel",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}", "cancel"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								"{{purchase_order_id}}",
+								"cancel"
+							]
 						},
 						"description": "Cancela una orden de compra. Requiere permiso purchase_orders:cancel.\n\nSolo se pueden cancelar órdenes en estado: draft, submitted, approved.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| reason | string | Sí | Motivo de la cancelación |"
 					},
@@ -2145,8 +2712,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}/close",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "purchase-orders", "{{purchase_order_id}}", "close"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								"{{purchase_order_id}}",
+								"close"
+							]
 						},
 						"description": "Cierra manualmente una orden de compra. Requiere permiso purchase_orders:close.\n\nLa orden debe estar en estado 'approved', 'partially_received' o 'received'.\n\nÚtil cuando no se esperan más recepciones o hay items que no se van a recibir."
 					},
@@ -2197,8 +2772,14 @@
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/goods-receipts",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "goods-receipts"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"goods-receipts"
+							]
 						},
 						"description": "Crea una nueva recepción de mercancía para una orden de compra. Requiere permiso goods_receipts:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| purchase_order_id | uuid | Sí | ID de la orden de compra |\n| store_id | uuid | Sí | ID de la tienda donde se recibe |\n| receipt_date | date | Sí | Fecha de recepción (YYYY-MM-DD) |\n| notes | string | No | Notas de la recepción |\n| items | array | Sí | Lista de items recibidos |\n\n## Item Fields\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| purchase_order_item_id | uuid | No | ID del item de la orden |\n| product_id | uuid | Sí* | ID del producto |\n| variant_id | uuid | Sí* | ID de la variante (excluyente) |\n| quantity_received | decimal | Sí | Cantidad recibida |\n| unit_cost | decimal | Sí | Costo unitario |\n| lot_number | string | No | Número de lote |\n| expiry_date | date | No | Fecha de vencimiento |\n| notes | string | No | Notas del item |"
 					},
@@ -2216,8 +2797,14 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/goods-receipts?page=1&page_size=20",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "goods-receipts"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"goods-receipts"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -2260,8 +2847,15 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/goods-receipts/{{goods_receipt_id}}",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "goods-receipts", "{{goods_receipt_id}}"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"goods-receipts",
+								"{{goods_receipt_id}}"
+							]
 						},
 						"description": "Obtiene el detalle de una recepción de mercancía incluyendo todos sus items. Requiere permiso goods_receipts:read."
 					},
@@ -2279,8 +2873,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/goods-receipts/{{goods_receipt_id}}/confirm",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "goods-receipts", "{{goods_receipt_id}}", "confirm"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"goods-receipts",
+								"{{goods_receipt_id}}",
+								"confirm"
+							]
 						},
 						"description": "Confirma una recepción de mercancía y actualiza el inventario. Requiere permiso goods_receipts:confirm.\n\nLa recepción debe estar en estado 'draft'.\n\nEsta operación:\n1. Actualiza las cantidades de stock para cada item\n2. Registra los movimientos de inventario (Kardex)\n3. Actualiza el estado de la orden de compra\n4. Cambia el estado de la recepción a 'confirmed'"
 					},
@@ -2298,8 +2900,16 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/v1/goods-receipts/{{goods_receipt_id}}/cancel",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "goods-receipts", "{{goods_receipt_id}}", "cancel"]
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"goods-receipts",
+								"{{goods_receipt_id}}",
+								"cancel"
+							]
 						},
 						"description": "Cancela una recepción de mercancía. Requiere permiso goods_receipts:cancel.\n\nLa recepción debe estar en estado 'draft'.\n\nNo se pueden cancelar recepciones ya confirmadas."
 					},
@@ -2307,6 +2917,1486 @@
 				}
 			],
 			"description": "Endpoints de gestión de recepciones de mercancía (Goods Receipts). Requieren autenticación."
+		},
+		{
+			"name": "Customers",
+			"description": "Endpoints de gestión de clientes. Requieren autenticación.",
+			"item": [
+				{
+					"name": "Create Customer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('customer_id', jsonData.id);",
+									"    pm.test('Created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"customer_type\": \"individual\",\n    \"first_name\": \"María\",\n    \"last_name\": \"López\",\n    \"company_name\": null,\n    \"email\": \"maria@ejemplo.com\",\n    \"phone\": \"+504 9988-7766\",\n    \"tax_id\": \"1234567890123\",\n    \"billing_address\": {\n        \"line1\": \"Calle Reforma #45\",\n        \"line2\": \"Apt 3B\",\n        \"city\": \"Tegucigalpa\",\n        \"state\": \"FM\",\n        \"postal_code\": \"11101\",\n        \"country\": \"Honduras\"\n    },\n    \"notes\": \"Cliente frecuente\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/customers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers"
+							]
+						},
+						"description": "Crea un nuevo cliente. Requiere permiso sales:create_customer.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda |\n| customer_type | string | Sí | individual o business |\n| first_name | string | Sí | Nombre |\n| last_name | string | Sí | Apellido |\n| company_name | string | No | Nombre de empresa (para business) |\n| email | string | No | Email de contacto |\n| phone | string | No | Teléfono |\n| tax_id | string | No | RTN o identificación fiscal |\n| billing_address | object | No | Dirección de facturación |\n| notes | string | No | Notas adicionales |"
+					}
+				},
+				{
+					"name": "List Customers",
+					"response": [],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customers?page=1&page_size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "store_id",
+									"value": "{{store_id}}",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "customer_type",
+									"value": "individual",
+									"disabled": true
+								},
+								{
+									"key": "is_active",
+									"value": "true",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista clientes con paginación y filtros. Requiere permiso sales:read_customer.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20) |\n| store_id | uuid | Filtrar por tienda |\n| search | string | Buscar por nombre o email |\n| customer_type | string | Filtrar por tipo: individual, business |\n| is_active | boolean | Filtrar por estado activo |"
+					}
+				},
+				{
+					"name": "Get Customer",
+					"response": [],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customers/{{customer_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers",
+								"{{customer_id}}"
+							]
+						},
+						"description": "Obtiene el detalle de un cliente. Requiere permiso sales:read_customer."
+					}
+				},
+				{
+					"name": "Update Customer",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"first_name\": \"María Elena\",\n    \"email\": \"maria.elena@ejemplo.com\",\n    \"phone\": \"+504 1122-3344\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/customers/{{customer_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers",
+								"{{customer_id}}"
+							]
+						},
+						"description": "Actualiza los datos de un cliente. Requiere permiso sales:update_customer. Todos los campos son opcionales."
+					}
+				},
+				{
+					"name": "Activate Customer",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customers/{{customer_id}}/activate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers",
+								"{{customer_id}}",
+								"activate"
+							]
+						},
+						"description": "Activa un cliente desactivado. Requiere permiso sales:update_customer."
+					}
+				},
+				{
+					"name": "Deactivate Customer",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/customers/{{customer_id}}/deactivate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers",
+								"{{customer_id}}",
+								"deactivate"
+							]
+						},
+						"description": "Desactiva un cliente. Requiere permiso sales:update_customer.\n\nNo se puede desactivar si tiene ventas pendientes."
+					}
+				}
+			]
+		},
+		{
+			"name": "Shifts",
+			"description": "Endpoints de gestión de turnos de cajero. Requieren autenticación.",
+			"item": [
+				{
+					"name": "Open Shift",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('shift_id', jsonData.id);",
+									"    pm.test('Created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"terminal_id\": \"{{terminal_id}}\",\n    \"opening_balance\": 500,\n    \"notes\": \"Turno de mañana\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/shifts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"shifts"
+							]
+						},
+						"description": "Abre un nuevo turno de cajero. Requiere permiso sales:manage_shift.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda |\n| terminal_id | uuid | Sí | ID de la terminal |\n| opening_balance | decimal | Sí | Balance de apertura en efectivo |\n| notes | string | No | Notas del turno |"
+					}
+				},
+				{
+					"name": "List Shifts",
+					"response": [],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/shifts?page=1&page_size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"shifts"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "store_id",
+									"value": "{{store_id}}",
+									"disabled": true
+								},
+								{
+									"key": "terminal_id",
+									"value": "{{terminal_id}}",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "open",
+									"disabled": true
+								},
+								{
+									"key": "date_from",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "date_to",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista turnos de cajero con paginación y filtros. Requiere permiso sales:read_shift.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20) |\n| store_id | uuid | Filtrar por tienda |\n| terminal_id | uuid | Filtrar por terminal |\n| cashier_id | uuid | Filtrar por cajero |\n| status | string | Filtrar por estado: open, closed |\n| date_from | string | Fecha desde (ISO 8601) |\n| date_to | string | Fecha hasta (ISO 8601) |"
+					}
+				},
+				{
+					"name": "Get Current Shift",
+					"response": [],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/shifts/current/{{terminal_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"shifts",
+								"current",
+								"{{terminal_id}}"
+							]
+						},
+						"description": "Obtiene el turno actualmente abierto de una terminal. Requiere permiso sales:read_shift.\n\nRetorna 404 si no hay turno abierto para la terminal."
+					}
+				},
+				{
+					"name": "Get Shift Report",
+					"response": [],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/shifts/{{shift_id}}/report",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"shifts",
+								"{{shift_id}}",
+								"report"
+							]
+						},
+						"description": "Obtiene el reporte completo de un turno incluyendo movimientos de efectivo, ventas y balances. Requiere permiso sales:read_shift."
+					}
+				},
+				{
+					"name": "Close Shift",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"closing_balance\": 1250,\n    \"closing_notes\": \"Cierre de turno de mañana\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/shifts/{{shift_id}}/close",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"shifts",
+								"{{shift_id}}",
+								"close"
+							]
+						},
+						"description": "Cierra un turno abierto. Requiere permiso sales:manage_shift.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| closing_balance | decimal | Sí | Balance de cierre en efectivo |\n| closing_notes | string | No | Notas del cierre |"
+					}
+				},
+				{
+					"name": "Cash In",
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 200,\n    \"reason\": \"Recarga de efectivo para cambio\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/shifts/{{shift_id}}/cash-in",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"shifts",
+								"{{shift_id}}",
+								"cash-in"
+							]
+						},
+						"description": "Registra una entrada de efectivo en el turno. Requiere permiso sales:manage_shift.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| amount | decimal | Sí | Monto de entrada |\n| reason | string | Sí | Motivo de la entrada |"
+					}
+				},
+				{
+					"name": "Cash Out",
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 100,\n    \"reason\": \"Pago de gastos menores\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/shifts/{{shift_id}}/cash-out",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"shifts",
+								"{{shift_id}}",
+								"cash-out"
+							]
+						},
+						"description": "Registra una salida de efectivo del turno. Requiere permiso sales:manage_shift.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| amount | decimal | Sí | Monto de salida |\n| reason | string | Sí | Motivo de la salida |"
+					}
+				}
+			]
+		},
+		{
+			"name": "POS Sales",
+			"description": "Endpoints de ventas POS (Point of Sale). Requieren autenticación.",
+			"item": [
+				{
+					"name": "Create Sale",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('sale_id', jsonData.id);",
+									"    pm.test('Created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"terminal_id\": \"{{terminal_id}}\",\n    \"shift_id\": \"{{shift_id}}\",\n    \"customer_id\": \"{{customer_id}}\",\n    \"notes\": \"Venta directa al mostrador\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales"
+							]
+						},
+						"description": "Crea una nueva venta POS en estado borrador. Requiere permiso sales:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda |\n| terminal_id | uuid | Sí | ID de la terminal |\n| shift_id | uuid | Sí | ID del turno activo |\n| customer_id | uuid | No | ID del cliente (venta con cliente) |\n| notes | string | No | Notas de la venta |"
+					}
+				},
+				{
+					"name": "List Sales",
+					"response": [],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales?page=1&page_size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "store_id",
+									"value": "{{store_id}}",
+									"disabled": true
+								},
+								{
+									"key": "terminal_id",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "customer_id",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "draft",
+									"disabled": true
+								},
+								{
+									"key": "date_from",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "date_to",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista ventas con paginación y filtros. Requiere permiso sales:read.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20) |\n| store_id | uuid | Filtrar por tienda |\n| terminal_id | uuid | Filtrar por terminal |\n| customer_id | uuid | Filtrar por cliente |\n| cashier_id | uuid | Filtrar por cajero |\n| shift_id | uuid | Filtrar por turno |\n| sale_type | string | Filtrar por tipo: pos, ecommerce |\n| status | string | Estado: draft, completed, voided, returned |\n| date_from | string | Fecha desde (ISO 8601) |\n| date_to | string | Fecha hasta (ISO 8601) |\n| min_total | decimal | Total mínimo |\n| max_total | decimal | Total máximo |\n| search | string | Búsqueda general |"
+					}
+				},
+				{
+					"name": "Get Sale",
+					"response": [],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales/{{sale_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales",
+								"{{sale_id}}"
+							]
+						},
+						"description": "Obtiene el detalle de una venta incluyendo items, pagos y descuentos. Requiere permiso sales:read."
+					}
+				},
+				{
+					"name": "Add Sale Item",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.items && jsonData.items.length > 0) {",
+									"        pm.collectionVariables.set('sale_item_id', jsonData.items[jsonData.items.length - 1].id);",
+									"    }",
+									"    pm.test('Item added successfully', function() {",
+									"        pm.expect(jsonData.items).to.have.lengthOf.at.least(1);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": \"{{product_id}}\",\n    \"variant_id\": null,\n    \"quantity\": 2,\n    \"unit_price\": 99.99,\n    \"sku\": \"PROD-001\",\n    \"description\": \"Producto de Prueba\",\n    \"unit_cost\": 50,\n    \"tax_rate\": 0.15,\n    \"unit_of_measure\": \"unit\",\n    \"notes\": null\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales/{{sale_id}}/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales",
+								"{{sale_id}}",
+								"items"
+							]
+						},
+						"description": "Agrega un item a una venta en borrador. Requiere permiso sales:create.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| product_id | uuid | Sí | ID del producto |\n| variant_id | uuid | No | ID de la variante |\n| quantity | decimal | Sí | Cantidad |\n| unit_price | decimal | No | Precio unitario (override) |\n| sku | string | Sí | SKU del producto |\n| description | string | Sí | Descripción del producto |\n| unit_cost | decimal | Sí | Costo unitario |\n| tax_rate | decimal | Sí | Tasa de impuesto |\n| unit_of_measure | string | Sí | Unidad: unit, kg, lb, liter, oz |\n| notes | string | No | Notas del item |"
+					}
+				},
+				{
+					"name": "Update Sale Item",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"quantity\": 3,\n    \"unit_price\": 89.99,\n    \"notes\": \"Cantidad ajustada\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales/{{sale_id}}/items/{{sale_item_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales",
+								"{{sale_id}}",
+								"items",
+								"{{sale_item_id}}"
+							]
+						},
+						"description": "Actualiza un item de la venta. Requiere permiso sales:update. Todos los campos son opcionales.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| quantity | decimal | No | Nueva cantidad |\n| unit_price | decimal | No | Nuevo precio unitario |\n| notes | string | No | Notas del item |"
+					}
+				},
+				{
+					"name": "Remove Sale Item",
+					"response": [],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales/{{sale_id}}/items/{{sale_item_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales",
+								"{{sale_id}}",
+								"items",
+								"{{sale_item_id}}"
+							]
+						},
+						"description": "Elimina un item de la venta. Requiere permiso sales:update.\n\nLa venta debe estar en estado 'draft'."
+					}
+				},
+				{
+					"name": "Apply Discount",
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"item_id\": null,\n    \"discount_type\": \"percentage\",\n    \"discount_value\": 10\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales/{{sale_id}}/discount",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales",
+								"{{sale_id}}",
+								"discount"
+							]
+						},
+						"description": "Aplica un descuento a la venta o a un item específico. Requiere permiso sales:apply_discount.\n\nSi item_id es null, el descuento se aplica a toda la venta.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| item_id | uuid | No | ID del item (null = descuento general) |\n| discount_type | string | Sí | percentage o fixed |\n| discount_value | decimal | Sí | Valor del descuento |"
+					}
+				},
+				{
+					"name": "Process Payment",
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"payment_method\": \"cash\",\n    \"amount\": 200,\n    \"reference\": null,\n    \"card_last_four\": null,\n    \"card_brand\": null,\n    \"amount_tendered\": 200,\n    \"notes\": null\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales/{{sale_id}}/payment",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales",
+								"{{sale_id}}",
+								"payment"
+							]
+						},
+						"description": "Procesa un pago para la venta. Requiere permiso sales:process_payment.\n\nSe pueden agregar múltiples pagos hasta cubrir el total.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| payment_method | string | Sí | cash, card, transfer, etc. |\n| amount | decimal | Sí | Monto del pago |\n| reference | string | No | Referencia de pago |\n| card_last_four | string | No | Últimos 4 dígitos (para tarjetas) |\n| card_brand | string | No | Marca: visa, mastercard, etc. |\n| amount_tendered | decimal | No | Monto entregado (para efectivo) |\n| notes | string | No | Notas del pago |"
+					}
+				},
+				{
+					"name": "Complete Sale",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"invoice_number\": \"INV-001-001\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales/{{sale_id}}/complete",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales",
+								"{{sale_id}}",
+								"complete"
+							]
+						},
+						"description": "Completa una venta que tiene pagos suficientes. Requiere permiso sales:complete.\n\nEl número de factura se obtiene previamente del endpoint CAI next-number.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| invoice_number | string | No | Número de factura CAI |"
+					}
+				},
+				{
+					"name": "Void Sale",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Cliente solicita anulación\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales/{{sale_id}}/void",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales",
+								"{{sale_id}}",
+								"void"
+							]
+						},
+						"description": "Anula una venta. Requiere permiso sales:void.\n\nEsta operación cancela las reservas de inventario asociadas.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| reason | string | Sí | Motivo de la anulación |"
+					}
+				}
+			]
+		},
+		{
+			"name": "Carts",
+			"description": "Endpoints de carritos de compra (E-commerce). Requieren autenticación.",
+			"item": [
+				{
+					"name": "Create Cart",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('cart_id', jsonData.id);",
+									"    pm.test('Created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"customer_id\": \"{{customer_id}}\",\n    \"session_id\": \"session-abc-123\",\n    \"currency\": \"HNL\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/carts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"carts"
+							]
+						},
+						"description": "Crea un nuevo carrito de e-commerce. Requiere permiso sales:manage_cart.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | uuid | Sí | ID de la tienda |\n| customer_id | uuid | No | ID del cliente |\n| session_id | string | No | ID de sesión del navegador |\n| currency | string | Sí | Moneda del carrito (ej: HNL) |"
+					}
+				},
+				{
+					"name": "Get Cart",
+					"response": [],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/carts/{{cart_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"carts",
+								"{{cart_id}}"
+							]
+						},
+						"description": "Obtiene el detalle de un carrito incluyendo todos sus items. Requiere permiso sales:manage_cart."
+					}
+				},
+				{
+					"name": "Add Cart Item",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.items && jsonData.items.length > 0) {",
+									"        pm.collectionVariables.set('cart_item_id', jsonData.items[jsonData.items.length - 1].id);",
+									"    }",
+									"    pm.test('Item added successfully', function() {",
+									"        pm.expect(jsonData.items).to.have.lengthOf.at.least(1);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": \"{{product_id}}\",\n    \"variant_id\": null,\n    \"sku\": \"PROD-001\",\n    \"name\": \"Producto de Prueba\",\n    \"quantity\": 2,\n    \"unit_of_measure\": \"unit\",\n    \"unit_price\": 99.99,\n    \"tax_rate\": 0.15\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/carts/{{cart_id}}/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"carts",
+								"{{cart_id}}",
+								"items"
+							]
+						},
+						"description": "Agrega un item al carrito. Requiere permiso sales:manage_cart.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| product_id | uuid | Sí | ID del producto |\n| variant_id | uuid | No | ID de la variante |\n| sku | string | Sí | SKU del producto |\n| name | string | Sí | Nombre del producto |\n| quantity | decimal | Sí | Cantidad |\n| unit_of_measure | string | Sí | Unidad: unit, kg, lb, liter, oz |\n| unit_price | decimal | Sí | Precio unitario |\n| tax_rate | decimal | Sí | Tasa de impuesto |"
+					}
+				},
+				{
+					"name": "Update Cart Item",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"quantity\": 5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/carts/{{cart_id}}/items/{{cart_item_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"carts",
+								"{{cart_id}}",
+								"items",
+								"{{cart_item_id}}"
+							]
+						},
+						"description": "Actualiza la cantidad de un item en el carrito. Requiere permiso sales:manage_cart.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| quantity | decimal | Sí | Nueva cantidad |"
+					}
+				},
+				{
+					"name": "Remove Cart Item",
+					"response": [],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/carts/{{cart_id}}/items/{{cart_item_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"carts",
+								"{{cart_id}}",
+								"items",
+								"{{cart_item_id}}"
+							]
+						},
+						"description": "Elimina un item específico del carrito. Requiere permiso sales:manage_cart."
+					}
+				},
+				{
+					"name": "Clear Cart",
+					"response": [],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/carts/{{cart_id}}/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"carts",
+								"{{cart_id}}",
+								"items"
+							]
+						},
+						"description": "Elimina todos los items del carrito. Requiere permiso sales:manage_cart."
+					}
+				}
+			]
+		},
+		{
+			"name": "Credit Notes",
+			"description": "Endpoints de notas de crédito y devoluciones. Requieren autenticación.",
+			"item": [
+				{
+					"name": "Create Credit Note",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('credit_note_id', jsonData.id);",
+									"    pm.test('Created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"original_sale_id\": \"{{sale_id}}\",\n    \"store_id\": \"{{store_id}}\",\n    \"original_invoice_number\": \"INV-001-001\",\n    \"return_type\": \"full\",\n    \"return_reason\": \"defective\",\n    \"reason_details\": \"El producto llegó dañado\",\n    \"notes\": \"Devolución solicitada por cliente\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/credit-notes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"credit-notes"
+							]
+						},
+						"description": "Crea una nota de crédito (devolución) vinculada a una venta original. Requiere permiso sales:manage_credit_note.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| original_sale_id | uuid | Sí | ID de la venta original |\n| store_id | uuid | Sí | ID de la tienda |\n| original_invoice_number | string | Sí | Número de factura original |\n| return_type | string | Sí | full o partial |\n| return_reason | string | Sí | defective, wrong_item, changed_mind, etc. |\n| reason_details | string | No | Detalle adicional del motivo |\n| notes | string | No | Notas generales |"
+					}
+				},
+				{
+					"name": "List Credit Notes",
+					"response": [],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/credit-notes?page=1&page_size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"credit-notes"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "store_id",
+									"value": "{{store_id}}",
+									"disabled": true
+								},
+								{
+									"key": "original_sale_id",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "draft",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista notas de crédito con paginación y filtros. Requiere permiso sales:read_credit_note.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Número de página (default: 1) |\n| page_size | number | Items por página (default: 20) |\n| store_id | uuid | Filtrar por tienda |\n| original_sale_id | uuid | Filtrar por venta original |\n| status | string | Estado: draft, pending, approved, applied, cancelled |\n| search | string | Búsqueda general |"
+					}
+				},
+				{
+					"name": "Get Credit Note",
+					"response": [],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/credit-notes/{{credit_note_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"credit-notes",
+								"{{credit_note_id}}"
+							]
+						},
+						"description": "Obtiene el detalle de una nota de crédito incluyendo sus items. Requiere permiso sales:read_credit_note."
+					}
+				},
+				{
+					"name": "Add Credit Note Item",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.items && jsonData.items.length > 0) {",
+									"        pm.collectionVariables.set('credit_note_item_id', jsonData.items[jsonData.items.length - 1].id);",
+									"    }",
+									"    pm.test('Item added successfully', function() {",
+									"        pm.expect(jsonData.items).to.have.lengthOf.at.least(1);",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": [],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"original_sale_item_id\": \"{{sale_item_id}}\",\n    \"product_id\": \"{{product_id}}\",\n    \"variant_id\": null,\n    \"sku\": \"PROD-001\",\n    \"description\": \"Producto de Prueba\",\n    \"return_quantity\": 1,\n    \"unit_of_measure\": \"unit\",\n    \"unit_price\": 99.99,\n    \"tax_rate\": 0.15\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/credit-notes/{{credit_note_id}}/items",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"credit-notes",
+								"{{credit_note_id}}",
+								"items"
+							]
+						},
+						"description": "Agrega un item a la nota de crédito. Requiere permiso sales:manage_credit_note.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| original_sale_item_id | uuid | Sí | ID del item de la venta original |\n| product_id | uuid | Sí | ID del producto |\n| variant_id | uuid | No | ID de la variante |\n| sku | string | Sí | SKU del producto |\n| description | string | Sí | Descripción |\n| return_quantity | decimal | Sí | Cantidad a devolver |\n| unit_of_measure | string | Sí | Unidad: unit, kg, lb, liter, oz |\n| unit_price | decimal | Sí | Precio unitario |\n| tax_rate | decimal | Sí | Tasa de impuesto |"
+					}
+				},
+				{
+					"name": "Remove Credit Note Item",
+					"response": [],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/credit-notes/{{credit_note_id}}/items/{{credit_note_item_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"credit-notes",
+								"{{credit_note_id}}",
+								"items",
+								"{{credit_note_item_id}}"
+							]
+						},
+						"description": "Elimina un item de la nota de crédito. Requiere permiso sales:manage_credit_note.\n\nLa nota debe estar en estado 'draft'."
+					}
+				},
+				{
+					"name": "Submit Credit Note",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/credit-notes/{{credit_note_id}}/submit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"credit-notes",
+								"{{credit_note_id}}",
+								"submit"
+							]
+						},
+						"description": "Envía la nota de crédito para aprobación. Requiere permiso sales:manage_credit_note.\n\nLa nota debe estar en estado 'draft' y tener al menos un item."
+					}
+				},
+				{
+					"name": "Approve Credit Note",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/credit-notes/{{credit_note_id}}/approve",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"credit-notes",
+								"{{credit_note_id}}",
+								"approve"
+							]
+						},
+						"description": "Aprueba una nota de crédito pendiente. Requiere permiso sales:approve_credit_note.\n\nLa nota debe estar en estado 'pending'."
+					}
+				},
+				{
+					"name": "Apply Credit Note",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refund_method\": \"cash\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/credit-notes/{{credit_note_id}}/apply",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"credit-notes",
+								"{{credit_note_id}}",
+								"apply"
+							]
+						},
+						"description": "Aplica la nota de crédito y procesa el reembolso. Requiere permiso sales:manage_credit_note.\n\nLa nota debe estar en estado 'approved'.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| refund_method | string | Sí | Método de reembolso: cash, card, transfer (default: cash) |"
+					}
+				},
+				{
+					"name": "Cancel Credit Note",
+					"response": [],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Devolución no es válida\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/credit-notes/{{credit_note_id}}/cancel",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"credit-notes",
+								"{{credit_note_id}}",
+								"cancel"
+							]
+						},
+						"description": "Cancela una nota de crédito. Requiere permiso sales:manage_credit_note.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| reason | string | Sí | Motivo de la cancelación |"
+					}
+				}
+			]
 		}
 	]
 }
