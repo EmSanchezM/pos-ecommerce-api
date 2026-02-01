@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::application::dtos::{ProcessPaymentCommand, SaleDetailResponse};
 use crate::domain::entities::Payment;
 use crate::domain::repositories::{SaleRepository, ShiftRepository};
-use crate::domain::value_objects::{PaymentId, PaymentMethod, SaleId};
+use crate::domain::value_objects::{PaymentMethod, SaleId};
 use crate::SalesError;
 
 /// Use case for processing a payment
@@ -33,46 +33,30 @@ impl ProcessPaymentUseCase {
 
         let mut sale = self
             .sale_repo
-            .find_by_id_with_items(sale_id)
+            .find_by_id_with_details(sale_id)
             .await?
             .ok_or(SalesError::SaleNotFound(cmd.sale_id))?;
 
-        // Verify sale is in draft status
-        if !sale.status().is_draft() {
+        // Verify sale is editable
+        if !sale.is_editable() {
             return Err(SalesError::SaleNotEditable);
         }
 
-        // Verify the amount doesn't exceed amount due
-        if cmd.amount > sale.amount_due() {
-            return Err(SalesError::PaymentExceedsBalance);
-        }
-
-        // Calculate change for cash payments
-        let (amount_tendered, change_given) = if payment_method == PaymentMethod::Cash {
+        // Create the payment based on method
+        let mut payment = if payment_method == PaymentMethod::Cash {
             let tendered = cmd.amount_tendered.unwrap_or(cmd.amount);
-            if tendered < cmd.amount {
-                return Err(SalesError::InsufficientAmountTendered);
-            }
-            let change = tendered - cmd.amount;
-            (Some(tendered), Some(change))
+            Payment::create_cash(sale_id, cmd.amount, sale.currency().clone(), tendered)?
         } else {
-            (None, None)
+            Payment::create(sale_id, payment_method, cmd.amount, sale.currency().clone())?
         };
 
-        // Create the payment
-        let payment = Payment::create(
-            PaymentId::new(),
-            sale_id,
-            payment_method,
-            cmd.amount,
-            sale.currency(),
-            cmd.reference,
-            cmd.card_last_four,
-            cmd.card_brand,
-            amount_tendered,
-            change_given,
-            cmd.notes,
-        );
+        // Set optional fields
+        if let Some(ref reference) = cmd.reference {
+            payment.set_reference_number(Some(reference.clone()));
+        }
+        if let Some(ref notes) = cmd.notes {
+            payment.set_notes(Some(notes.clone()));
+        }
 
         // Add payment to sale
         sale.add_payment(payment.clone())?;

@@ -30,7 +30,7 @@ impl OpenShiftUseCase {
         // Check if there's already an open shift for this terminal
         if self
             .shift_repo
-            .find_open_shift(terminal_id)
+            .find_open_by_terminal(terminal_id)
             .await?
             .is_some()
         {
@@ -40,7 +40,7 @@ impl OpenShiftUseCase {
         // Check if the cashier already has an open shift elsewhere
         if self
             .shift_repo
-            .find_open_shift_by_cashier(cashier_id)
+            .find_open_by_cashier(cashier_id)
             .await?
             .is_some()
         {

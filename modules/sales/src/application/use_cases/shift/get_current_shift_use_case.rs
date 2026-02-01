@@ -23,7 +23,7 @@ impl GetCurrentShiftUseCase {
 
         let shift = self
             .shift_repo
-            .find_open_shift(terminal_id)
+            .find_open_by_terminal(terminal_id)
             .await?
             .ok_or(SalesError::NoOpenShift)?;
 

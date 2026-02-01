@@ -25,32 +25,46 @@ impl ApplyDiscountUseCase {
 
         let mut sale = self
             .sale_repo
-            .find_by_id_with_items(sale_id)
+            .find_by_id_with_details(sale_id)
             .await?
             .ok_or(SalesError::SaleNotFound(cmd.sale_id))?;
 
-        // Verify sale is in draft status
-        if !sale.status().is_draft() {
+        // Verify sale is editable
+        if !sale.is_editable() {
             return Err(SalesError::SaleNotEditable);
         }
 
         if let Some(item_uuid) = cmd.item_id {
             // Apply discount to specific item
             let item_id = SaleItemId::from_uuid(item_uuid);
-            sale.apply_item_discount(item_id, discount_type, cmd.discount_value)?;
 
-            // Get the updated item
-            let updated_item = sale
+            let sale_item = sale
+                .items_mut()
+                .iter_mut()
+                .find(|i| i.id() == item_id)
+                .ok_or(SalesError::SaleItemNotFound(item_uuid))?;
+
+            match discount_type {
+                DiscountType::Percentage => sale_item.apply_percentage_discount(cmd.discount_value)?,
+                DiscountType::Fixed => sale_item.apply_fixed_discount(cmd.discount_value)?,
+            }
+
+            // Recalculate sale totals after item discount
+            sale.recalculate_totals();
+
+            // Save updated item
+            let item_to_save = sale
                 .items()
                 .iter()
                 .find(|i| i.id() == item_id)
                 .ok_or(SalesError::SaleItemNotFound(item_uuid))?;
-
-            // Save the updated item
-            self.sale_repo.update_item(updated_item).await?;
+            self.sale_repo.update_item(item_to_save).await?;
         } else {
             // Apply discount to entire sale
-            sale.apply_sale_discount(discount_type, cmd.discount_value)?;
+            match discount_type {
+                DiscountType::Percentage => sale.apply_percentage_discount(cmd.discount_value)?,
+                DiscountType::Fixed => sale.apply_fixed_discount(cmd.discount_value)?,
+            }
         }
 
         // Update sale

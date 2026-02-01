@@ -30,29 +30,43 @@ impl UpdateSaleItemUseCase {
         let sale_uuid = item.sale_id().into_uuid();
         let mut sale = self
             .sale_repo
-            .find_by_id_with_items(item.sale_id())
+            .find_by_id_with_details(item.sale_id())
             .await?
             .ok_or(SalesError::SaleNotFound(sale_uuid))?;
 
-        // Verify sale is in draft status
-        if !sale.status().is_draft() {
+        // Verify sale is editable
+        if !sale.is_editable() {
             return Err(SalesError::SaleNotEditable);
         }
 
-        // Update the item in the sale
-        sale.update_item(item_id, cmd.quantity, cmd.unit_price, cmd.notes)?;
+        // Find the item in the sale and update it
+        let sale_item = sale
+            .items_mut()
+            .iter_mut()
+            .find(|i| i.id() == item_id)
+            .ok_or(SalesError::SaleItemNotFound(cmd.item_id))?;
 
-        // Get the updated item
-        let updated_item = sale
+        if let Some(qty) = cmd.quantity {
+            sale_item.set_quantity(qty)?;
+        }
+        if let Some(price) = cmd.unit_price {
+            sale_item.set_unit_price(price)?;
+        }
+        if cmd.notes.is_some() {
+            sale_item.set_notes(cmd.notes);
+        }
+
+        // Recalculate sale totals
+        sale.recalculate_totals();
+
+        // Find the updated item for saving
+        let item_to_save = sale
             .items()
             .iter()
             .find(|i| i.id() == item_id)
             .ok_or(SalesError::SaleItemNotFound(cmd.item_id))?;
 
-        // Save the updated item
-        self.sale_repo.update_item(updated_item).await?;
-
-        // Update sale totals
+        self.sale_repo.update_item(item_to_save).await?;
         self.sale_repo.update(&sale).await?;
 
         Ok(SaleDetailResponse::from(sale))

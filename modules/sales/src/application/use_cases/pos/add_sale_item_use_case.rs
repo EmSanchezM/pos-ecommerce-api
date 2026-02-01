@@ -35,16 +35,16 @@ impl AddSaleItemUseCase {
 
         let mut sale = self
             .sale_repo
-            .find_by_id_with_items(sale_id)
+            .find_by_id_with_details(sale_id)
             .await?
             .ok_or(SalesError::SaleNotFound(cmd.sale_id))?;
 
-        // Verify sale is in draft status
-        if !sale.status().is_draft() {
+        // Verify sale is editable
+        if !sale.is_editable() {
             return Err(SalesError::SaleNotEditable);
         }
 
-        let line_number = sale.next_line_number();
+        let line_number = sale.item_count() as i32 + 1;
         let final_price = cmd.unit_price.unwrap_or(unit_price);
 
         // Create the sale item
