@@ -10,8 +10,9 @@ mod routes;
 mod state;
 
 use routes::{
-    auth_router, goods_receipts_router, inventory_router, products_router, purchase_orders_router,
-    recipes_router, reports_router, store_router, store_terminals_router, terminals_router,
+    auth_router, cart_router, credit_notes_router, customers_router, goods_receipts_router,
+    inventory_router, pos_sales_router, products_router, purchase_orders_router, recipes_router,
+    reports_router, shifts_router, store_router, store_terminals_router, terminals_router,
     vendors_router,
 };
 use state::AppState;
@@ -53,6 +54,11 @@ async fn main() {
         .nest("/api/v1/vendors", vendors_router(app_state.clone()))
         .nest("/api/v1/purchase-orders", purchase_orders_router(app_state.clone()))
         .nest("/api/v1/goods-receipts", goods_receipts_router(app_state.clone()))
+        .nest("/api/v1/customers", customers_router(app_state.clone()))
+        .nest("/api/v1/shifts", shifts_router(app_state.clone()))
+        .nest("/api/v1/sales", pos_sales_router(app_state.clone()))
+        .nest("/api/v1/carts", cart_router(app_state.clone()))
+        .nest("/api/v1/credit-notes", credit_notes_router(app_state.clone()))
         .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
