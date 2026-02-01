@@ -18,7 +18,7 @@ use uuid::Uuid;
 use pos_core::{
     AssignCaiCommand, AssignCaiUseCase, CaiHistoryItemResponse, CaiStatusResponse,
     GetCaiStatusUseCase, GetNextInvoiceNumberUseCase, GetTerminalDetailUseCase,
-    NextInvoiceNumberResponse, TerminalId,
+    ListResponse, NextInvoiceNumberResponse, TerminalId,
 };
 
 use crate::error::AppError;
@@ -237,8 +237,7 @@ pub async fn get_cai_history_handler(
     State(state): State<AppState>,
     CurrentUser(_ctx): CurrentUser,
     Path(terminal_id): Path<Uuid>,
-) -> Result<Json<Vec<CaiHistoryItemResponse>>, Response> {
-    // We use GetTerminalDetailUseCase which already fetches CAI history
+) -> Result<Json<ListResponse<CaiHistoryItemResponse>>, Response> {
     let use_case = GetTerminalDetailUseCase::new(state.terminal_repo());
 
     let terminal_id = TerminalId::from_uuid(terminal_id);
@@ -247,5 +246,5 @@ pub async fn get_cai_history_handler(
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 
-    Ok(Json(terminal_detail.cai_history))
+    Ok(Json(ListResponse::new(terminal_detail.cai_history)))
 }
