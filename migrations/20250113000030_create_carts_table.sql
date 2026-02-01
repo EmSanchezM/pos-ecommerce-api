@@ -24,7 +24,7 @@ CREATE INDEX idx_carts_session_id ON carts(session_id);
 CREATE INDEX idx_carts_expires_at ON carts(expires_at);
 CREATE INDEX idx_carts_converted ON carts(converted_to_sale);
 
--- Partial index for active carts
+-- Partial index for non-converted carts
 CREATE INDEX idx_carts_active
-    ON carts(store_id, customer_id)
-    WHERE converted_to_sale = FALSE AND expires_at > NOW();
+    ON carts(store_id, customer_id, expires_at)
+    WHERE converted_to_sale = FALSE;
