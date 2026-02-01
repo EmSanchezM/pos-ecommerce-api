@@ -39,7 +39,9 @@
 //!      ↘ Cancelled  ↘ Cancelled
 //! ```
 
+pub mod application;
 pub mod domain;
+pub mod infrastructure;
 
 mod error;
 
@@ -107,3 +109,82 @@ pub use domain::repositories::SaleFilter;
 pub use domain::repositories::SaleRepository;
 pub use domain::repositories::ShiftFilter;
 pub use domain::repositories::ShiftRepository;
+
+// -----------------------------------------------------------------------------
+// Infrastructure Layer - PostgreSQL Repository Implementations
+// -----------------------------------------------------------------------------
+
+pub use infrastructure::persistence::PgCartRepository;
+pub use infrastructure::persistence::PgCreditNoteRepository;
+pub use infrastructure::persistence::PgCustomerRepository;
+pub use infrastructure::persistence::PgSaleRepository;
+pub use infrastructure::persistence::PgShiftRepository;
+
+// -----------------------------------------------------------------------------
+// Application Layer - DTOs
+// -----------------------------------------------------------------------------
+
+// Customer DTOs
+pub use application::dtos::AddressInput;
+pub use application::dtos::AddressResponse;
+pub use application::dtos::CreateCustomerCommand;
+pub use application::dtos::CustomerListResponse;
+pub use application::dtos::CustomerResponse;
+pub use application::dtos::ListCustomersQuery;
+pub use application::dtos::UpdateCustomerCommand;
+
+// Shift DTOs
+pub use application::dtos::CashMovementCommand;
+pub use application::dtos::CloseShiftCommand;
+pub use application::dtos::ListShiftsQuery;
+pub use application::dtos::OpenShiftCommand;
+pub use application::dtos::PaymentBreakdownItem;
+pub use application::dtos::SalesBreakdown;
+pub use application::dtos::ShiftListResponse;
+pub use application::dtos::ShiftReportResponse;
+pub use application::dtos::ShiftResponse;
+
+// Sale DTOs
+pub use application::dtos::AddSaleItemCommand;
+pub use application::dtos::ApplyDiscountCommand;
+pub use application::dtos::CreatePosSaleCommand;
+pub use application::dtos::ListSalesQuery;
+pub use application::dtos::PaymentResponse;
+pub use application::dtos::ProcessPaymentCommand;
+pub use application::dtos::SaleDetailResponse;
+pub use application::dtos::SaleItemResponse;
+pub use application::dtos::SaleListResponse;
+pub use application::dtos::SaleResponse;
+pub use application::dtos::UpdateSaleItemCommand;
+pub use application::dtos::VoidSaleCommand;
+
+// -----------------------------------------------------------------------------
+// Application Layer - Use Cases
+// -----------------------------------------------------------------------------
+
+// Customer Use Cases
+pub use application::use_cases::CreateCustomerUseCase;
+pub use application::use_cases::GetCustomerUseCase;
+pub use application::use_cases::ListCustomersUseCase;
+pub use application::use_cases::ToggleCustomerStatusUseCase;
+pub use application::use_cases::UpdateCustomerUseCase;
+
+// Shift Use Cases
+pub use application::use_cases::CloseShiftUseCase;
+pub use application::use_cases::GetCurrentShiftUseCase;
+pub use application::use_cases::GetShiftReportUseCase;
+pub use application::use_cases::ListShiftsUseCase;
+pub use application::use_cases::OpenShiftUseCase;
+pub use application::use_cases::RecordCashMovementUseCase;
+
+// POS Sale Use Cases
+pub use application::use_cases::AddSaleItemUseCase;
+pub use application::use_cases::ApplyDiscountUseCase;
+pub use application::use_cases::CompleteSaleUseCase;
+pub use application::use_cases::CreatePosSaleUseCase;
+pub use application::use_cases::GetSaleUseCase;
+pub use application::use_cases::ListSalesUseCase;
+pub use application::use_cases::ProcessPaymentUseCase;
+pub use application::use_cases::RemoveSaleItemUseCase;
+pub use application::use_cases::UpdateSaleItemUseCase;
+pub use application::use_cases::VoidSaleUseCase;
