@@ -45,7 +45,11 @@ impl From<Customer> for CustomerResponse {
             email: c.email().map(String::from),
             phone: c.phone().map(String::from),
             tax_id: c.tax_id().map(String::from),
-            billing_address: c.billing_address().map(AddressResponse::from),
+            billing_address: if c.billing_address().is_empty() {
+                None
+            } else {
+                Some(AddressResponse::from(c.billing_address()))
+            },
             is_active: c.is_active(),
             total_purchases: c.total_purchases(),
             purchase_count: c.purchase_count(),
@@ -60,36 +64,23 @@ impl From<Customer> for CustomerResponse {
 /// Response for an address
 #[derive(Debug, Serialize)]
 pub struct AddressResponse {
-    pub line1: String,
+    pub line1: Option<String>,
     pub line2: Option<String>,
-    pub city: String,
+    pub city: Option<String>,
     pub state: Option<String>,
     pub postal_code: Option<String>,
-    pub country: String,
-}
-
-impl From<Address> for AddressResponse {
-    fn from(a: Address) -> Self {
-        Self {
-            line1: a.line1().to_string(),
-            line2: a.line2().map(String::from),
-            city: a.city().to_string(),
-            state: a.state().map(String::from),
-            postal_code: a.postal_code().map(String::from),
-            country: a.country().to_string(),
-        }
-    }
+    pub country: Option<String>,
 }
 
 impl From<&Address> for AddressResponse {
     fn from(a: &Address) -> Self {
         Self {
-            line1: a.line1().to_string(),
-            line2: a.line2().map(String::from),
-            city: a.city().to_string(),
-            state: a.state().map(String::from),
-            postal_code: a.postal_code().map(String::from),
-            country: a.country().to_string(),
+            line1: a.line1.clone(),
+            line2: a.line2.clone(),
+            city: a.city.clone(),
+            state: a.state.clone(),
+            postal_code: a.postal_code.clone(),
+            country: a.country.clone(),
         }
     }
 }
