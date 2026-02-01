@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::application::dtos::responses::StockResponse;
+use crate::application::dtos::responses::{ListResponse, StockResponse};
 use crate::domain::repositories::{InventoryStockRepository, ProductRepository};
 use crate::domain::value_objects::ProductId;
 use crate::InventoryError;
@@ -36,14 +36,14 @@ where
     /// * `product_id` - The UUID of the product
     ///
     /// # Returns
-    /// List of stock records for the product across all stores
+    /// ListResponse containing stock records for the product across all stores
     ///
     /// # Errors
     /// * `InventoryError::ProductNotFound` - If the product doesn't exist
     pub async fn execute(
         &self,
         product_id: uuid::Uuid,
-    ) -> Result<Vec<StockResponse>, InventoryError> {
+    ) -> Result<ListResponse<StockResponse>, InventoryError> {
         let product_id_vo = ProductId::from_uuid(product_id);
 
         // Validate product exists
@@ -78,6 +78,6 @@ where
             })
             .collect();
 
-        Ok(stock_responses)
+        Ok(ListResponse::new(stock_responses))
     }
 }
