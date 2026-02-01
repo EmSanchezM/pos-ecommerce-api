@@ -13,6 +13,7 @@ use inventory::{
 };
 use pos_core::PgTerminalRepository;
 use purchasing::{PgGoodsReceiptRepository, PgPurchaseOrderRepository, PgVendorRepository};
+use sales::{PgCartRepository, PgCreditNoteRepository, PgCustomerRepository, PgSaleRepository, PgShiftRepository};
 use sqlx::PgPool;
 
 /// Application state shared across all HTTP handlers.
@@ -65,6 +66,19 @@ pub struct AppState {
     purchase_order_repo: Arc<PgPurchaseOrderRepository>,
     /// Goods receipt repository for goods receipt management
     goods_receipt_repo: Arc<PgGoodsReceiptRepository>,
+    // -------------------------------------------------------------------------
+    // Sales repositories
+    // -------------------------------------------------------------------------
+    /// Customer repository for customer management
+    customer_repo: Arc<PgCustomerRepository>,
+    /// Sale repository for sale transaction operations
+    sale_repo: Arc<PgSaleRepository>,
+    /// Shift repository for cashier shift management
+    shift_repo: Arc<PgShiftRepository>,
+    /// Cart repository for e-commerce cart management
+    cart_repo: Arc<PgCartRepository>,
+    /// Credit note repository for returns management
+    credit_note_repo: Arc<PgCreditNoteRepository>,
 }
 
 impl AppState {
@@ -106,6 +120,11 @@ impl AppState {
         vendor_repo: Arc<PgVendorRepository>,
         purchase_order_repo: Arc<PgPurchaseOrderRepository>,
         goods_receipt_repo: Arc<PgGoodsReceiptRepository>,
+        customer_repo: Arc<PgCustomerRepository>,
+        sale_repo: Arc<PgSaleRepository>,
+        shift_repo: Arc<PgShiftRepository>,
+        cart_repo: Arc<PgCartRepository>,
+        credit_note_repo: Arc<PgCreditNoteRepository>,
     ) -> Self {
         Self {
             user_repo,
@@ -124,6 +143,11 @@ impl AppState {
             vendor_repo,
             purchase_order_repo,
             goods_receipt_repo,
+            customer_repo,
+            sale_repo,
+            shift_repo,
+            cart_repo,
+            credit_note_repo,
         }
     }
 
@@ -162,6 +186,13 @@ impl AppState {
         let purchase_order_repo = Arc::new(PgPurchaseOrderRepository::new((*pool_arc).clone()));
         let goods_receipt_repo = Arc::new(PgGoodsReceiptRepository::new((*pool_arc).clone()));
 
+        // Sales repositories
+        let customer_repo = Arc::new(PgCustomerRepository::new((*pool_arc).clone()));
+        let sale_repo = Arc::new(PgSaleRepository::new((*pool_arc).clone()));
+        let shift_repo = Arc::new(PgShiftRepository::new((*pool_arc).clone()));
+        let cart_repo = Arc::new(PgCartRepository::new((*pool_arc).clone()));
+        let credit_note_repo = Arc::new(PgCreditNoteRepository::new((*pool_arc).clone()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -182,6 +213,11 @@ impl AppState {
             vendor_repo,
             purchase_order_repo,
             goods_receipt_repo,
+            customer_repo,
+            sale_repo,
+            shift_repo,
+            cart_repo,
+            credit_note_repo,
         }
     }
 
@@ -271,5 +307,34 @@ impl AppState {
     /// Returns a reference to the goods receipt repository.
     pub fn goods_receipt_repo(&self) -> Arc<PgGoodsReceiptRepository> {
         self.goods_receipt_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Sales repository accessors
+    // -------------------------------------------------------------------------
+
+    /// Returns a reference to the customer repository.
+    pub fn customer_repo(&self) -> Arc<PgCustomerRepository> {
+        self.customer_repo.clone()
+    }
+
+    /// Returns a reference to the sale repository.
+    pub fn sale_repo(&self) -> Arc<PgSaleRepository> {
+        self.sale_repo.clone()
+    }
+
+    /// Returns a reference to the shift repository.
+    pub fn shift_repo(&self) -> Arc<PgShiftRepository> {
+        self.shift_repo.clone()
+    }
+
+    /// Returns a reference to the cart repository.
+    pub fn cart_repo(&self) -> Arc<PgCartRepository> {
+        self.cart_repo.clone()
+    }
+
+    /// Returns a reference to the credit note repository.
+    pub fn credit_note_repo(&self) -> Arc<PgCreditNoteRepository> {
+        self.credit_note_repo.clone()
     }
 }
