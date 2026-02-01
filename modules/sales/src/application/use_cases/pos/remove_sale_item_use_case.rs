@@ -31,12 +31,12 @@ impl RemoveSaleItemUseCase {
         let sale_uuid = item.sale_id().into_uuid();
         let mut sale = self
             .sale_repo
-            .find_by_id_with_items(item.sale_id())
+            .find_by_id_with_details(item.sale_id())
             .await?
             .ok_or(SalesError::SaleNotFound(sale_uuid))?;
 
-        // Verify sale is in draft status
-        if !sale.status().is_draft() {
+        // Verify sale is editable
+        if !sale.is_editable() {
             return Err(SalesError::SaleNotEditable);
         }
 

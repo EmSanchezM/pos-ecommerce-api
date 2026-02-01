@@ -3,8 +3,6 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
-use chrono::NaiveDate;
-
 use crate::application::dtos::SaleDetailResponse;
 use crate::domain::repositories::SaleRepository;
 use crate::domain::value_objects::SaleId;
@@ -23,20 +21,18 @@ impl CompleteSaleUseCase {
     pub async fn execute(
         &self,
         sale_id: Uuid,
-        invoice_number: i64,
-        cai_number: String,
-        invoice_date: NaiveDate,
+        invoice_number: String,
     ) -> Result<SaleDetailResponse, SalesError> {
-        let sale_id = SaleId::from_uuid(sale_id);
+        let sale_id_vo = SaleId::from_uuid(sale_id);
 
         let mut sale = self
             .sale_repo
-            .find_by_id_with_items(sale_id)
+            .find_by_id_with_details(sale_id_vo)
             .await?
-            .ok_or(SalesError::SaleNotFound)?;
+            .ok_or(SalesError::SaleNotFound(sale_id))?;
 
         // Complete the sale (validates status and payment)
-        sale.complete(invoice_number, cai_number, invoice_date)?;
+        sale.complete(invoice_number)?;
 
         // Update sale
         self.sale_repo.update(&sale).await?;

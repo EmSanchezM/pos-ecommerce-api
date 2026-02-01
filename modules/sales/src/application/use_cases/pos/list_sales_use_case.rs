@@ -3,13 +3,11 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
-
 use crate::application::dtos::{ListSalesQuery, SaleListResponse, SaleResponse};
 use crate::domain::repositories::{SaleFilter, SaleRepository};
 use crate::domain::value_objects::{CustomerId, SaleStatus, SaleType, ShiftId};
 use crate::SalesError;
-use identity::{StoreId, UserId};
+use identity::StoreId;
 use pos_core::TerminalId;
 
 /// Use case for listing sales with filters and pagination
@@ -30,7 +28,6 @@ impl ListSalesUseCase {
             store_id: query.store_id.map(StoreId::from_uuid),
             terminal_id: query.terminal_id.map(TerminalId::from_uuid),
             customer_id: query.customer_id.map(CustomerId::from_uuid),
-            cashier_id: query.cashier_id.map(UserId::from_uuid),
             shift_id: query.shift_id.map(ShiftId::from_uuid),
             sale_type: query
                 .sale_type
@@ -40,13 +37,7 @@ impl ListSalesUseCase {
                 .status
                 .as_ref()
                 .and_then(|s| SaleStatus::from_str(s).ok()),
-            date_from: query
-                .date_from
-                .as_ref()
-                .and_then(|s| parse_date_as_datetime(s)),
-            date_to: query.date_to.as_ref().and_then(|s| parse_date_as_datetime(s)),
-            min_total: query.min_total,
-            max_total: query.max_total,
+            search: query.search,
         };
 
         let (sales, total) = self.sale_repo.find_paginated(filter, page, page_size).await?;
@@ -61,10 +52,4 @@ impl ListSalesUseCase {
             total_pages,
         })
     }
-}
-
-fn parse_date_as_datetime(s: &str) -> Option<DateTime<Utc>> {
-    NaiveDate::parse_from_str(s, "%Y-%m-%d")
-        .ok()
-        .and_then(|d| d.and_time(NaiveTime::MIN).and_local_timezone(Utc).single())
 }
