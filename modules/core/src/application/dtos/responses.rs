@@ -9,6 +9,20 @@ use uuid::Uuid;
 
 use crate::domain::entities::{CaiRange, Terminal};
 
+/// Generic list response wrapper for endpoints that return a collection without pagination.
+#[derive(Debug, Clone, Serialize)]
+pub struct ListResponse<T: Serialize> {
+    pub items: Vec<T>,
+    pub total: i64,
+}
+
+impl<T: Serialize> ListResponse<T> {
+    pub fn new(items: Vec<T>) -> Self {
+        let total = items.len() as i64;
+        Self { items, total }
+    }
+}
+
 /// Response DTO for terminal information
 #[derive(Debug, Clone, Serialize)]
 pub struct TerminalResponse {
