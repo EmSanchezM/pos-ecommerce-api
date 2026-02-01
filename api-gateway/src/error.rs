@@ -12,6 +12,7 @@ use identity::{AuthError, ErrorResponse, IdentityError};
 use inventory::InventoryError;
 use pos_core::CoreError;
 use purchasing::PurchasingError;
+use sales::SalesError;
 
 // =============================================================================
 // AppError - Unified API Gateway Error Type
@@ -802,6 +803,318 @@ impl From<PurchasingError> for AppError {
                 ErrorResponse::internal_error(),
             ),
             PurchasingError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<SalesError> Implementation
+// =============================================================================
+
+impl From<SalesError> for AppError {
+    fn from(err: SalesError) -> Self {
+        let (status, response) = match &err {
+            // -----------------------------------------------------------------
+            // 404 Not Found
+            // -----------------------------------------------------------------
+            SalesError::CustomerNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CUSTOMER_NOT_FOUND", format!("Customer not found: {}", id)),
+            ),
+            SalesError::ShiftNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("SHIFT_NOT_FOUND", format!("Shift not found: {}", id)),
+            ),
+            SalesError::SaleNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("SALE_NOT_FOUND", format!("Sale not found: {}", id)),
+            ),
+            SalesError::SaleItemNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("SALE_ITEM_NOT_FOUND", format!("Sale item not found: {}", id)),
+            ),
+            SalesError::PaymentNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PAYMENT_NOT_FOUND", format!("Payment not found: {}", id)),
+            ),
+            SalesError::CartNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CART_NOT_FOUND", format!("Cart not found: {}", id)),
+            ),
+            SalesError::CartItemNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CART_ITEM_NOT_FOUND", format!("Cart item not found: {}", id)),
+            ),
+            SalesError::CreditNoteNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CREDIT_NOTE_NOT_FOUND", format!("Credit note not found: {}", id)),
+            ),
+            SalesError::ProductNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PRODUCT_NOT_FOUND", format!("Product not found: {}", id)),
+            ),
+            SalesError::StoreNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("STORE_NOT_FOUND", format!("Store not found: {}", id)),
+            ),
+            SalesError::TerminalNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("TERMINAL_NOT_FOUND", format!("Terminal not found: {}", id)),
+            ),
+            // -----------------------------------------------------------------
+            // 409 Conflict - Duplicate or state conflicts
+            // -----------------------------------------------------------------
+            SalesError::DuplicateCustomerCode(code) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_CUSTOMER_CODE", format!("Customer code '{}' already exists", code)),
+            ),
+            SalesError::DuplicateCustomerEmail(email) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_CUSTOMER_EMAIL", format!("Customer email '{}' already exists", email)),
+            ),
+            SalesError::DuplicateSaleNumber(number) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_SALE_NUMBER", format!("Sale number '{}' already exists", number)),
+            ),
+            SalesError::DuplicateCreditNoteNumber(number) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_CREDIT_NOTE_NUMBER", format!("Credit note number '{}' already exists", number)),
+            ),
+            SalesError::TerminalHasOpenShift => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("TERMINAL_HAS_OPEN_SHIFT", "Terminal already has an open shift"),
+            ),
+            SalesError::CashierHasOpenShift => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CASHIER_HAS_OPEN_SHIFT", "Cashier already has an open shift"),
+            ),
+            SalesError::SaleAlreadyCompleted => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SALE_ALREADY_COMPLETED", "Sale has already been completed"),
+            ),
+            SalesError::SaleAlreadyVoided => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SALE_ALREADY_VOIDED", "Sale has already been voided"),
+            ),
+            SalesError::PaymentAlreadyRefunded => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("PAYMENT_ALREADY_REFUNDED", "Payment has already been refunded"),
+            ),
+            SalesError::CreditNoteAlreadyApproved => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CREDIT_NOTE_ALREADY_APPROVED", "Credit note has already been approved"),
+            ),
+            SalesError::CreditNoteAlreadyCancelled => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CREDIT_NOTE_ALREADY_CANCELLED", "Credit note has already been cancelled"),
+            ),
+            SalesError::CreditNoteAlreadyApplied => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CREDIT_NOTE_ALREADY_APPLIED", "Credit note has already been applied"),
+            ),
+            SalesError::ShiftAlreadyClosed => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SHIFT_ALREADY_CLOSED", "Shift is already closed"),
+            ),
+            // -----------------------------------------------------------------
+            // 400 Bad Request - Validation and business rule violations
+            // -----------------------------------------------------------------
+            SalesError::CustomerNotActive(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("CUSTOMER_NOT_ACTIVE", format!("Customer is not active: {}", id)),
+            ),
+            SalesError::TerminalNotActive(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("TERMINAL_NOT_ACTIVE", format!("Terminal is not active: {}", id)),
+            ),
+            SalesError::NoOpenShift => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("NO_OPEN_SHIFT", "No open shift found for terminal"),
+            ),
+            SalesError::InvalidOpeningBalance => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_OPENING_BALANCE", "Opening balance must be non-negative"),
+            ),
+            SalesError::SaleNotEditable => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("SALE_NOT_EDITABLE", "Cannot modify sale: not in draft status"),
+            ),
+            SalesError::EmptySale => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("EMPTY_SALE", "Sale has no items"),
+            ),
+            SalesError::SaleNotFullyPaid => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("SALE_NOT_FULLY_PAID", "Sale is not fully paid"),
+            ),
+            SalesError::PosRequiresOpenShift => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("POS_REQUIRES_OPEN_SHIFT", "POS sale requires an open shift"),
+            ),
+            SalesError::PosRequiresTerminal => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("POS_REQUIRES_TERMINAL", "POS sale requires a terminal"),
+            ),
+            SalesError::PosRequiresCashier => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("POS_REQUIRES_CASHIER", "POS sale requires a cashier"),
+            ),
+            SalesError::InvalidQuantity => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_QUANTITY", "Quantity must be positive"),
+            ),
+            SalesError::InvalidUnitPrice => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_UNIT_PRICE", "Unit price must be non-negative"),
+            ),
+            SalesError::InsufficientStock(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INSUFFICIENT_STOCK", format!("Insufficient stock for product: {}", id)),
+            ),
+            SalesError::InvalidPaymentAmount => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_PAYMENT_AMOUNT", "Payment amount must be positive"),
+            ),
+            SalesError::PaymentExceedsBalance => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("PAYMENT_EXCEEDS_BALANCE", "Payment exceeds remaining balance"),
+            ),
+            SalesError::CashRequiresAmountTendered => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("CASH_REQUIRES_AMOUNT_TENDERED", "Cash payment requires amount tendered"),
+            ),
+            SalesError::InsufficientAmountTendered => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INSUFFICIENT_AMOUNT_TENDERED", "Amount tendered is less than payment amount"),
+            ),
+            SalesError::CartExpired => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("CART_EXPIRED", "Cart has expired"),
+            ),
+            SalesError::EmptyCart => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("EMPTY_CART", "Cart is empty"),
+            ),
+            SalesError::CreditNoteNotEditable => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("CREDIT_NOTE_NOT_EDITABLE", "Cannot modify credit note: not in draft status"),
+            ),
+            SalesError::EmptyCreditNote => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("EMPTY_CREDIT_NOTE", "Credit note has no items"),
+            ),
+            SalesError::CannotApproveSelfCreatedCreditNote => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("CANNOT_APPROVE_SELF_CREATED", "User cannot approve their own credit note"),
+            ),
+            SalesError::ReturnQuantityExceedsSaleQuantity => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("RETURN_QUANTITY_EXCEEDS", "Return quantity exceeds original sale quantity"),
+            ),
+            SalesError::SaleNotCompleted => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("SALE_NOT_COMPLETED", "Cannot create return for incomplete sale"),
+            ),
+            SalesError::CannotCancelShippedOrder => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("CANNOT_CANCEL_SHIPPED_ORDER", "Cannot cancel order that has been shipped"),
+            ),
+            SalesError::OrderNotPaid => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("ORDER_NOT_PAID", "Order has not been paid"),
+            ),
+            SalesError::OrderNotProcessing => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("ORDER_NOT_PROCESSING", "Order is not in processing status"),
+            ),
+            SalesError::OrderNotShipped => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("ORDER_NOT_SHIPPED", "Order has not been shipped"),
+            ),
+            SalesError::NoValidCai(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("NO_VALID_CAI", format!("No valid CAI available for terminal: {}", id)),
+            ),
+            SalesError::ReservationFailed => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("RESERVATION_FAILED", "Failed to create inventory reservation"),
+            ),
+            SalesError::ReservationConfirmFailed => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("RESERVATION_CONFIRM_FAILED", "Failed to confirm inventory reservation"),
+            ),
+            SalesError::ReservationCancelFailed => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("RESERVATION_CANCEL_FAILED", "Failed to cancel inventory reservation"),
+            ),
+            // -----------------------------------------------------------------
+            // 400 Bad Request - Validation (enum parsing)
+            // -----------------------------------------------------------------
+            SalesError::InvalidStatusTransition => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_STATUS_TRANSITION", "Invalid status transition"),
+            ),
+            SalesError::InvalidCurrency => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_CURRENCY", "Invalid currency code"),
+            ),
+            SalesError::InvalidUnitOfMeasure => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_UNIT_OF_MEASURE", "Invalid unit of measure"),
+            ),
+            SalesError::InvalidSaleStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_SALE_STATUS", "Invalid sale status"),
+            ),
+            SalesError::InvalidOrderStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_ORDER_STATUS", "Invalid order status"),
+            ),
+            SalesError::InvalidPaymentMethod => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_PAYMENT_METHOD", "Invalid payment method"),
+            ),
+            SalesError::InvalidPaymentStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_PAYMENT_STATUS", "Invalid payment status"),
+            ),
+            SalesError::InvalidDiscountType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_DISCOUNT_TYPE", "Invalid discount type"),
+            ),
+            SalesError::InvalidCustomerType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_CUSTOMER_TYPE", "Invalid customer type"),
+            ),
+            SalesError::InvalidReturnReason => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_RETURN_REASON", "Invalid return reason"),
+            ),
+            SalesError::InvalidCreditNoteStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_CREDIT_NOTE_STATUS", "Invalid credit note status"),
+            ),
+            SalesError::InvalidDiscountPercentage => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_DISCOUNT_PERCENTAGE", "Discount percentage must be between 0 and 100"),
+            ),
+            SalesError::InvalidTaxRate => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_TAX_RATE", "Tax rate must be non-negative"),
+            ),
+            // -----------------------------------------------------------------
+            // 500 Internal Server Error
+            // -----------------------------------------------------------------
+            SalesError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+            SalesError::NotImplemented => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
             ),
