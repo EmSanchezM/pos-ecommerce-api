@@ -198,7 +198,7 @@ pub async fn get_product_stock_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(product_id): Path<Uuid>,
-) -> Result<Json<Vec<StockResponse>>, Response> {
+) -> Result<Json<ListResponse<StockResponse>>, Response> {
     require_permission(&ctx, "inventory:read")?;
 
     let use_case = GetProductStockUseCase::new(state.stock_repo(), state.product_repo());
