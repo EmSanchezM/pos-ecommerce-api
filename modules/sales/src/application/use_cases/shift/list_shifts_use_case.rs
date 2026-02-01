@@ -3,8 +3,6 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use chrono::NaiveDate;
-
 use crate::application::dtos::{ListShiftsQuery, ShiftListResponse, ShiftResponse};
 use crate::domain::repositories::{ShiftFilter, ShiftRepository};
 use crate::domain::value_objects::ShiftStatus;
@@ -34,14 +32,6 @@ impl ListShiftsUseCase {
                 .status
                 .as_ref()
                 .and_then(|s| ShiftStatus::from_str(s).ok()),
-            date_from: query
-                .date_from
-                .as_ref()
-                .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok()),
-            date_to: query
-                .date_to
-                .as_ref()
-                .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok()),
         };
 
         let (shifts, total) = self.shift_repo.find_paginated(filter, page, page_size).await?;

@@ -23,9 +23,9 @@ impl GetSaleUseCase {
 
         let sale = self
             .sale_repo
-            .find_by_id_with_items(id)
+            .find_by_id_with_details(id)
             .await?
-            .ok_or(SalesError::SaleNotFound)?;
+            .ok_or(SalesError::SaleNotFound(sale_id))?;
 
         Ok(SaleDetailResponse::from(sale))
     }

@@ -27,9 +27,9 @@ impl VoidSaleUseCase {
 
         let mut sale = self
             .sale_repo
-            .find_by_id_with_items(sale_id)
+            .find_by_id_with_details(sale_id)
             .await?
-            .ok_or(SalesError::SaleNotFound)?;
+            .ok_or(SalesError::SaleNotFound(cmd.sale_id))?;
 
         // Void the sale
         sale.void(voided_by, cmd.reason)?;
