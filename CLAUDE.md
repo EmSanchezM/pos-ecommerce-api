@@ -35,7 +35,7 @@ module/
 - **Dependency Injection:** Use cases receive repositories via Arc-wrapped constructors
 - **Value Objects:** Type-safe IDs (ProductId, Sku, CategoryId), Currency, UnitOfMeasure
 - **Optimistic Locking:** InventoryStock uses version column for concurrent updates
-- **Workflow State Machines:** Adjustments (draft → submitted → approved), Transfers (draft → shipped → received)
+- **Workflow State Machines:** Adjustments (draft → submitted → approved), Transfers (draft → shipped → received), Sales (draft → completed → returned), Purchase Orders (draft → submitted → approved → received → closed), Credit Notes (draft → pending → approved → applied), Cashier Shifts (open → closed)
 - **Audit Trail:** All domain operations tracked with actor_id, entity_type, timestamp
 
 ## Project Structure
@@ -57,10 +57,10 @@ pos-ecommerce-api/
 │   ├── core/                # Stores, terminals, CAI (tax compliance)
 │   ├── identity/            # Users, authentication, RBAC
 │   ├── inventory/           # Products, stock, recipes, transfers, adjustments
-│   ├── purchasing/          # Purchase orders (framework stub)
-│   └── sales/               # Sales transactions (framework stub)
+│   ├── purchasing/          # Vendors, purchase orders, goods receipts
+│   └── sales/               # Customers, POS sales, carts, shifts, credit notes
 │
-├── migrations/              # SQLx database migrations (19 files)
+├── migrations/              # SQLx database migrations (33 files)
 ├── seed/                    # Initial data seeding
 ├── docs/                    # Postman collection
 │
@@ -97,10 +97,23 @@ pos-ecommerce-api/
 - Cost calculation for recipes
 
 ### Purchasing Module (`modules/purchasing/`)
-- Framework structure only (to be implemented)
+- Vendor management (CRUD, activate/deactivate, auto-generated codes)
+- Purchase order lifecycle (draft → submitted → approved → received → closed)
+- Purchase order rejection and cancellation flows
+- Purchase order items (add, update, remove)
+- Goods receipts linked to purchase orders (with lot and expiry tracking)
+- Goods receipt confirmation and cancellation
 
 ### Sales Module (`modules/sales/`)
-- Framework structure only (to be implemented)
+- Customer management (CRUD, activate/deactivate, individual and business types)
+- POS sales with full workflow (draft → completed → returned)
+- Sale items with discounts (fixed and percentage) and tax calculations
+- Multi-method payments (cash, cards, transfers, etc.) with refund support
+- E-commerce orders (pending payment → paid → processing → shipped → delivered)
+- Cashier shift management (open/close with opening/closing balances and cash movements)
+- Shopping carts with expiration and inventory reservations
+- Credit notes / returns with approval workflow (draft → pending → approved → applied)
+- Integration with inventory reservations (confirm on sale completion, cancel on void)
 
 ## Database
 
@@ -123,6 +136,12 @@ sqlx migrate run
 - `recipes`, `recipe_ingredients`, `ingredient_substitutes`
 - `adjustments`, `adjustment_items`
 - `transfers`, `transfer_items`
+- `vendors`, `purchase_orders`, `purchase_order_items`
+- `goods_receipts`, `goods_receipt_items`
+- `customers`, `cashier_shifts`
+- `sales`, `sale_items`, `payments`
+- `carts`, `cart_items`
+- `credit_notes`, `credit_note_items`
 - `audit_entries`
 
 ## API Structure
@@ -135,6 +154,14 @@ sqlx migrate run
 - `/api/v1/stores/` - Store management
 - `/api/v1/stores/{store_id}/terminals/` - Store terminals
 - `/api/v1/terminals/` - Terminal management
+- `/api/v1/vendors/` - Vendor management (CRUD, activate/deactivate)
+- `/api/v1/purchase-orders/` - Purchase orders (create, items, submit, approve, reject, cancel, close)
+- `/api/v1/goods-receipts/` - Goods receipts (create, confirm, cancel)
+- `/api/v1/customers/` - Customer management (CRUD, activate/deactivate)
+- `/api/v1/shifts/` - Cashier shifts (open, close, report, cash movements)
+- `/api/v1/sales/` - POS sales (create, items, discount, payment, complete, void)
+- `/api/v1/carts/` - Shopping carts (create, items, clear)
+- `/api/v1/returns/` - Credit notes (create, items, submit, approve, apply, cancel)
 
 ### Error Handling
 - Domain errors map to HTTP status codes in `api-gateway/src/error.rs`
