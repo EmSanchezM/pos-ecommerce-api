@@ -144,6 +144,24 @@ pub use application::dtos::ShiftListResponse;
 pub use application::dtos::ShiftReportResponse;
 pub use application::dtos::ShiftResponse;
 
+// Cart DTOs
+pub use application::dtos::AddCartItemCommand;
+pub use application::dtos::CartItemResponse;
+pub use application::dtos::CartResponse;
+pub use application::dtos::CreateCartCommand;
+pub use application::dtos::UpdateCartItemCommand;
+
+// Credit Note DTOs
+pub use application::dtos::AddCreditNoteItemCommand;
+pub use application::dtos::ApplyCreditNoteCommand;
+pub use application::dtos::CancelCreditNoteCommand;
+pub use application::dtos::CreateCreditNoteCommand;
+pub use application::dtos::CreditNoteItemResponse;
+pub use application::dtos::CreditNoteListResponse;
+pub use application::dtos::CreditNoteResponse;
+pub use application::dtos::ListCreditNotesQuery;
+pub use application::dtos::SubmitCreditNoteCommand;
+
 // Sale DTOs
 pub use application::dtos::AddSaleItemCommand;
 pub use application::dtos::ApplyDiscountCommand;
@@ -176,6 +194,25 @@ pub use application::use_cases::GetShiftReportUseCase;
 pub use application::use_cases::ListShiftsUseCase;
 pub use application::use_cases::OpenShiftUseCase;
 pub use application::use_cases::RecordCashMovementUseCase;
+
+// Cart Use Cases
+pub use application::use_cases::AddCartItemUseCase;
+pub use application::use_cases::ClearCartUseCase;
+pub use application::use_cases::CreateCartUseCase;
+pub use application::use_cases::GetCartUseCase;
+pub use application::use_cases::RemoveCartItemUseCase;
+pub use application::use_cases::UpdateCartItemUseCase;
+
+// Credit Note Use Cases
+pub use application::use_cases::AddCreditNoteItemUseCase;
+pub use application::use_cases::ApproveCreditNoteUseCase;
+pub use application::use_cases::ApplyCreditNoteUseCase;
+pub use application::use_cases::CancelCreditNoteUseCase;
+pub use application::use_cases::CreateCreditNoteUseCase;
+pub use application::use_cases::GetCreditNoteUseCase;
+pub use application::use_cases::ListCreditNotesUseCase;
+pub use application::use_cases::RemoveCreditNoteItemUseCase;
+pub use application::use_cases::SubmitCreditNoteUseCase;
 
 // POS Sale Use Cases
 pub use application::use_cases::AddSaleItemUseCase;
