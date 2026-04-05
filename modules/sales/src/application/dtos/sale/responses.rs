@@ -98,7 +98,8 @@ pub struct SaleDetailResponse {
 impl From<Sale> for SaleDetailResponse {
     fn from(s: Sale) -> Self {
         let items: Vec<SaleItemResponse> = s.items().iter().map(SaleItemResponse::from).collect();
-        let payments: Vec<PaymentResponse> = s.payments().iter().map(PaymentResponse::from).collect();
+        let payments: Vec<PaymentResponse> =
+            s.payments().iter().map(PaymentResponse::from).collect();
 
         Self {
             id: s.id().into_uuid(),

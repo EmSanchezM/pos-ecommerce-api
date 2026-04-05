@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{CreditNoteListResponse, CreditNoteResponse, ListCreditNotesQuery};
 use crate::domain::repositories::{CreditNoteFilter, CreditNoteRepository};
 use crate::domain::value_objects::SaleId;
-use crate::SalesError;
 use identity::StoreId;
 
 /// Use case for listing credit notes with pagination
@@ -18,7 +18,10 @@ impl ListCreditNotesUseCase {
         Self { credit_note_repo }
     }
 
-    pub async fn execute(&self, query: ListCreditNotesQuery) -> Result<CreditNoteListResponse, SalesError> {
+    pub async fn execute(
+        &self,
+        query: ListCreditNotesQuery,
+    ) -> Result<CreditNoteListResponse, SalesError> {
         let status = match &query.status {
             Some(s) => Some(s.parse()?),
             None => None,
@@ -36,7 +39,10 @@ impl ListCreditNotesUseCase {
             .find_paginated(filter, query.page, query.page_size)
             .await?;
 
-        let data: Vec<CreditNoteResponse> = credit_notes.into_iter().map(CreditNoteResponse::from).collect();
+        let data: Vec<CreditNoteResponse> = credit_notes
+            .into_iter()
+            .map(CreditNoteResponse::from)
+            .collect();
 
         Ok(CreditNoteListResponse {
             data,

@@ -58,9 +58,10 @@ where
             .filter(|terminal| {
                 // Filter by is_active if specified
                 if let Some(is_active) = query.is_active
-                    && terminal.is_active() != is_active {
-                        return false;
-                    }
+                    && terminal.is_active() != is_active
+                {
+                    return false;
+                }
                 true
             })
             .collect();

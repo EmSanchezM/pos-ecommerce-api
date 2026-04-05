@@ -3,7 +3,7 @@
 // This module defines the authentication router that groups all auth endpoints
 // under /api/v1/auth prefix.
 
-use axum::{routing::post, Router};
+use axum::{Router, routing::post};
 
 use crate::handlers::{login_handler, refresh_handler, register_handler};
 use crate::state::AppState;

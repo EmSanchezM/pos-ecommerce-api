@@ -21,9 +21,7 @@ pub use error::IdentityError;
 // -----------------------------------------------------------------------------
 // Domain Layer - Entities
 // -----------------------------------------------------------------------------
-pub use domain::entities::{
-    AuditAction, AuditEntry, Permission, Role, Store, User,
-};
+pub use domain::entities::{AuditAction, AuditEntry, Permission, Role, Store, User};
 
 // -----------------------------------------------------------------------------
 // Domain Layer - Value Objects
@@ -53,31 +51,52 @@ pub use domain::auth::{AuthError, LoginIdentifier, TokenClaims, TokenService};
 // Application Layer - Use Cases
 // -----------------------------------------------------------------------------
 pub use application::use_cases::{
-    // Permission use cases
-    CreatePermissionUseCase, DeletePermissionUseCase, ListPermissionsUseCase,
     // Role use cases
-    AddPermissionToRoleUseCase, CreateRoleUseCase, DeleteRoleUseCase,
-    RemovePermissionFromRoleUseCase,
-    // User use cases
-    AssignRoleUseCase, CreateUserUseCase, RemoveRoleUseCase, SetUserActiveUseCase,
-    UpdateUserUseCase,
+    AddPermissionToRoleUseCase,
     // Store use cases
-    AddUserToStoreUseCase, CreateStoreUseCase, RemoveUserFromStoreUseCase,
-    SetStoreActiveUseCase, UpdateStoreUseCase,
+    AddUserToStoreUseCase,
+    // User use cases
+    AssignRoleUseCase,
     // UserContext use case
     BuildUserContextUseCase,
+    // Permission use cases
+    CreatePermissionUseCase,
+    CreateRoleUseCase,
+    CreateStoreUseCase,
+    CreateUserUseCase,
+    DeletePermissionUseCase,
+    DeleteRoleUseCase,
+    ListPermissionsUseCase,
     // Auth use cases
-    LoginUseCase, RefreshTokenUseCase, RegisterUserUseCase,
+    LoginUseCase,
+    RefreshTokenUseCase,
+    RegisterUserUseCase,
+    RemovePermissionFromRoleUseCase,
+    RemoveRoleUseCase,
+    RemoveUserFromStoreUseCase,
+    SetStoreActiveUseCase,
+    SetUserActiveUseCase,
+    UpdateStoreUseCase,
+    UpdateUserUseCase,
 };
 
 // -----------------------------------------------------------------------------
 // Application Layer - DTOs (Commands)
 // -----------------------------------------------------------------------------
 pub use application::dtos::{
-    AddUserToStoreCommand, AssignRoleCommand, CreatePermissionCommand, CreateRoleCommand,
-    CreateStoreCommand, CreateUserCommand, UpdateStoreCommand, UpdateUserCommand,
+    AddUserToStoreCommand,
+    AssignRoleCommand,
+    CreatePermissionCommand,
+    CreateRoleCommand,
+    CreateStoreCommand,
+    CreateUserCommand,
     // Auth commands
-    LoginCommand, RefreshCommand, RegisterEcommerceCommand, RegisterPosCommand,
+    LoginCommand,
+    RefreshCommand,
+    RegisterEcommerceCommand,
+    RegisterPosCommand,
+    UpdateStoreCommand,
+    UpdateUserCommand,
 };
 
 // -----------------------------------------------------------------------------
@@ -89,7 +108,7 @@ pub use application::dtos::{ErrorResponse, ListResponse, LoginResponse, Register
 // Application Layer - Validators
 // -----------------------------------------------------------------------------
 pub use application::validators::{
-    validate_name, validate_password, MAX_NAME_LENGTH, MIN_PASSWORD_LENGTH,
+    MAX_NAME_LENGTH, MIN_PASSWORD_LENGTH, validate_name, validate_password,
 };
 
 // -----------------------------------------------------------------------------

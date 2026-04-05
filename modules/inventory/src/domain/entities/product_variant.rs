@@ -187,14 +187,9 @@ mod tests {
     fn test_create_variant() {
         let product_id = ProductId::new();
         let parent_sku = Sku::from_string("PRD-ELE-ABC123-XY12".to_string());
-        
-        let variant = ProductVariant::create(
-            product_id,
-            &parent_sku,
-            1,
-            "Red - Large".to_string(),
-        );
-        
+
+        let variant = ProductVariant::create(product_id, &parent_sku, 1, "Red - Large".to_string());
+
         assert_eq!(variant.product_id(), product_id);
         assert_eq!(variant.name(), "Red - Large");
         assert_eq!(variant.sku().as_str(), "PRD-ELE-ABC123-XY12-V001");
@@ -207,11 +202,11 @@ mod tests {
     fn test_variant_sku_generation() {
         let product_id = ProductId::new();
         let parent_sku = Sku::from_string("PRD-GEN-TEST-1234".to_string());
-        
+
         let variant1 = ProductVariant::create(product_id, &parent_sku, 1, "V1".to_string());
         let variant2 = ProductVariant::create(product_id, &parent_sku, 2, "V2".to_string());
         let variant10 = ProductVariant::create(product_id, &parent_sku, 10, "V10".to_string());
-        
+
         assert_eq!(variant1.sku().as_str(), "PRD-GEN-TEST-1234-V001");
         assert_eq!(variant2.sku().as_str(), "PRD-GEN-TEST-1234-V002");
         assert_eq!(variant10.sku().as_str(), "PRD-GEN-TEST-1234-V010");
@@ -222,12 +217,12 @@ mod tests {
         let product_id = ProductId::new();
         let parent_sku = Sku::from_string("PRD-TEST-123".to_string());
         let mut variant = ProductVariant::create(product_id, &parent_sku, 1, "Test".to_string());
-        
+
         let product_base_price = dec!(100.00);
-        
+
         // Without override, should use product price
         assert_eq!(variant.effective_price(product_base_price), dec!(100.00));
-        
+
         // With override, should use variant price
         variant.set_price(Some(dec!(120.00)));
         assert_eq!(variant.effective_price(product_base_price), dec!(120.00));
@@ -238,12 +233,12 @@ mod tests {
         let product_id = ProductId::new();
         let parent_sku = Sku::from_string("PRD-TEST-123".to_string());
         let mut variant = ProductVariant::create(product_id, &parent_sku, 1, "Test".to_string());
-        
+
         let product_cost_price = dec!(50.00);
-        
+
         // Without override, should use product cost
         assert_eq!(variant.effective_cost(product_cost_price), dec!(50.00));
-        
+
         // With override, should use variant cost
         variant.set_cost_price(Some(dec!(55.00)));
         assert_eq!(variant.effective_cost(product_cost_price), dec!(55.00));
@@ -254,12 +249,12 @@ mod tests {
         let product_id = ProductId::new();
         let parent_sku = Sku::from_string("PRD-TEST-123".to_string());
         let mut variant = ProductVariant::create(product_id, &parent_sku, 1, "Test".to_string());
-        
+
         assert!(variant.is_active());
-        
+
         variant.deactivate();
         assert!(!variant.is_active());
-        
+
         variant.activate();
         assert!(variant.is_active());
     }
@@ -269,7 +264,7 @@ mod tests {
         let product_id = ProductId::new();
         let parent_sku = Sku::from_string("PRD-TEST-123".to_string());
         let mut variant = ProductVariant::create(product_id, &parent_sku, 1, "Test".to_string());
-        
+
         let attrs = serde_json::json!({
             "color": "red",
             "size": "XL"
@@ -283,9 +278,9 @@ mod tests {
         let product_id = ProductId::new();
         let parent_sku = Sku::from_string("PRD-TEST-123".to_string());
         let mut variant = ProductVariant::create(product_id, &parent_sku, 1, "Test".to_string());
-        
+
         assert!(variant.barcode().is_none());
-        
+
         let barcode = Barcode::new("9876543210123").unwrap();
         variant.set_barcode(Some(barcode));
         assert_eq!(variant.barcode().map(|b| b.as_str()), Some("9876543210123"));

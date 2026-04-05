@@ -2,12 +2,14 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::ShipTransferCommand;
 use crate::application::dtos::responses::{TransferDetailResponse, TransferItemResponse};
 use crate::domain::entities::{InventoryMovement, StockTransfer};
-use crate::domain::repositories::{InventoryMovementRepository, InventoryStockRepository, TransferRepository};
+use crate::domain::repositories::{
+    InventoryMovementRepository, InventoryStockRepository, TransferRepository,
+};
 use crate::domain::value_objects::{Currency, MovementType, TransferId};
-use crate::InventoryError;
 use identity::UserId;
 
 /// Use case for shipping a stock transfer.
@@ -78,11 +80,12 @@ where
         transfer.ship(actor_id)?;
 
         // 4. Build a map of item_id -> shipped quantity from command
-        let shipped_quantities: std::collections::HashMap<uuid::Uuid, rust_decimal::Decimal> = command
-            .items
-            .iter()
-            .map(|item| (item.item_id, item.quantity_shipped))
-            .collect();
+        let shipped_quantities: std::collections::HashMap<uuid::Uuid, rust_decimal::Decimal> =
+            command
+                .items
+                .iter()
+                .map(|item| (item.item_id, item.quantity_shipped))
+                .collect();
 
         // 5. Process each item: reduce source stock and create movements (Requirement 11.5)
         let from_store_id = transfer.from_store_id();
@@ -196,7 +199,6 @@ where
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -306,7 +308,7 @@ mod tests {
         fn add_stock(&self, stock: InventoryStock) {
             let mut stocks = self.stocks.lock().unwrap();
             let stock_id = stock.id();
-            
+
             if let Some(product_id) = stock.product_id() {
                 let mut product_stocks = self.product_stocks.lock().unwrap();
                 product_stocks.insert((stock.store_id(), product_id), stock_id);
@@ -315,7 +317,7 @@ mod tests {
                 let mut variant_stocks = self.variant_stocks.lock().unwrap();
                 variant_stocks.insert((stock.store_id(), variant_id), stock_id);
             }
-            
+
             stocks.insert(stock_id, stock);
         }
     }
@@ -418,7 +420,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_low_stock_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_low_stock_by_store(
+            &self,
+            _store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
     }
@@ -502,31 +507,40 @@ mod tests {
             unimplemented!()
         }
 
-        async fn count_with_filters(&self, _query: &crate::domain::repositories::MovementQuery) -> Result<i64, InventoryError> {
+        async fn count_with_filters(
+            &self,
+            _query: &crate::domain::repositories::MovementQuery,
+        ) -> Result<i64, InventoryError> {
             unimplemented!()
         }
     }
 
-    fn create_pending_transfer(from_store_id: StoreId, to_store_id: StoreId, product_id: ProductId) -> StockTransfer {
+    fn create_pending_transfer(
+        from_store_id: StoreId,
+        to_store_id: StoreId,
+        product_id: ProductId,
+    ) -> StockTransfer {
         let mut transfer = StockTransfer::create(
             "TRF-TEST-00001".to_string(),
             from_store_id,
             to_store_id,
             UserId::new(),
-        ).unwrap();
-        
-        let item = TransferItem::create_for_product(
-            transfer.id(),
-            product_id,
-            dec!(10),
-            Some(dec!(5.00)),
-        ).unwrap();
+        )
+        .unwrap();
+
+        let item =
+            TransferItem::create_for_product(transfer.id(), product_id, dec!(10), Some(dec!(5.00)))
+                .unwrap();
         transfer.add_item(item).unwrap();
         transfer.submit().unwrap();
         transfer
     }
 
-    fn create_stock_with_quantity(store_id: StoreId, product_id: ProductId, quantity: Decimal) -> InventoryStock {
+    fn create_stock_with_quantity(
+        store_id: StoreId,
+        product_id: ProductId,
+        quantity: Decimal,
+    ) -> InventoryStock {
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.adjust_quantity(quantity).unwrap();
         stock
@@ -627,13 +641,10 @@ mod tests {
             from_store_id,
             to_store_id,
             UserId::new(),
-        ).unwrap();
-        let item = TransferItem::create_for_product(
-            transfer.id(),
-            product_id,
-            dec!(10),
-            None,
-        ).unwrap();
+        )
+        .unwrap();
+        let item =
+            TransferItem::create_for_product(transfer.id(), product_id, dec!(10), None).unwrap();
         transfer.add_item(item).unwrap();
         // NOT submitted - still in draft
         let transfer_id = transfer.id();
@@ -648,7 +659,10 @@ mod tests {
         };
 
         let result = use_case.execute(command, UserId::new()).await;
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[tokio::test]

@@ -3,11 +3,11 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::PurchasingError;
 use crate::application::dtos::commands::UpdateVendorCommand;
 use crate::application::dtos::responses::VendorResponse;
 use crate::domain::repositories::VendorRepository;
 use crate::domain::value_objects::VendorId;
-use crate::PurchasingError;
 use inventory::Currency;
 
 /// Use case for updating an existing vendor
@@ -57,13 +57,13 @@ where
         // Check for duplicate tax ID if changing
         if let Some(ref new_tax_id) = command.tax_id
             && new_tax_id != vendor.tax_id()
-                && self
-                    .vendor_repo
-                    .exists_by_tax_id_excluding(new_tax_id, id)
-                    .await?
-            {
-                return Err(PurchasingError::DuplicateVendorTaxId(new_tax_id.clone()));
-            }
+            && self
+                .vendor_repo
+                .exists_by_tax_id_excluding(new_tax_id, id)
+                .await?
+        {
+            return Err(PurchasingError::DuplicateVendorTaxId(new_tax_id.clone()));
+        }
 
         // Apply updates
         if let Some(name) = command.name {
@@ -88,8 +88,8 @@ where
             vendor.set_payment_terms_days(days);
         }
         if let Some(currency_str) = command.currency {
-            let currency = Currency::new(&currency_str)
-                .map_err(|_| PurchasingError::InvalidCurrency)?;
+            let currency =
+                Currency::new(&currency_str).map_err(|_| PurchasingError::InvalidCurrency)?;
             vendor.set_currency(currency);
         }
         if let Some(notes) = command.notes {

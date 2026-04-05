@@ -3,9 +3,9 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::PurchasingError;
 use crate::domain::entities::GoodsReceiptItem;
 use crate::domain::value_objects::{GoodsReceiptId, GoodsReceiptStatus, PurchaseOrderId};
-use crate::PurchasingError;
 use identity::{StoreId, UserId};
 
 /// GoodsReceipt entity representing a document for receiving goods from a purchase order.
@@ -355,7 +355,10 @@ mod tests {
 
         let result = receipt.confirm(UserId::new());
 
-        assert!(matches!(result, Err(PurchasingError::InvalidStatusTransition)));
+        assert!(matches!(
+            result,
+            Err(PurchasingError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
@@ -367,6 +370,9 @@ mod tests {
 
         let result = receipt.cancel();
 
-        assert!(matches!(result, Err(PurchasingError::InvalidStatusTransition)));
+        assert!(matches!(
+            result,
+            Err(PurchasingError::InvalidStatusTransition)
+        ));
     }
 }

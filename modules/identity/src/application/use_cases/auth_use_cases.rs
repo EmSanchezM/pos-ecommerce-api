@@ -5,11 +5,13 @@
 use std::sync::Arc;
 
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 
-use crate::application::dtos::{LoginCommand, LoginResponse, RegisterEcommerceCommand, RegisterResponse};
+use crate::application::dtos::{
+    LoginCommand, LoginResponse, RegisterEcommerceCommand, RegisterResponse,
+};
 use crate::application::validators::{validate_name, validate_password};
 use crate::domain::auth::{AuthError, LoginIdentifier, TokenService};
 use crate::domain::entities::{AuditEntry, User};
@@ -213,18 +215,16 @@ where
 
         // Find user by email or username (Requirements 3.3, 3.4)
         let user = match &identifier {
-            LoginIdentifier::Email(email) => {
-                self.user_repo
-                    .find_by_email(email)
-                    .await
-                    .map_err(|e| AuthError::Internal(e.to_string()))?
-            }
-            LoginIdentifier::Username(username) => {
-                self.user_repo
-                    .find_by_username(username)
-                    .await
-                    .map_err(|e| AuthError::Internal(e.to_string()))?
-            }
+            LoginIdentifier::Email(email) => self
+                .user_repo
+                .find_by_email(email)
+                .await
+                .map_err(|e| AuthError::Internal(e.to_string()))?,
+            LoginIdentifier::Username(username) => self
+                .user_repo
+                .find_by_username(username)
+                .await
+                .map_err(|e| AuthError::Internal(e.to_string()))?,
         };
 
         // Return InvalidCredentials if user not found (Requirement 3.6)
@@ -365,13 +365,12 @@ fn generate_username_from_email(email: &Email) -> Username {
         .collect();
 
     // Ensure it starts with a letter
-    let username_str = if sanitized.is_empty()
-        || !sanitized.chars().next().unwrap_or('0').is_alphabetic()
-    {
-        format!("user_{}", sanitized)
-    } else {
-        sanitized
-    };
+    let username_str =
+        if sanitized.is_empty() || !sanitized.chars().next().unwrap_or('0').is_alphabetic() {
+            format!("user_{}", sanitized)
+        } else {
+            sanitized
+        };
 
     // Ensure minimum length of 3
     let username_str = if username_str.len() < 3 {
@@ -636,7 +635,10 @@ mod tests {
             Ok(format!("refresh_token_for_{}", user_id.as_uuid()))
         }
 
-        fn validate_access_token(&self, _token: &str) -> Result<crate::domain::auth::TokenClaims, AuthError> {
+        fn validate_access_token(
+            &self,
+            _token: &str,
+        ) -> Result<crate::domain::auth::TokenClaims, AuthError> {
             unimplemented!("Not needed for login tests")
         }
 
@@ -662,7 +664,10 @@ mod tests {
         }
 
         fn with_valid_token(self, token: &str, user_id: UserId) -> Self {
-            self.valid_tokens.lock().unwrap().insert(token.to_string(), user_id);
+            self.valid_tokens
+                .lock()
+                .unwrap()
+                .insert(token.to_string(), user_id);
             self
         }
 
@@ -681,13 +686,21 @@ mod tests {
             Ok(format!("refresh_token_for_{}", user_id.as_uuid()))
         }
 
-        fn validate_access_token(&self, _token: &str) -> Result<crate::domain::auth::TokenClaims, AuthError> {
+        fn validate_access_token(
+            &self,
+            _token: &str,
+        ) -> Result<crate::domain::auth::TokenClaims, AuthError> {
             unimplemented!("Not needed for refresh tests")
         }
 
         fn validate_refresh_token(&self, token: &str) -> Result<UserId, AuthError> {
             // Check if token is in expired list
-            if self.expired_tokens.lock().unwrap().contains(&token.to_string()) {
+            if self
+                .expired_tokens
+                .lock()
+                .unwrap()
+                .contains(&token.to_string())
+            {
                 return Err(AuthError::TokenExpired);
             }
 
@@ -1045,8 +1058,7 @@ mod tests {
 
         // Create token service with valid refresh token
         let token_service = Arc::new(
-            MockTokenServiceWithRefresh::new()
-                .with_valid_token("valid_refresh_token", user_id)
+            MockTokenServiceWithRefresh::new().with_valid_token("valid_refresh_token", user_id),
         );
 
         let use_case = RefreshTokenUseCase::new(user_repo, token_service);
@@ -1064,10 +1076,8 @@ mod tests {
     #[tokio::test]
     async fn test_refresh_token_expired() {
         let user_repo = Arc::new(MockUserRepository::new());
-        let token_service = Arc::new(
-            MockTokenServiceWithRefresh::new()
-                .with_expired_token("expired_token")
-        );
+        let token_service =
+            Arc::new(MockTokenServiceWithRefresh::new().with_expired_token("expired_token"));
 
         let use_case = RefreshTokenUseCase::new(user_repo, token_service);
 
@@ -1093,10 +1103,8 @@ mod tests {
         // Token is valid but user no longer exists
         let user_id = UserId::new();
         let user_repo = Arc::new(MockUserRepository::new());
-        let token_service = Arc::new(
-            MockTokenServiceWithRefresh::new()
-                .with_valid_token("valid_token", user_id)
-        );
+        let token_service =
+            Arc::new(MockTokenServiceWithRefresh::new().with_valid_token("valid_token", user_id));
 
         let use_case = RefreshTokenUseCase::new(user_repo, token_service);
 
@@ -1113,10 +1121,8 @@ mod tests {
         let user_id = *user.id();
         let user_repo = Arc::new(MockUserRepository::new().with_user(user));
 
-        let token_service = Arc::new(
-            MockTokenServiceWithRefresh::new()
-                .with_valid_token("valid_token", user_id)
-        );
+        let token_service =
+            Arc::new(MockTokenServiceWithRefresh::new().with_valid_token("valid_token", user_id));
 
         let use_case = RefreshTokenUseCase::new(user_repo, token_service);
 

@@ -61,7 +61,10 @@ mod tests {
     fn test_from_str() {
         assert_eq!(ReturnType::from_str("full").unwrap(), ReturnType::Full);
         assert_eq!(ReturnType::from_str("complete").unwrap(), ReturnType::Full);
-        assert_eq!(ReturnType::from_str("partial").unwrap(), ReturnType::Partial);
+        assert_eq!(
+            ReturnType::from_str("partial").unwrap(),
+            ReturnType::Partial
+        );
     }
 
     #[test]

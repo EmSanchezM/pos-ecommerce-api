@@ -11,10 +11,10 @@
 // - GET /api/products/{product_id}/stock - Get product stock across stores
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::Deserialize;
 use uuid::Uuid;

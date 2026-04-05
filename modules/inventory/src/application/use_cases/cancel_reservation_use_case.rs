@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::CancelReservationCommand;
 use crate::application::dtos::responses::ReservationResponse;
 use crate::domain::repositories::{InventoryStockRepository, ReservationRepository};
 use crate::domain::value_objects::ReservationId;
-use crate::InventoryError;
 
 /// Use case for cancelling an inventory reservation.
 ///
@@ -295,7 +295,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_low_stock_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_low_stock_by_store(
+            &self,
+            _store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
     }
@@ -361,7 +364,10 @@ mod tests {
         };
 
         let result = use_case.execute(command).await;
-        assert!(matches!(result, Err(InventoryError::ReservationNotFound(_))));
+        assert!(matches!(
+            result,
+            Err(InventoryError::ReservationNotFound(_))
+        ));
     }
 
     #[tokio::test]

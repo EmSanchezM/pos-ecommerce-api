@@ -5,10 +5,10 @@ use chrono::Utc;
 use rust_decimal::Decimal;
 use sqlx::PgPool;
 
+use crate::InventoryError;
 use crate::domain::entities::{StockTransfer, TransferItem};
 use crate::domain::repositories::TransferRepository;
 use crate::domain::value_objects::{ProductId, TransferId, TransferStatus, VariantId};
-use crate::InventoryError;
 use identity::{StoreId, UserId};
 
 /// PostgreSQL implementation of TransferRepository
@@ -88,7 +88,6 @@ impl TransferRepository for PgTransferRepository {
         Ok(())
     }
 
-
     async fn find_by_id(&self, id: TransferId) -> Result<Option<StockTransfer>, InventoryError> {
         let row = sqlx::query_as::<_, TransferRow>(
             r#"
@@ -107,7 +106,10 @@ impl TransferRepository for PgTransferRepository {
         row.map(|r| r.try_into_without_items()).transpose()
     }
 
-    async fn find_by_id_with_items(&self, id: TransferId) -> Result<Option<StockTransfer>, InventoryError> {
+    async fn find_by_id_with_items(
+        &self,
+        id: TransferId,
+    ) -> Result<Option<StockTransfer>, InventoryError> {
         let row = sqlx::query_as::<_, TransferRow>(
             r#"
             SELECT id, transfer_number, from_store_id, to_store_id, status, requested_date,
@@ -137,7 +139,7 @@ impl TransferRepository for PgTransferRepository {
                 .fetch_all(&self.pool)
                 .await?;
 
-                let items: Result<Vec<TransferItem>, InventoryError> = 
+                let items: Result<Vec<TransferItem>, InventoryError> =
                     item_rows.into_iter().map(|r| r.try_into()).collect();
                 Ok(Some(transfer_row.try_into_with_items(items?)?))
             }
@@ -160,10 +162,15 @@ impl TransferRepository for PgTransferRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        rows.into_iter().map(|r| r.try_into_without_items()).collect()
+        rows.into_iter()
+            .map(|r| r.try_into_without_items())
+            .collect()
     }
 
-    async fn find_outgoing_by_store(&self, store_id: StoreId) -> Result<Vec<StockTransfer>, InventoryError> {
+    async fn find_outgoing_by_store(
+        &self,
+        store_id: StoreId,
+    ) -> Result<Vec<StockTransfer>, InventoryError> {
         let rows = sqlx::query_as::<_, TransferRow>(
             r#"
             SELECT id, transfer_number, from_store_id, to_store_id, status, requested_date,
@@ -178,10 +185,15 @@ impl TransferRepository for PgTransferRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        rows.into_iter().map(|r| r.try_into_without_items()).collect()
+        rows.into_iter()
+            .map(|r| r.try_into_without_items())
+            .collect()
     }
 
-    async fn find_incoming_by_store(&self, store_id: StoreId) -> Result<Vec<StockTransfer>, InventoryError> {
+    async fn find_incoming_by_store(
+        &self,
+        store_id: StoreId,
+    ) -> Result<Vec<StockTransfer>, InventoryError> {
         let rows = sqlx::query_as::<_, TransferRow>(
             r#"
             SELECT id, transfer_number, from_store_id, to_store_id, status, requested_date,
@@ -196,9 +208,10 @@ impl TransferRepository for PgTransferRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        rows.into_iter().map(|r| r.try_into_without_items()).collect()
+        rows.into_iter()
+            .map(|r| r.try_into_without_items())
+            .collect()
     }
-
 
     async fn update(&self, transfer: &StockTransfer) -> Result<(), InventoryError> {
         let mut tx = self.pool.begin().await?;
@@ -271,7 +284,7 @@ impl TransferRepository for PgTransferRepository {
     async fn generate_transfer_number(&self) -> Result<String, InventoryError> {
         // Generate globally unique transfer number: TRF-{YYYYMMDD}-{SEQUENCE}
         let today = Utc::now().format("%Y%m%d").to_string();
-        
+
         // Count transfers created today
         let count: (i64,) = sqlx::query_as(
             r#"
@@ -318,7 +331,10 @@ impl TransferRow {
         self.try_into_with_items(Vec::new())
     }
 
-    fn try_into_with_items(self, items: Vec<TransferItem>) -> Result<StockTransfer, InventoryError> {
+    fn try_into_with_items(
+        self,
+        items: Vec<TransferItem>,
+    ) -> Result<StockTransfer, InventoryError> {
         let status: TransferStatus = self.status.parse()?;
 
         Ok(StockTransfer::reconstitute(

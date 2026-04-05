@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{OpenShiftCommand, ShiftResponse};
 use crate::domain::entities::CashierShift;
 use crate::domain::repositories::ShiftRepository;
-use crate::SalesError;
 use identity::{StoreId, UserId};
 use pos_core::TerminalId;
 
@@ -48,12 +48,7 @@ impl OpenShiftUseCase {
         }
 
         // Create new shift
-        let shift = CashierShift::create(
-            store_id,
-            terminal_id,
-            cashier_id,
-            cmd.opening_balance,
-        )?;
+        let shift = CashierShift::create(store_id, terminal_id, cashier_id, cmd.opening_balance)?;
 
         // Save the shift
         self.shift_repo.save(&shift).await?;

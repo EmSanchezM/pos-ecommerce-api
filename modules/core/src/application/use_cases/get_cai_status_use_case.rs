@@ -5,10 +5,10 @@
 
 use std::sync::Arc;
 
+use crate::CaiStatusResponse;
 use crate::domain::repositories::TerminalRepository;
 use crate::domain::value_objects::TerminalId;
 use crate::error::CoreError;
-use crate::CaiStatusResponse;
 
 /// Use case for getting the CAI status of a terminal
 ///
@@ -43,10 +43,7 @@ where
     /// * `Ok(CaiStatusResponse)` - The current CAI status with optional expiration warning
     /// * `Err(CoreError::TerminalNotFound)` - If the terminal doesn't exist
     /// * `Err(CoreError::NoCaiAssigned)` - If no CAI is assigned to the terminal
-    pub async fn execute(
-        &self,
-        terminal_id: TerminalId,
-    ) -> Result<CaiStatusResponse, CoreError> {
+    pub async fn execute(&self, terminal_id: TerminalId) -> Result<CaiStatusResponse, CoreError> {
         // 1. Get terminal
         let terminal = self
             .terminal_repo

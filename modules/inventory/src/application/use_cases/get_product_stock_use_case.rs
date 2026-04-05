@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{ListResponse, StockResponse};
 use crate::domain::repositories::{InventoryStockRepository, ProductRepository};
 use crate::domain::value_objects::ProductId;
-use crate::InventoryError;
 
 /// Use case for getting stock levels for a product across all stores
 pub struct GetProductStockUseCase<S, P>

@@ -2,9 +2,9 @@
 
 use async_trait::async_trait;
 
+use crate::SalesError;
 use crate::domain::entities::Customer;
 use crate::domain::value_objects::CustomerId;
-use crate::SalesError;
 use identity::StoreId;
 
 /// Filter for querying customers

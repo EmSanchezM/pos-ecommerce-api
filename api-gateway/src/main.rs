@@ -1,4 +1,4 @@
-use axum::{routing::get, Router};
+use axum::{Router, routing::get};
 use common::health::infrastructure::health_check_simple;
 use std::env;
 
@@ -23,8 +23,7 @@ async fn main() {
     dotenvy::dotenv().ok();
 
     // Get database URL from environment
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     // Get JWT secret from environment (or use a default for development)
     let jwt_secret = env::var("JWT_SECRET")
@@ -45,20 +44,32 @@ async fn main() {
         .route("/health", get(health_check_simple))
         .nest("/api/v1/auth", auth_router())
         .nest("/api/v1/stores", store_router(app_state.clone()))
-        .nest("/api/v1/stores/{store_id}/terminals", store_terminals_router(app_state.clone()))
+        .nest(
+            "/api/v1/stores/{store_id}/terminals",
+            store_terminals_router(app_state.clone()),
+        )
         .nest("/api/v1/terminals", terminals_router(app_state.clone()))
         .nest("/api/v1/products", products_router(app_state.clone()))
         .nest("/api/v1/recipes", recipes_router(app_state.clone()))
         .nest("/api/v1/inventory", inventory_router(app_state.clone()))
         .nest("/api/v1/reports", reports_router(app_state.clone()))
         .nest("/api/v1/vendors", vendors_router(app_state.clone()))
-        .nest("/api/v1/purchase-orders", purchase_orders_router(app_state.clone()))
-        .nest("/api/v1/goods-receipts", goods_receipts_router(app_state.clone()))
+        .nest(
+            "/api/v1/purchase-orders",
+            purchase_orders_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/goods-receipts",
+            goods_receipts_router(app_state.clone()),
+        )
         .nest("/api/v1/customers", customers_router(app_state.clone()))
         .nest("/api/v1/shifts", shifts_router(app_state.clone()))
         .nest("/api/v1/sales", pos_sales_router(app_state.clone()))
         .nest("/api/v1/carts", cart_router(app_state.clone()))
-        .nest("/api/v1/credit-notes", credit_notes_router(app_state.clone()))
+        .nest(
+            "/api/v1/credit-notes",
+            credit_notes_router(app_state.clone()),
+        )
         .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();

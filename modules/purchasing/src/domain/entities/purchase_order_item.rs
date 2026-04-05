@@ -45,12 +45,8 @@ impl PurchaseOrderItem {
         discount_percent: Decimal,
         tax_percent: Decimal,
     ) -> Self {
-        let line_total = Self::calculate_line_total(
-            quantity_ordered,
-            unit_cost,
-            discount_percent,
-            tax_percent,
-        );
+        let line_total =
+            Self::calculate_line_total(quantity_ordered, unit_cost, discount_percent, tax_percent);
 
         Self {
             id: PurchaseOrderItemId::new(),

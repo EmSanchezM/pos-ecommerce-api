@@ -6,13 +6,13 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{
-    IngredientSubstituteResponse, RecipeDetailResponse, RecipeIngredientResponse,
-    ProductResponse, VariantResponse
+    IngredientSubstituteResponse, ProductResponse, RecipeDetailResponse, RecipeIngredientResponse,
+    VariantResponse,
 };
 use crate::domain::repositories::{ProductRepository, RecipeRepository};
 use crate::domain::value_objects::RecipeId;
-use crate::InventoryError;
 
 /// Use case for getting a recipe by ID with full details
 ///

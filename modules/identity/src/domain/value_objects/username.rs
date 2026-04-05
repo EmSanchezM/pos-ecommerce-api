@@ -4,7 +4,7 @@ use crate::IdentityError;
 use serde::{Deserialize, Serialize};
 
 /// Validated username for user identification
-/// 
+///
 /// Usernames must be 3-50 characters long and contain only
 /// alphanumeric characters and underscores.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -12,17 +12,17 @@ pub struct Username(String);
 
 impl Username {
     /// Creates a new Username after validating the format.
-    /// 
+    ///
     /// # Validation Rules
     /// - Must be 3-50 characters long
     /// - Must contain only alphanumeric characters (a-z, A-Z, 0-9) and underscores
     /// - Must start with a letter
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use identity::domain::value_objects::Username;
-    /// 
+    ///
     /// let username = Username::new("john_doe").unwrap();
     /// assert_eq!(username.as_str(), "john_doe");
     /// ```
@@ -31,18 +31,21 @@ impl Username {
         if username.len() < 3 || username.len() > 50 {
             return Err(IdentityError::InvalidUsernameFormat);
         }
-        
+
         // Check that it starts with a letter
         let first_char = username.chars().next().unwrap();
         if !first_char.is_ascii_alphabetic() {
             return Err(IdentityError::InvalidUsernameFormat);
         }
-        
+
         // Check all characters are alphanumeric or underscore
-        if !username.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+        if !username
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_')
+        {
             return Err(IdentityError::InvalidUsernameFormat);
         }
-        
+
         Ok(Self(username.to_string()))
     }
 
@@ -52,12 +55,12 @@ impl Username {
     }
 
     /// Creates a Username without validation.
-    /// 
+    ///
     /// This is used internally for cases where we need to represent
     /// an invalid username that will fail authentication later.
-    /// 
+    ///
     /// # Warning
-    /// 
+    ///
     /// This method bypasses validation. Use `new()` for normal cases.
     pub(crate) fn new_unchecked(username: &str) -> Self {
         Self(username.to_string())
@@ -153,7 +156,7 @@ mod tests {
         let u1 = Username::new("john").unwrap();
         let u2 = Username::new("john").unwrap();
         let u3 = Username::new("jane").unwrap();
-        
+
         assert_eq!(u1, u2);
         assert_ne!(u1, u3);
     }

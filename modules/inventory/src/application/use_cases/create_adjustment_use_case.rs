@@ -3,12 +3,12 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::{AdjustmentItemCommand, CreateAdjustmentCommand};
 use crate::application::dtos::responses::{AdjustmentDetailResponse, AdjustmentItemResponse};
 use crate::domain::entities::{AdjustmentItem, StockAdjustment};
 use crate::domain::repositories::AdjustmentRepository;
 use crate::domain::value_objects::{AdjustmentReason, AdjustmentType, StockId};
-use crate::InventoryError;
 use identity::{StoreId, UserId};
 
 /// Use case for creating a new stock adjustment.

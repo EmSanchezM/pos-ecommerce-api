@@ -4,9 +4,9 @@ use std::sync::Arc;
 
 use identity::StoreId;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{AdjustmentResponse, PaginatedResponse};
 use crate::domain::repositories::AdjustmentRepository;
-use crate::InventoryError;
 
 /// Query parameters for listing adjustments
 #[derive(Debug, Clone)]
@@ -70,12 +70,7 @@ where
         // Fetch adjustments with pagination
         let (adjustments, total_items) = self
             .adjustment_repo
-            .find_paginated(
-                store_id_vo,
-                query.status.as_deref(),
-                page,
-                page_size,
-            )
+            .find_paginated(store_id_vo, query.status.as_deref(), page, page_size)
             .await?;
 
         // Convert to response DTOs

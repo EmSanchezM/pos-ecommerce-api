@@ -58,16 +58,34 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        assert_eq!(AdjustmentType::from_str("increase").unwrap(), AdjustmentType::Increase);
-        assert_eq!(AdjustmentType::from_str("decrease").unwrap(), AdjustmentType::Decrease);
+        assert_eq!(
+            AdjustmentType::from_str("increase").unwrap(),
+            AdjustmentType::Increase
+        );
+        assert_eq!(
+            AdjustmentType::from_str("decrease").unwrap(),
+            AdjustmentType::Decrease
+        );
     }
 
     #[test]
     fn test_from_str_aliases() {
-        assert_eq!(AdjustmentType::from_str("add").unwrap(), AdjustmentType::Increase);
-        assert_eq!(AdjustmentType::from_str("+").unwrap(), AdjustmentType::Increase);
-        assert_eq!(AdjustmentType::from_str("remove").unwrap(), AdjustmentType::Decrease);
-        assert_eq!(AdjustmentType::from_str("-").unwrap(), AdjustmentType::Decrease);
+        assert_eq!(
+            AdjustmentType::from_str("add").unwrap(),
+            AdjustmentType::Increase
+        );
+        assert_eq!(
+            AdjustmentType::from_str("+").unwrap(),
+            AdjustmentType::Increase
+        );
+        assert_eq!(
+            AdjustmentType::from_str("remove").unwrap(),
+            AdjustmentType::Decrease
+        );
+        assert_eq!(
+            AdjustmentType::from_str("-").unwrap(),
+            AdjustmentType::Decrease
+        );
     }
 
     #[test]

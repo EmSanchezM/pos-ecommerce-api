@@ -2,12 +2,12 @@
 
 use std::sync::Arc;
 
+use crate::PurchasingError;
 use crate::application::dtos::commands::CreateVendorCommand;
 use crate::application::dtos::responses::VendorResponse;
 use crate::application::utils::generate_vendor_code_prefix;
 use crate::domain::entities::Vendor;
 use crate::domain::repositories::VendorRepository;
-use crate::PurchasingError;
 use inventory::Currency;
 
 /// Use case for creating a new vendor
@@ -39,7 +39,10 @@ where
     /// * `PurchasingError::DuplicateVendorCode` - If vendor code already exists
     /// * `PurchasingError::DuplicateVendorTaxId` - If vendor tax ID already exists
     /// * `PurchasingError::InvalidCurrency` - If currency code is invalid
-    pub async fn execute(&self, command: CreateVendorCommand) -> Result<VendorResponse, PurchasingError> {
+    pub async fn execute(
+        &self,
+        command: CreateVendorCommand,
+    ) -> Result<VendorResponse, PurchasingError> {
         // Check for duplicate tax ID
         if self.vendor_repo.exists_by_tax_id(&command.tax_id).await? {
             return Err(PurchasingError::DuplicateVendorTaxId(command.tax_id));
@@ -53,8 +56,7 @@ where
 
         // Parse currency (default to HNL)
         let currency_str = command.currency.as_deref().unwrap_or("HNL");
-        let currency = Currency::new(currency_str)
-            .map_err(|_| PurchasingError::InvalidCurrency)?;
+        let currency = Currency::new(currency_str).map_err(|_| PurchasingError::InvalidCurrency)?;
 
         // Create vendor entity
         let mut vendor = Vendor::create(

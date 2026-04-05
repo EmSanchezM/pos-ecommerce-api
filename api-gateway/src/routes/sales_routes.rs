@@ -8,24 +8,22 @@
 // POS Sales: /api/v1/sales
 
 use axum::{
-    middleware,
+    Router, middleware,
     routing::{delete, get, post, put},
-    Router,
 };
 
 use crate::handlers::{
     activate_customer_handler, add_cart_item_handler, add_credit_note_item_handler,
     add_sale_item_handler, apply_credit_note_handler, apply_discount_handler,
-    approve_credit_note_handler, cancel_credit_note_handler, cash_in_handler,
-    cash_out_handler, clear_cart_handler, close_shift_handler, complete_sale_handler,
-    create_cart_handler, create_credit_note_handler, create_customer_handler,
-    create_pos_sale_handler, deactivate_customer_handler, get_cart_handler,
-    get_credit_note_handler, get_current_shift_handler, get_customer_handler,
-    get_sale_handler, get_shift_report_handler, list_credit_notes_handler,
-    list_customers_handler, list_sales_handler, list_shifts_handler, open_shift_handler,
-    process_payment_handler, remove_cart_item_handler, remove_credit_note_item_handler,
-    remove_sale_item_handler, submit_credit_note_handler, update_cart_item_handler,
-    update_customer_handler, update_sale_item_handler, void_sale_handler,
+    approve_credit_note_handler, cancel_credit_note_handler, cash_in_handler, cash_out_handler,
+    clear_cart_handler, close_shift_handler, complete_sale_handler, create_cart_handler,
+    create_credit_note_handler, create_customer_handler, create_pos_sale_handler,
+    deactivate_customer_handler, get_cart_handler, get_credit_note_handler,
+    get_current_shift_handler, get_customer_handler, get_sale_handler, get_shift_report_handler,
+    list_credit_notes_handler, list_customers_handler, list_sales_handler, list_shifts_handler,
+    open_shift_handler, process_payment_handler, remove_cart_item_handler,
+    remove_credit_note_item_handler, remove_sale_item_handler, submit_credit_note_handler,
+    update_cart_item_handler, update_customer_handler, update_sale_item_handler, void_sale_handler,
 };
 use crate::middleware::auth_middleware;
 use crate::state::AppState;
@@ -41,8 +39,14 @@ use crate::state::AppState;
 /// - `PUT /{id}/deactivate` - Deactivate customer
 pub fn customers_router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/", post(create_customer_handler).get(list_customers_handler))
-        .route("/{id}", get(get_customer_handler).put(update_customer_handler))
+        .route(
+            "/",
+            post(create_customer_handler).get(list_customers_handler),
+        )
+        .route(
+            "/{id}",
+            get(get_customer_handler).put(update_customer_handler),
+        )
         .route("/{id}/activate", put(activate_customer_handler))
         .route("/{id}/deactivate", put(deactivate_customer_handler))
         .layer(middleware::from_fn_with_state(state, auth_middleware))
@@ -87,7 +91,10 @@ pub fn pos_sales_router(state: AppState) -> Router<AppState> {
         .route("/", post(create_pos_sale_handler).get(list_sales_handler))
         .route("/{id}", get(get_sale_handler))
         .route("/{id}/items", post(add_sale_item_handler))
-        .route("/{id}/items/{item_id}", put(update_sale_item_handler).delete(remove_sale_item_handler))
+        .route(
+            "/{id}/items/{item_id}",
+            put(update_sale_item_handler).delete(remove_sale_item_handler),
+        )
         .route("/{id}/discount", post(apply_discount_handler))
         .route("/{id}/payment", post(process_payment_handler))
         .route("/{id}/complete", put(complete_sale_handler))
@@ -108,8 +115,14 @@ pub fn cart_router(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/", post(create_cart_handler))
         .route("/{id}", get(get_cart_handler))
-        .route("/{id}/items", post(add_cart_item_handler).delete(clear_cart_handler))
-        .route("/{id}/items/{item_id}", put(update_cart_item_handler).delete(remove_cart_item_handler))
+        .route(
+            "/{id}/items",
+            post(add_cart_item_handler).delete(clear_cart_handler),
+        )
+        .route(
+            "/{id}/items/{item_id}",
+            put(update_cart_item_handler).delete(remove_cart_item_handler),
+        )
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }
 
@@ -127,10 +140,16 @@ pub fn cart_router(state: AppState) -> Router<AppState> {
 /// - `PUT /{id}/cancel` - Cancel credit note
 pub fn credit_notes_router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/", post(create_credit_note_handler).get(list_credit_notes_handler))
+        .route(
+            "/",
+            post(create_credit_note_handler).get(list_credit_notes_handler),
+        )
         .route("/{id}", get(get_credit_note_handler))
         .route("/{id}/items", post(add_credit_note_item_handler))
-        .route("/{id}/items/{item_id}", delete(remove_credit_note_item_handler))
+        .route(
+            "/{id}/items/{item_id}",
+            delete(remove_credit_note_item_handler),
+        )
         .route("/{id}/submit", put(submit_credit_note_handler))
         .route("/{id}/approve", put(approve_credit_note_handler))
         .route("/{id}/apply", put(apply_credit_note_handler))

@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::UpdateVariantCommand;
 use crate::application::dtos::responses::VariantResponse;
 use crate::domain::repositories::ProductRepository;
 use crate::domain::value_objects::{Barcode, ProductId, VariantId};
-use crate::InventoryError;
 
 /// Use case for updating an existing product variant
 pub struct UpdateVariantUseCase<P>
@@ -104,9 +104,10 @@ where
             // Check against other variants
             if let Some(existing_variant) =
                 self.product_repo.find_variant_by_barcode(&barcode).await?
-                && existing_variant.id() != variant.id() {
-                    return Err(InventoryError::DuplicateBarcode(barcode_str));
-                }
+                && existing_variant.id() != variant.id()
+            {
+                return Err(InventoryError::DuplicateBarcode(barcode_str));
+            }
 
             variant.set_barcode(Some(barcode));
         }

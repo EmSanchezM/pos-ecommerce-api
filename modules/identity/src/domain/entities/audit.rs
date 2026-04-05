@@ -220,12 +220,27 @@ mod tests {
         assert_eq!(format!("{}", AuditAction::Created), "created");
         assert_eq!(format!("{}", AuditAction::Updated), "updated");
         assert_eq!(format!("{}", AuditAction::Deleted), "deleted");
-        assert_eq!(format!("{}", AuditAction::PermissionAdded), "permission_added");
-        assert_eq!(format!("{}", AuditAction::PermissionRemoved), "permission_removed");
+        assert_eq!(
+            format!("{}", AuditAction::PermissionAdded),
+            "permission_added"
+        );
+        assert_eq!(
+            format!("{}", AuditAction::PermissionRemoved),
+            "permission_removed"
+        );
         assert_eq!(format!("{}", AuditAction::RoleAssigned), "role_assigned");
-        assert_eq!(format!("{}", AuditAction::RoleUnassigned), "role_unassigned");
-        assert_eq!(format!("{}", AuditAction::UserAddedToStore), "user_added_to_store");
-        assert_eq!(format!("{}", AuditAction::UserRemovedFromStore), "user_removed_from_store");
+        assert_eq!(
+            format!("{}", AuditAction::RoleUnassigned),
+            "role_unassigned"
+        );
+        assert_eq!(
+            format!("{}", AuditAction::UserAddedToStore),
+            "user_added_to_store"
+        );
+        assert_eq!(
+            format!("{}", AuditAction::UserRemovedFromStore),
+            "user_removed_from_store"
+        );
     }
 
     #[test]
@@ -284,7 +299,8 @@ mod tests {
             value: 2,
         };
 
-        let entry = AuditEntry::for_update("test_entity", entity_id, &old_entity, &new_entity, actor_id);
+        let entry =
+            AuditEntry::for_update("test_entity", entity_id, &old_entity, &new_entity, actor_id);
 
         assert_eq!(entry.action(), &AuditAction::Updated);
         assert!(entry.old_value().is_some());

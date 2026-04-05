@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{CartResponse, UpdateCartItemCommand};
 use crate::domain::repositories::CartRepository;
 use crate::domain::value_objects::{CartId, CartItemId};
-use crate::SalesError;
 
 /// Use case for updating a cart item quantity
 pub struct UpdateCartItemUseCase {

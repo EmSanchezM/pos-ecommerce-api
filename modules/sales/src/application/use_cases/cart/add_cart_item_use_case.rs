@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{AddCartItemCommand, CartResponse};
 use crate::domain::entities::CartItem;
 use crate::domain::repositories::CartRepository;
 use crate::domain::value_objects::CartId;
-use crate::SalesError;
 use inventory::{ProductId, UnitOfMeasure, VariantId};
 
 /// Use case for adding an item to a cart
@@ -28,7 +28,9 @@ impl AddCartItemUseCase {
             .await?
             .ok_or(SalesError::CartNotFound(cmd.cart_id))?;
 
-        let uom: UnitOfMeasure = cmd.unit_of_measure.parse()
+        let uom: UnitOfMeasure = cmd
+            .unit_of_measure
+            .parse()
             .map_err(|_| SalesError::InvalidUnitOfMeasure)?;
 
         let item = CartItem::create(

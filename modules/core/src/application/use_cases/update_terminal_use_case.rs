@@ -8,11 +8,11 @@ use std::sync::Arc;
 
 use identity::{AuditEntry, AuditRepository, UserId};
 
+use crate::UpdateTerminalCommand;
 use crate::domain::entities::Terminal;
 use crate::domain::repositories::TerminalRepository;
 use crate::domain::value_objects::TerminalId;
 use crate::error::CoreError;
-use crate::UpdateTerminalCommand;
 
 /// Use case for updating an existing terminal
 ///

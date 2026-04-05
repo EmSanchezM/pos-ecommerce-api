@@ -4,12 +4,12 @@ use async_trait::async_trait;
 use sqlx::PgPool;
 use std::str::FromStr;
 
+use crate::SalesError;
 use crate::domain::entities::{CreditNote, CreditNoteItem};
 use crate::domain::repositories::{CreditNoteFilter, CreditNoteRepository};
 use crate::domain::value_objects::{
     CreditNoteId, CreditNoteItemId, CreditNoteStatus, ReturnReason, ReturnType, SaleId, SaleItemId,
 };
-use crate::SalesError;
 use identity::{StoreId, UserId};
 use inventory::{Currency, ProductId, UnitOfMeasure, VariantId};
 
@@ -23,7 +23,10 @@ impl PgCreditNoteRepository {
         Self { pool }
     }
 
-    async fn load_items(&self, credit_note_id: CreditNoteId) -> Result<Vec<CreditNoteItem>, SalesError> {
+    async fn load_items(
+        &self,
+        credit_note_id: CreditNoteId,
+    ) -> Result<Vec<CreditNoteItem>, SalesError> {
         let rows = sqlx::query_as::<_, CreditNoteItemRow>(
             r#"
             SELECT id, credit_note_id, original_sale_item_id, product_id, variant_id, sku,

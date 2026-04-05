@@ -4,9 +4,8 @@
 // under /api/v1/stores prefix with authentication middleware.
 
 use axum::{
-    middleware,
+    Router, middleware,
     routing::{get, post},
-    Router,
 };
 
 use crate::handlers::{

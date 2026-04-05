@@ -4,13 +4,13 @@ use async_trait::async_trait;
 use sqlx::PgPool;
 use std::str::FromStr;
 
+use crate::SalesError;
 use crate::domain::entities::{Payment, Sale, SaleItem};
 use crate::domain::repositories::{SaleFilter, SaleRepository};
 use crate::domain::value_objects::{
     CustomerId, DiscountType, OrderStatus, PaymentId, PaymentMethod, PaymentStatus, SaleId,
     SaleItemId, SaleStatus, SaleType, ShiftId,
 };
-use crate::SalesError;
 use identity::{StoreId, UserId};
 use inventory::{Currency, ProductId, ReservationId, UnitOfMeasure, VariantId};
 use pos_core::TerminalId;
@@ -370,12 +370,13 @@ impl SaleRepository for PgSaleRepository {
         let today = chrono::Utc::now().format("%Y%m%d");
         let prefix = format!("SALE-{}", today);
 
-        let count: (i64,) =
-            sqlx::query_as("SELECT COUNT(*) FROM sales WHERE store_id = $1 AND sale_number LIKE $2")
-                .bind(store_id.into_uuid())
-                .bind(format!("{}%", prefix))
-                .fetch_one(&self.pool)
-                .await?;
+        let count: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*) FROM sales WHERE store_id = $1 AND sale_number LIKE $2",
+        )
+        .bind(store_id.into_uuid())
+        .bind(format!("{}%", prefix))
+        .fetch_one(&self.pool)
+        .await?;
 
         Ok(format!("{}-{:04}", prefix, count.0 + 1))
     }
@@ -602,10 +603,8 @@ impl SaleRow {
     fn into_sale(self, items: Vec<SaleItem>, payments: Vec<Payment>) -> Result<Sale, SalesError> {
         let sale_type: SaleType = self.sale_type.parse().unwrap_or(SaleType::Pos);
         let status: SaleStatus = self.status.parse().unwrap_or(SaleStatus::Draft);
-        let order_status: Option<OrderStatus> =
-            self.order_status.and_then(|s| s.parse().ok());
-        let discount_type: Option<DiscountType> =
-            self.discount_type.and_then(|d| d.parse().ok());
+        let order_status: Option<OrderStatus> = self.order_status.and_then(|s| s.parse().ok());
+        let discount_type: Option<DiscountType> = self.discount_type.and_then(|d| d.parse().ok());
 
         Ok(Sale::reconstitute(
             SaleId::from_uuid(self.id),
@@ -674,8 +673,7 @@ impl TryFrom<SaleItemRow> for SaleItem {
     type Error = SalesError;
 
     fn try_from(row: SaleItemRow) -> Result<Self, Self::Error> {
-        let discount_type: Option<DiscountType> =
-            row.discount_type.and_then(|d| d.parse().ok());
+        let discount_type: Option<DiscountType> = row.discount_type.and_then(|d| d.parse().ok());
         let uom = UnitOfMeasure::from_str(&row.unit_of_measure)
             .map_err(|_| SalesError::InvalidUnitOfMeasure)?;
 

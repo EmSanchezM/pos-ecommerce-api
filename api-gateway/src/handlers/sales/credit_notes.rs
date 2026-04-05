@@ -1,9 +1,9 @@
 // Credit note handlers for the Sales module (Returns)
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
-    Json,
     response::{IntoResponse, Response},
 };
 use uuid::Uuid;

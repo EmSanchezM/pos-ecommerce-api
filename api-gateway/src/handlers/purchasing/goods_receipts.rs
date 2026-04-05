@@ -10,20 +10,20 @@
 // - PUT /api/v1/goods-receipts/{id}/cancel - Cancel goods receipt
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::Deserialize;
 use uuid::Uuid;
 
+use inventory::PaginatedResponse;
 use purchasing::{
     CancelGoodsReceiptUseCase, ConfirmGoodsReceiptUseCase, CreateGoodsReceiptCommand,
     CreateGoodsReceiptUseCase, GetGoodsReceiptUseCase, GoodsReceiptDetailResponse,
     GoodsReceiptResponse, ListGoodsReceiptsQuery, ListGoodsReceiptsUseCase,
 };
-use inventory::PaginatedResponse;
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
@@ -116,10 +116,8 @@ pub async fn create_goods_receipt_handler(
 ) -> Result<(StatusCode, Json<GoodsReceiptDetailResponse>), Response> {
     require_permission(&ctx, "goods_receipts:create")?;
 
-    let use_case = CreateGoodsReceiptUseCase::new(
-        state.goods_receipt_repo(),
-        state.purchase_order_repo(),
-    );
+    let use_case =
+        CreateGoodsReceiptUseCase::new(state.goods_receipt_repo(), state.purchase_order_repo());
 
     let actor_id = *ctx.user_id();
     let response = use_case
@@ -230,10 +228,8 @@ pub async fn confirm_goods_receipt_handler(
 ) -> Result<Json<GoodsReceiptDetailResponse>, Response> {
     require_permission(&ctx, "goods_receipts:confirm")?;
 
-    let use_case = ConfirmGoodsReceiptUseCase::new(
-        state.goods_receipt_repo(),
-        state.purchase_order_repo(),
-    );
+    let use_case =
+        ConfirmGoodsReceiptUseCase::new(state.goods_receipt_repo(), state.purchase_order_repo());
 
     let actor_id = *ctx.user_id();
     let response = use_case

@@ -3,6 +3,7 @@
 use rust_decimal::Decimal;
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::{BulkInitializeStockCommand, BulkInitializeStockItem};
 use crate::application::dtos::responses::StockResponse;
 use crate::domain::entities::{InventoryMovement, InventoryStock};
@@ -10,11 +11,10 @@ use crate::domain::repositories::{
     InventoryMovementRepository, InventoryStockRepository, ProductRepository,
 };
 use crate::domain::value_objects::{Currency, MovementType, ProductId, VariantId};
-use crate::InventoryError;
+use identity::StoreId;
 use identity::domain::entities::AuditEntry;
 use identity::domain::repositories::AuditRepository;
 use identity::domain::value_objects::UserId;
-use identity::StoreId;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -220,12 +220,8 @@ where
         }
 
         // 7. Create audit entry
-        let audit_entry = AuditEntry::for_create(
-            "inventory_stock",
-            stock.id().into_uuid(),
-            &stock,
-            actor_id,
-        );
+        let audit_entry =
+            AuditEntry::for_create("inventory_stock", stock.id().into_uuid(), &stock, actor_id);
         let _ = self.audit_repo.save(&audit_entry).await;
 
         // 8. Return response

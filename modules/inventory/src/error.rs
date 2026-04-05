@@ -34,7 +34,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Category errors
     // -------------------------------------------------------------------------
-    
     /// The requested category was not found in the database.
     #[error("Category not found: {0}")]
     CategoryNotFound(Uuid),
@@ -50,7 +49,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Product errors
     // -------------------------------------------------------------------------
-    
     /// The requested product was not found in the database.
     #[error("Product not found: {0}")]
     ProductNotFound(Uuid),
@@ -70,7 +68,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Variant errors
     // -------------------------------------------------------------------------
-    
     /// The requested product variant was not found.
     #[error("Variant not found: {0}")]
     VariantNotFound(Uuid),
@@ -78,7 +75,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Stock errors
     // -------------------------------------------------------------------------
-    
     /// The requested stock record was not found.
     #[error("Stock not found: {0}")]
     StockNotFound(Uuid),
@@ -115,7 +111,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Reservation errors
     // -------------------------------------------------------------------------
-    
     /// The requested reservation was not found.
     #[error("Reservation not found: {0}")]
     ReservationNotFound(Uuid),
@@ -131,7 +126,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Recipe errors
     // -------------------------------------------------------------------------
-    
     /// The requested recipe was not found.
     #[error("Recipe not found: {0}")]
     RecipeNotFound(Uuid),
@@ -180,7 +174,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Adjustment errors
     // -------------------------------------------------------------------------
-    
     /// The requested adjustment was not found.
     #[error("Adjustment not found: {0}")]
     AdjustmentNotFound(Uuid),
@@ -196,7 +189,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Transfer errors
     // -------------------------------------------------------------------------
-    
     /// The requested transfer was not found.
     #[error("Transfer not found: {0}")]
     TransferNotFound(Uuid),
@@ -212,7 +204,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Workflow errors
     // -------------------------------------------------------------------------
-    
     /// The requested status transition is not valid for the current state.
     #[error("Invalid status transition")]
     InvalidStatusTransition,
@@ -220,7 +211,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Validation errors
     // -------------------------------------------------------------------------
-    
     /// Currency code must be exactly 3 uppercase letters (ISO 4217 format).
     #[error("Invalid currency code: must be 3 uppercase letters (ISO 4217)")]
     InvalidCurrency,
@@ -264,7 +254,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Database errors
     // -------------------------------------------------------------------------
-    
     /// A database error occurred during the operation.
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
@@ -272,7 +261,6 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // General errors
     // -------------------------------------------------------------------------
-    
     /// The requested functionality is not yet implemented.
     #[error("Not implemented")]
     NotImplemented,

@@ -1,10 +1,10 @@
 use anyhow::Result;
 use argon2::{
-    password_hash::{rand_core::OsRng, SaltString},
     Argon2, PasswordHasher,
+    password_hash::{SaltString, rand_core::OsRng},
 };
 use sqlx::postgres::PgPoolOptions;
-use tracing::{info, Level};
+use tracing::{Level, info};
 use tracing_subscriber::FmtSubscriber;
 use uuid::Uuid;
 
@@ -21,8 +21,7 @@ async fn main() -> Result<()> {
     // Load environment variables
     dotenvy::dotenv().ok();
 
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
+    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     info!("Connecting to database...");
     let pool = PgPoolOptions::new()
@@ -72,7 +71,7 @@ async fn seed_permissions(
 
     for (code, description) in data::PERMISSIONS {
         let id = Uuid::now_v7();
-        
+
         sqlx::query(
             r#"
             INSERT INTO permissions (id, code, description)
@@ -134,7 +133,6 @@ async fn seed_roles(
     Ok(role_ids)
 }
 
-
 async fn seed_role_permissions(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     role_ids: &std::collections::HashMap<String, Uuid>,
@@ -144,7 +142,9 @@ async fn seed_role_permissions(
         let role_id = role_ids.get(*role_name).expect("Role not found");
 
         for permission_code in *permissions {
-            let permission_id = permission_ids.get(*permission_code).expect("Permission not found");
+            let permission_id = permission_ids
+                .get(*permission_code)
+                .expect("Permission not found");
 
             sqlx::query(
                 r#"
@@ -159,15 +159,17 @@ async fn seed_role_permissions(
             .await?;
         }
 
-        info!("  Assigned {} permissions to role: {}", permissions.len(), role_name);
+        info!(
+            "  Assigned {} permissions to role: {}",
+            permissions.len(),
+            role_name
+        );
     }
 
     Ok(())
 }
 
-async fn seed_main_store(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> Result<Uuid> {
+async fn seed_main_store(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<Uuid> {
     let id = Uuid::now_v7();
 
     sqlx::query(
@@ -196,9 +198,7 @@ async fn seed_main_store(
     Ok(row.0)
 }
 
-async fn seed_super_admin_user(
-    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> Result<Uuid> {
+async fn seed_super_admin_user(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<Uuid> {
     let id = Uuid::now_v7();
 
     // Hash the password using Argon2
@@ -225,7 +225,11 @@ async fn seed_super_admin_user(
     .execute(&mut **tx)
     .await?;
 
-    info!("  User: {} ({})", data::SUPER_ADMIN_USER.1, data::SUPER_ADMIN_USER.0);
+    info!(
+        "  User: {} ({})",
+        data::SUPER_ADMIN_USER.1,
+        data::SUPER_ADMIN_USER.0
+    );
 
     // Get the actual ID (in case it already existed)
     let row: (Uuid,) = sqlx::query_as("SELECT id FROM users WHERE email = $1")
@@ -256,8 +260,10 @@ async fn seed_super_admin_store_assignment(
     .await?;
 
     // Assign super_admin role (composite PK: user_id, store_id, role_id)
-    let super_admin_role_id = role_ids.get("super_admin").expect("super_admin role not found");
-    
+    let super_admin_role_id = role_ids
+        .get("super_admin")
+        .expect("super_admin role not found");
+
     sqlx::query(
         r#"
         INSERT INTO user_store_roles (user_id, store_id, role_id)

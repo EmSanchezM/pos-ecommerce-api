@@ -5,7 +5,7 @@ use crate::CoreError;
 use serde::{Deserialize, Serialize};
 
 /// CAI (Código de Autorización de Impresión) number
-/// 
+///
 /// Validation rules:
 /// - Must not be empty
 /// - Maximum 50 characters
@@ -14,14 +14,14 @@ pub struct CaiNumber(String);
 
 impl CaiNumber {
     /// Creates a new CaiNumber with validation
-    /// 
+    ///
     /// # Arguments
     /// * `cai` - The CAI number string
-    /// 
+    ///
     /// # Returns
     /// * `Ok(CaiNumber)` - If validation passes
     /// * `Err(CoreError::InvalidCaiNumber)` - If validation fails
-    /// 
+    ///
     /// # Validation Rules
     /// - Must not be empty
     /// - Maximum 50 characters

@@ -7,18 +7,18 @@
 // - GET /terminals/:id/cai/history - Get CAI history
 
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use chrono::NaiveDate;
 use uuid::Uuid;
 
 use pos_core::{
     AssignCaiCommand, AssignCaiUseCase, CaiHistoryItemResponse, CaiStatusResponse,
-    GetCaiStatusUseCase, GetNextInvoiceNumberUseCase, GetTerminalDetailUseCase,
-    ListResponse, NextInvoiceNumberResponse, TerminalId,
+    GetCaiStatusUseCase, GetNextInvoiceNumberUseCase, GetTerminalDetailUseCase, ListResponse,
+    NextInvoiceNumberResponse, TerminalId,
 };
 
 use crate::error::AppError;

@@ -3,10 +3,10 @@
 use async_trait::async_trait;
 use sqlx::PgPool;
 
+use crate::InventoryError;
 use crate::domain::entities::ProductCategory;
 use crate::domain::repositories::CategoryRepository;
 use crate::domain::value_objects::CategoryId;
-use crate::InventoryError;
 
 /// PostgreSQL implementation of CategoryRepository
 pub struct PgCategoryRepository {
@@ -60,7 +60,6 @@ impl CategoryRepository for PgCategoryRepository {
         Ok(row.map(|r| r.into()))
     }
 
-
     async fn find_by_slug(&self, slug: &str) -> Result<Option<ProductCategory>, InventoryError> {
         let row = sqlx::query_as::<_, CategoryRow>(
             r#"
@@ -91,7 +90,10 @@ impl CategoryRepository for PgCategoryRepository {
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
 
-    async fn find_children(&self, parent_id: CategoryId) -> Result<Vec<ProductCategory>, InventoryError> {
+    async fn find_children(
+        &self,
+        parent_id: CategoryId,
+    ) -> Result<Vec<ProductCategory>, InventoryError> {
         let rows = sqlx::query_as::<_, CategoryRow>(
             r#"
             SELECT id, parent_id, name, description, slug, icon, sort_order, is_active, created_at, updated_at

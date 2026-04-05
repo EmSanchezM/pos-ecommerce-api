@@ -6,9 +6,9 @@ use chrono::Utc;
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{LowStockItemResponse, LowStockReportResponse};
 use crate::domain::repositories::{InventoryStockRepository, ProductRepository};
-use crate::InventoryError;
 
 /// Query parameters for low stock report
 #[derive(Debug, Clone)]
@@ -57,10 +57,15 @@ where
     ///
     /// # Returns
     /// LowStockReportResponse with low stock items and reorder suggestions
-    pub async fn execute(&self, query: LowStockReportQuery) -> Result<LowStockReportResponse, InventoryError> {
+    pub async fn execute(
+        &self,
+        query: LowStockReportQuery,
+    ) -> Result<LowStockReportResponse, InventoryError> {
         // Get low stock items (optionally filtered by store)
         let stocks = if let Some(store_id) = query.store_id {
-            self.stock_repo.find_low_stock_by_store(store_id.into()).await?
+            self.stock_repo
+                .find_low_stock_by_store(store_id.into())
+                .await?
         } else {
             self.stock_repo.find_all_low_stock().await?
         };
@@ -92,9 +97,7 @@ where
             };
 
             // Get product info
-            let (product_name, variant_name, sku) = self
-                .get_product_info(&stock)
-                .await?;
+            let (product_name, variant_name, sku) = self.get_product_info(&stock).await?;
 
             items.push(LowStockItemResponse {
                 stock_id: stock.id().into_uuid(),
@@ -131,22 +134,25 @@ where
         let mut sku = None;
 
         if let Some(product_id) = stock.product_id()
-            && let Some(product) = self.product_repo.find_by_id(product_id).await? {
-                product_name = Some(product.name().to_string());
-                sku = Some(product.sku().to_string());
-            }
+            && let Some(product) = self.product_repo.find_by_id(product_id).await?
+        {
+            product_name = Some(product.name().to_string());
+            sku = Some(product.sku().to_string());
+        }
 
         if let Some(variant_id) = stock.variant_id()
-            && let Some(variant) = self.product_repo.find_variant_by_id(variant_id).await? {
-                variant_name = Some(variant.name().to_string());
-                sku = Some(variant.sku().to_string());
+            && let Some(variant) = self.product_repo.find_variant_by_id(variant_id).await?
+        {
+            variant_name = Some(variant.name().to_string());
+            sku = Some(variant.sku().to_string());
 
-                // Also get parent product name if not already set
-                if product_name.is_none()
-                    && let Some(product) = self.product_repo.find_by_id(variant.product_id()).await? {
-                        product_name = Some(product.name().to_string());
-                    }
+            // Also get parent product name if not already set
+            if product_name.is_none()
+                && let Some(product) = self.product_repo.find_by_id(variant.product_id()).await?
+            {
+                product_name = Some(product.name().to_string());
             }
+        }
 
         Ok((product_name, variant_name, sku))
     }
@@ -163,9 +169,7 @@ mod tests {
     use uuid::{NoContext, Timestamp, Uuid};
 
     use crate::domain::entities::{InventoryStock, Product, ProductVariant};
-    use crate::domain::value_objects::{
-        Barcode, CategoryId, ProductId, Sku, StockId, VariantId,
-    };
+    use crate::domain::value_objects::{Barcode, CategoryId, ProductId, Sku, StockId, VariantId};
     use identity::StoreId;
 
     fn new_uuid() -> Uuid {
@@ -227,7 +231,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_low_stock(&self, store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_low_stock(
+            &self,
+            store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             let stocks = self.stocks.lock().unwrap();
             Ok(stocks
                 .values()
@@ -239,7 +246,10 @@ mod tests {
                 .collect())
         }
 
-        async fn find_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_by_store(
+            &self,
+            _store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
 
@@ -254,7 +264,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_by_product(&self, _product_id: ProductId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_by_product(
+            &self,
+            _product_id: ProductId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
 
@@ -272,7 +285,10 @@ mod tests {
                 .collect())
         }
 
-        async fn find_low_stock_by_store(&self, store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_low_stock_by_store(
+            &self,
+            store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             let stocks = self.stocks.lock().unwrap();
             Ok(stocks
                 .values()
@@ -302,7 +318,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_by_category(&self, _category_id: CategoryId) -> Result<Vec<Product>, InventoryError> {
+        async fn find_by_category(
+            &self,
+            _category_id: CategoryId,
+        ) -> Result<Vec<Product>, InventoryError> {
             unimplemented!()
         }
 
@@ -329,15 +348,24 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_variant_by_id(&self, _id: VariantId) -> Result<Option<ProductVariant>, InventoryError> {
+        async fn find_variant_by_id(
+            &self,
+            _id: VariantId,
+        ) -> Result<Option<ProductVariant>, InventoryError> {
             Ok(None) // No variant info for simplicity
         }
 
-        async fn find_variant_by_sku(&self, _sku: &Sku) -> Result<Option<ProductVariant>, InventoryError> {
+        async fn find_variant_by_sku(
+            &self,
+            _sku: &Sku,
+        ) -> Result<Option<ProductVariant>, InventoryError> {
             unimplemented!()
         }
 
-        async fn find_variants_by_product(&self, _product_id: ProductId) -> Result<Vec<ProductVariant>, InventoryError> {
+        async fn find_variants_by_product(
+            &self,
+            _product_id: ProductId,
+        ) -> Result<Vec<ProductVariant>, InventoryError> {
             unimplemented!()
         }
 
@@ -349,7 +377,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_by_barcode(&self, _barcode: &Barcode) -> Result<Option<Product>, InventoryError> {
+        async fn find_by_barcode(
+            &self,
+            _barcode: &Barcode,
+        ) -> Result<Option<Product>, InventoryError> {
             unimplemented!()
         }
 
@@ -366,7 +397,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_variant_by_barcode(&self, _barcode: &Barcode) -> Result<Option<ProductVariant>, InventoryError> {
+        async fn find_variant_by_barcode(
+            &self,
+            _barcode: &Barcode,
+        ) -> Result<Option<ProductVariant>, InventoryError> {
             unimplemented!()
         }
 
@@ -466,7 +500,10 @@ mod tests {
         let use_case = GetLowStockReportUseCase::new(stock_repo, product_repo);
 
         // First, with zero stock included (default)
-        let result = use_case.execute(LowStockReportQuery::default()).await.unwrap();
+        let result = use_case
+            .execute(LowStockReportQuery::default())
+            .await
+            .unwrap();
         assert_eq!(result.total_items, 2);
 
         // Then, with zero stock excluded
@@ -490,7 +527,10 @@ mod tests {
         stock_repo.add_stock(create_test_stock(dec!(5), dec!(0), dec!(10), None));
 
         let use_case = GetLowStockReportUseCase::new(stock_repo, product_repo);
-        let result = use_case.execute(LowStockReportQuery::default()).await.unwrap();
+        let result = use_case
+            .execute(LowStockReportQuery::default())
+            .await
+            .unwrap();
 
         assert_eq!(result.items[0].reorder_suggestion, dec!(15));
     }

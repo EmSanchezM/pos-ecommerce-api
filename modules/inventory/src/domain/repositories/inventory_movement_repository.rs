@@ -5,9 +5,9 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
+use crate::InventoryError;
 use crate::domain::entities::InventoryMovement;
 use crate::domain::value_objects::StockId;
-use crate::InventoryError;
 
 /// Query parameters for listing movements with filters
 #[derive(Debug, Clone, Default)]

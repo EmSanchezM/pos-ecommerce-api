@@ -5,8 +5,8 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
-use crate::domain::value_objects::{ProductId, RecipeId, VariantId};
 use crate::InventoryError;
+use crate::domain::value_objects::{ProductId, RecipeId, VariantId};
 
 /// Recipe entity representing a Bill of Materials (BOM) for composite products.
 /// Defines ingredients needed to produce a product or variant.
@@ -62,7 +62,6 @@ impl Recipe {
             updated_at: now,
         })
     }
-
 
     /// Creates a new Recipe for a variant
     pub fn create_for_variant(
@@ -157,7 +156,7 @@ impl Recipe {
 
     /// Calculates the cost per unit based on ingredient costs
     /// Returns the total ingredient cost divided by yield_quantity
-    /// 
+    ///
     /// Formula: sum(ingredient_quantity * (1 + waste_percentage) * ingredient_cost) / yield_quantity
     pub fn calculate_cost(&self, total_ingredient_cost: Decimal) -> Decimal {
         if self.yield_quantity <= Decimal::ZERO {
@@ -171,7 +170,6 @@ impl Recipe {
         self.version += 1;
         self.updated_at = Utc::now();
     }
-
 
     // =========================================================================
     // Getters
@@ -277,7 +275,6 @@ impl Recipe {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -286,11 +283,8 @@ mod tests {
     #[test]
     fn test_create_recipe_for_product() {
         let product_id = ProductId::new();
-        let recipe = Recipe::create_for_product(
-            product_id,
-            "Chocolate Cake".to_string(),
-            dec!(10),
-        ).unwrap();
+        let recipe =
+            Recipe::create_for_product(product_id, "Chocolate Cake".to_string(), dec!(10)).unwrap();
 
         assert_eq!(recipe.product_id(), Some(product_id));
         assert!(recipe.variant_id().is_none());
@@ -304,11 +298,9 @@ mod tests {
     #[test]
     fn test_create_recipe_for_variant() {
         let variant_id = VariantId::new();
-        let recipe = Recipe::create_for_variant(
-            variant_id,
-            "Large Chocolate Cake".to_string(),
-            dec!(15),
-        ).unwrap();
+        let recipe =
+            Recipe::create_for_variant(variant_id, "Large Chocolate Cake".to_string(), dec!(15))
+                .unwrap();
 
         assert!(recipe.product_id().is_none());
         assert_eq!(recipe.variant_id(), Some(variant_id));
@@ -319,30 +311,19 @@ mod tests {
     #[test]
     fn test_create_recipe_invalid_yield_quantity() {
         let product_id = ProductId::new();
-        
-        let result = Recipe::create_for_product(
-            product_id,
-            "Test Recipe".to_string(),
-            dec!(0),
-        );
+
+        let result = Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(0));
         assert!(matches!(result, Err(InventoryError::InvalidYieldQuantity)));
 
-        let result = Recipe::create_for_product(
-            product_id,
-            "Test Recipe".to_string(),
-            dec!(-5),
-        );
+        let result = Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(-5));
         assert!(matches!(result, Err(InventoryError::InvalidYieldQuantity)));
     }
 
     #[test]
     fn test_deactivate_activate() {
         let product_id = ProductId::new();
-        let mut recipe = Recipe::create_for_product(
-            product_id,
-            "Test Recipe".to_string(),
-            dec!(1),
-        ).unwrap();
+        let mut recipe =
+            Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(1)).unwrap();
 
         assert!(recipe.is_active());
 
@@ -356,11 +337,8 @@ mod tests {
     #[test]
     fn test_calculate_cost() {
         let product_id = ProductId::new();
-        let recipe = Recipe::create_for_product(
-            product_id,
-            "Test Recipe".to_string(),
-            dec!(10),
-        ).unwrap();
+        let recipe =
+            Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(10)).unwrap();
 
         // Total ingredient cost of 100, yield of 10 = cost per unit of 10
         let cost_per_unit = recipe.calculate_cost(dec!(100));
@@ -374,11 +352,8 @@ mod tests {
     #[test]
     fn test_increment_version() {
         let product_id = ProductId::new();
-        let mut recipe = Recipe::create_for_product(
-            product_id,
-            "Test Recipe".to_string(),
-            dec!(1),
-        ).unwrap();
+        let mut recipe =
+            Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(1)).unwrap();
 
         assert_eq!(recipe.version(), 1);
 
@@ -392,11 +367,8 @@ mod tests {
     #[test]
     fn test_setters() {
         let product_id = ProductId::new();
-        let mut recipe = Recipe::create_for_product(
-            product_id,
-            "Test Recipe".to_string(),
-            dec!(1),
-        ).unwrap();
+        let mut recipe =
+            Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(1)).unwrap();
 
         recipe.set_name("Updated Recipe".to_string());
         assert_eq!(recipe.name(), "Updated Recipe");
@@ -424,11 +396,8 @@ mod tests {
     #[test]
     fn test_set_yield_quantity_invalid() {
         let product_id = ProductId::new();
-        let mut recipe = Recipe::create_for_product(
-            product_id,
-            "Test Recipe".to_string(),
-            dec!(10),
-        ).unwrap();
+        let mut recipe =
+            Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(10)).unwrap();
 
         let result = recipe.set_yield_quantity(dec!(0));
         assert!(matches!(result, Err(InventoryError::InvalidYieldQuantity)));
@@ -463,7 +432,10 @@ mod tests {
             now,
         );
 
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[test]
@@ -487,7 +459,10 @@ mod tests {
             now,
         );
 
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[test]
@@ -510,7 +485,8 @@ mod tests {
             serde_json::json!({"key": "value"}),
             now,
             now,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(recipe.product_id(), Some(product_id));
         assert!(recipe.variant_id().is_none());

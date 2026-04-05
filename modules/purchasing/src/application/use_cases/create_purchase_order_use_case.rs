@@ -5,14 +5,12 @@ use std::sync::Arc;
 
 use chrono::NaiveDate;
 
+use crate::PurchasingError;
 use crate::application::dtos::commands::CreatePurchaseOrderCommand;
-use crate::application::dtos::responses::{
-    PurchaseOrderDetailResponse, PurchaseOrderItemResponse,
-};
+use crate::application::dtos::responses::{PurchaseOrderDetailResponse, PurchaseOrderItemResponse};
 use crate::domain::entities::{PurchaseOrder, PurchaseOrderItem};
 use crate::domain::repositories::{PurchaseOrderRepository, VendorRepository};
 use crate::domain::value_objects::VendorId;
-use crate::PurchasingError;
 use identity::{StoreId, UserId};
 use inventory::{Currency, ProductId, UnitOfMeasure};
 
@@ -74,8 +72,7 @@ where
 
         // Determine currency (use command value, or vendor's default)
         let currency = if let Some(ref currency_str) = command.currency {
-            Currency::new(currency_str)
-                .map_err(|_| PurchasingError::InvalidCurrency)?
+            Currency::new(currency_str).map_err(|_| PurchasingError::InvalidCurrency)?
         } else {
             vendor.currency().clone()
         };

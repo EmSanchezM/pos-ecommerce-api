@@ -2,12 +2,14 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::ReceiveTransferCommand;
 use crate::application::dtos::responses::{TransferDetailResponse, TransferItemResponse};
 use crate::domain::entities::{InventoryMovement, InventoryStock, StockTransfer};
-use crate::domain::repositories::{InventoryMovementRepository, InventoryStockRepository, TransferRepository};
+use crate::domain::repositories::{
+    InventoryMovementRepository, InventoryStockRepository, TransferRepository,
+};
 use crate::domain::value_objects::{Currency, MovementType, TransferId};
-use crate::InventoryError;
 use identity::UserId;
 
 /// Use case for receiving a stock transfer at destination.
@@ -71,11 +73,12 @@ where
         transfer.receive(actor_id)?;
 
         // 3. Build a map of item_id -> received quantity from command
-        let received_quantities: std::collections::HashMap<uuid::Uuid, rust_decimal::Decimal> = command
-            .items
-            .iter()
-            .map(|item| (item.item_id, item.quantity_received))
-            .collect();
+        let received_quantities: std::collections::HashMap<uuid::Uuid, rust_decimal::Decimal> =
+            command
+                .items
+                .iter()
+                .map(|item| (item.item_id, item.quantity_received))
+                .collect();
 
         // 4. Process each item: increase destination stock and create movements (Requirement 11.7)
         let to_store_id = transfer.to_store_id();
@@ -93,29 +96,33 @@ where
 
             // Find or create stock record for this item at destination store
             let stock = if let Some(product_id) = item.product_id() {
-                let existing = self.stock_repo
+                let existing = self
+                    .stock_repo
                     .find_by_store_and_product(to_store_id, product_id)
                     .await?;
-                
+
                 match existing {
                     Some(s) => s,
                     None => {
                         // Create new stock record
-                        let new_stock = InventoryStock::create_for_product(to_store_id, product_id)?;
+                        let new_stock =
+                            InventoryStock::create_for_product(to_store_id, product_id)?;
                         self.stock_repo.save(&new_stock).await?;
                         new_stock
                     }
                 }
             } else if let Some(variant_id) = item.variant_id() {
-                let existing = self.stock_repo
+                let existing = self
+                    .stock_repo
                     .find_by_store_and_variant(to_store_id, variant_id)
                     .await?;
-                
+
                 match existing {
                     Some(s) => s,
                     None => {
                         // Create new stock record
-                        let new_stock = InventoryStock::create_for_variant(to_store_id, variant_id)?;
+                        let new_stock =
+                            InventoryStock::create_for_variant(to_store_id, variant_id)?;
                         self.stock_repo.save(&new_stock).await?;
                         new_stock
                     }
@@ -201,7 +208,6 @@ where
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -312,7 +318,7 @@ mod tests {
         fn add_stock(&self, stock: InventoryStock) {
             let mut stocks = self.stocks.lock().unwrap();
             let stock_id = stock.id();
-            
+
             if let Some(product_id) = stock.product_id() {
                 let mut product_stocks = self.product_stocks.lock().unwrap();
                 product_stocks.insert((stock.store_id(), product_id), stock_id);
@@ -321,11 +327,15 @@ mod tests {
                 let mut variant_stocks = self.variant_stocks.lock().unwrap();
                 variant_stocks.insert((stock.store_id(), variant_id), stock_id);
             }
-            
+
             stocks.insert(stock_id, stock);
         }
 
-        fn get_stock_by_store_and_product(&self, store_id: StoreId, product_id: ProductId) -> Option<InventoryStock> {
+        fn get_stock_by_store_and_product(
+            &self,
+            store_id: StoreId,
+            product_id: ProductId,
+        ) -> Option<InventoryStock> {
             let product_stocks = self.product_stocks.lock().unwrap();
             if let Some(stock_id) = product_stocks.get(&(store_id, product_id)) {
                 let stocks = self.stocks.lock().unwrap();
@@ -341,7 +351,7 @@ mod tests {
         async fn save(&self, stock: &InventoryStock) -> Result<(), InventoryError> {
             let mut stocks = self.stocks.lock().unwrap();
             let stock_id = stock.id();
-            
+
             if let Some(product_id) = stock.product_id() {
                 let mut product_stocks = self.product_stocks.lock().unwrap();
                 product_stocks.insert((stock.store_id(), product_id), stock_id);
@@ -350,7 +360,7 @@ mod tests {
                 let mut variant_stocks = self.variant_stocks.lock().unwrap();
                 variant_stocks.insert((stock.store_id(), variant_id), stock_id);
             }
-            
+
             stocks.insert(stock_id, stock.clone());
             Ok(())
         }
@@ -445,7 +455,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_low_stock_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_low_stock_by_store(
+            &self,
+            _store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
     }
@@ -529,25 +542,30 @@ mod tests {
             unimplemented!()
         }
 
-        async fn count_with_filters(&self, _query: &crate::domain::repositories::MovementQuery) -> Result<i64, InventoryError> {
+        async fn count_with_filters(
+            &self,
+            _query: &crate::domain::repositories::MovementQuery,
+        ) -> Result<i64, InventoryError> {
             unimplemented!()
         }
     }
 
-    fn create_in_transit_transfer(from_store_id: StoreId, to_store_id: StoreId, product_id: ProductId) -> StockTransfer {
+    fn create_in_transit_transfer(
+        from_store_id: StoreId,
+        to_store_id: StoreId,
+        product_id: ProductId,
+    ) -> StockTransfer {
         let mut transfer = StockTransfer::create(
             "TRF-TEST-00001".to_string(),
             from_store_id,
             to_store_id,
             UserId::new(),
-        ).unwrap();
-        
-        let mut item = TransferItem::create_for_product(
-            transfer.id(),
-            product_id,
-            dec!(10),
-            Some(dec!(5.00)),
-        ).unwrap();
+        )
+        .unwrap();
+
+        let mut item =
+            TransferItem::create_for_product(transfer.id(), product_id, dec!(10), Some(dec!(5.00)))
+                .unwrap();
         item.record_shipped(dec!(10));
         transfer.add_item(item).unwrap();
         transfer.submit().unwrap();
@@ -555,7 +573,11 @@ mod tests {
         transfer
     }
 
-    fn create_stock_with_quantity(store_id: StoreId, product_id: ProductId, quantity: Decimal) -> InventoryStock {
+    fn create_stock_with_quantity(
+        store_id: StoreId,
+        product_id: ProductId,
+        quantity: Decimal,
+    ) -> InventoryStock {
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.adjust_quantity(quantity).unwrap();
         stock
@@ -738,13 +760,10 @@ mod tests {
             from_store_id,
             to_store_id,
             UserId::new(),
-        ).unwrap();
-        let item = TransferItem::create_for_product(
-            transfer.id(),
-            product_id,
-            dec!(10),
-            None,
-        ).unwrap();
+        )
+        .unwrap();
+        let item =
+            TransferItem::create_for_product(transfer.id(), product_id, dec!(10), None).unwrap();
         transfer.add_item(item).unwrap();
         transfer.submit().unwrap();
         // NOT shipped - still pending
@@ -759,6 +778,9 @@ mod tests {
         };
 
         let result = use_case.execute(command, UserId::new()).await;
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 }

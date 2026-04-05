@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::value_objects::{CartId, CartItemId};
 use crate::SalesError;
+use crate::domain::value_objects::{CartId, CartItemId};
 use inventory::{ProductId, ReservationId, UnitOfMeasure, VariantId};
 
 /// CartItem entity representing a line item in a shopping cart.

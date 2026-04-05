@@ -55,11 +55,7 @@ where
     /// # Returns
     /// * `Ok(Store)` - The activated store
     /// * `Err(CoreError::StoreNotFound)` - If the store doesn't exist
-    pub async fn activate(
-        &self,
-        store_id: StoreId,
-        actor_id: UserId,
-    ) -> Result<Store, CoreError> {
+    pub async fn activate(&self, store_id: StoreId, actor_id: UserId) -> Result<Store, CoreError> {
         self.set_active(store_id, true, actor_id).await
     }
 
@@ -124,13 +120,8 @@ where
             .map_err(|e| CoreError::Database(sqlx::Error::Protocol(e.to_string())))?;
 
         // 6. Audit
-        let audit = AuditEntry::for_update(
-            "store",
-            store_id.into_uuid(),
-            &old_store,
-            &store,
-            actor_id,
-        );
+        let audit =
+            AuditEntry::for_update("store", store_id.into_uuid(), &old_store, &store, actor_id);
         self.audit_repo
             .save(&audit)
             .await

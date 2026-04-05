@@ -275,10 +275,7 @@ mod tests {
             ErrorResponse::store_not_found().error_code,
             "STORE_NOT_FOUND"
         );
-        assert_eq!(
-            ErrorResponse::internal_error().error_code,
-            "INTERNAL_ERROR"
-        );
+        assert_eq!(ErrorResponse::internal_error().error_code, "INTERNAL_ERROR");
     }
 
     #[test]

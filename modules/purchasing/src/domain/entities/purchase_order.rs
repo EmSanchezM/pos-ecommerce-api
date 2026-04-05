@@ -4,9 +4,9 @@ use chrono::{DateTime, NaiveDate, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
+use crate::PurchasingError;
 use crate::domain::entities::PurchaseOrderItem;
 use crate::domain::value_objects::{PurchaseOrderId, PurchaseOrderStatus, VendorId};
-use crate::PurchasingError;
 use identity::{StoreId, UserId};
 use inventory::Currency;
 
@@ -311,8 +311,7 @@ impl PurchaseOrder {
 
         for item in &self.items {
             let item_subtotal = item.quantity_ordered() * item.unit_cost();
-            let item_discount =
-                item_subtotal * (item.discount_percent() / Decimal::from(100));
+            let item_discount = item_subtotal * (item.discount_percent() / Decimal::from(100));
             let after_discount = item_subtotal - item_discount;
             let item_tax = after_discount * (item.tax_percent() / Decimal::from(100));
 
@@ -664,7 +663,9 @@ mod tests {
         order.add_item(item).unwrap();
         order.submit(UserId::new()).unwrap();
 
-        order.reject(Some("Invalid quantities".to_string())).unwrap();
+        order
+            .reject(Some("Invalid quantities".to_string()))
+            .unwrap();
 
         assert_eq!(order.status(), PurchaseOrderStatus::Draft);
         assert!(order.is_editable());

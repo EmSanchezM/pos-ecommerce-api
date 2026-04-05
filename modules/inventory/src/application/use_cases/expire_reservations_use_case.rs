@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::ReservationResponse;
 use crate::domain::repositories::{InventoryStockRepository, ReservationRepository};
-use crate::InventoryError;
 
 /// Result of the batch expiration process
 #[derive(Debug, Clone)]
@@ -336,7 +336,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_low_stock_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_low_stock_by_store(
+            &self,
+            _store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
     }
@@ -351,10 +354,7 @@ mod tests {
 
     // Helper to create a reservation with a specific expiration time
     // We need to use reconstitute since create validates expires_at > now
-    fn create_expired_reservation(
-        stock_id: StockId,
-        quantity: Decimal,
-    ) -> InventoryReservation {
+    fn create_expired_reservation(stock_id: StockId, quantity: Decimal) -> InventoryReservation {
         InventoryReservation::reconstitute(
             ReservationId::new(),
             stock_id,

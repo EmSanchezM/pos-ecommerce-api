@@ -7,13 +7,12 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{
-    IngredientSubstituteResponse, RecipeDetailResponse, RecipeIngredientResponse,
-    ProductResponse,
+    IngredientSubstituteResponse, ProductResponse, RecipeDetailResponse, RecipeIngredientResponse,
 };
 use crate::domain::repositories::{ProductRepository, RecipeRepository};
 use crate::domain::value_objects::ProductId;
-use crate::InventoryError;
 
 /// Use case for getting the active recipe for a product
 ///

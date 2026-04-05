@@ -62,7 +62,6 @@ impl RoleRepository for PgRoleRepository {
         Ok(row.map(|r| r.into()))
     }
 
-
     async fn find_by_name(&self, name: &str) -> Result<Option<Role>, IdentityError> {
         let row = sqlx::query_as::<_, RoleRow>(
             r#"
@@ -98,7 +97,7 @@ impl RoleRepository for PgRoleRepository {
         match role {
             None => return Err(IdentityError::RoleNotFound(id.into_uuid())),
             Some(r) if r.is_system_protected() => {
-                return Err(IdentityError::ProtectedRoleCannotBeDeleted)
+                return Err(IdentityError::ProtectedRoleCannotBeDeleted);
             }
             _ => {}
         }
@@ -146,19 +145,17 @@ impl RoleRepository for PgRoleRepository {
         Ok(())
     }
 
-
     async fn add_permission(
         &self,
         role_id: RoleId,
         permission_id: PermissionId,
     ) -> Result<(), IdentityError> {
         // Verify role exists
-        let role_exists = sqlx::query_scalar::<_, bool>(
-            r#"SELECT EXISTS(SELECT 1 FROM roles WHERE id = $1)"#,
-        )
-        .bind(role_id.as_uuid())
-        .fetch_one(&self.pool)
-        .await?;
+        let role_exists =
+            sqlx::query_scalar::<_, bool>(r#"SELECT EXISTS(SELECT 1 FROM roles WHERE id = $1)"#)
+                .bind(role_id.as_uuid())
+                .fetch_one(&self.pool)
+                .await?;
 
         if !role_exists {
             return Err(IdentityError::RoleNotFound(role_id.into_uuid()));
@@ -198,12 +195,11 @@ impl RoleRepository for PgRoleRepository {
         permission_id: PermissionId,
     ) -> Result<(), IdentityError> {
         // Verify role exists
-        let role_exists = sqlx::query_scalar::<_, bool>(
-            r#"SELECT EXISTS(SELECT 1 FROM roles WHERE id = $1)"#,
-        )
-        .bind(role_id.as_uuid())
-        .fetch_one(&self.pool)
-        .await?;
+        let role_exists =
+            sqlx::query_scalar::<_, bool>(r#"SELECT EXISTS(SELECT 1 FROM roles WHERE id = $1)"#)
+                .bind(role_id.as_uuid())
+                .fetch_one(&self.pool)
+                .await?;
 
         if !role_exists {
             return Err(IdentityError::RoleNotFound(role_id.into_uuid()));

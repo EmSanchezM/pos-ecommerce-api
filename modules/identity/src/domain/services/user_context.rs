@@ -60,7 +60,6 @@ impl UserContext {
         &self.permissions
     }
 
-
     /// Checks if the user has a specific permission.
     ///
     /// Returns `true` if the permission exists in the context's permission set,
@@ -85,7 +84,6 @@ impl UserContext {
         }
     }
 
-
     /// Checks if the user has ALL of the specified permissions (AND logic).
     ///
     /// Returns `true` if every permission in the list exists in the context's
@@ -106,7 +104,6 @@ impl UserContext {
     pub fn has_all_permissions(&self, permissions: &[&str]) -> bool {
         permissions.iter().all(|p| self.has_permission(p))
     }
-
 
     /// Checks if the user has AT LEAST ONE of the specified permissions (OR logic).
     ///
@@ -133,7 +130,6 @@ impl UserContext {
         }
         permissions.iter().any(|p| self.has_permission(p))
     }
-
 
     /// Checks permissions and returns detailed information about missing permissions.
     ///

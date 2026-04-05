@@ -9,10 +9,10 @@
 // - POST /api/recipes/{recipe_id}/calculate-cost - Calculate recipe cost
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

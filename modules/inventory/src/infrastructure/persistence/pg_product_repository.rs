@@ -4,10 +4,12 @@ use async_trait::async_trait;
 use rust_decimal::Decimal;
 use sqlx::PgPool;
 
+use crate::InventoryError;
 use crate::domain::entities::{Product, ProductVariant};
 use crate::domain::repositories::ProductRepository;
-use crate::domain::value_objects::{Barcode, CategoryId, Currency, ProductId, Sku, UnitOfMeasure, VariantId};
-use crate::InventoryError;
+use crate::domain::value_objects::{
+    Barcode, CategoryId, Currency, ProductId, Sku, UnitOfMeasure, VariantId,
+};
 
 /// PostgreSQL implementation of ProductRepository
 pub struct PgProductRepository {
@@ -76,7 +78,6 @@ impl ProductRepository for PgProductRepository {
 
         row.map(|r| r.try_into()).transpose()
     }
-
 
     async fn find_by_sku(&self, sku: &Sku) -> Result<Option<Product>, InventoryError> {
         let row = sqlx::query_as::<_, ProductRow>(
@@ -188,7 +189,10 @@ impl ProductRepository for PgProductRepository {
         rows.into_iter().map(|r| r.try_into()).collect()
     }
 
-    async fn find_by_category(&self, category_id: CategoryId) -> Result<Vec<Product>, InventoryError> {
+    async fn find_by_category(
+        &self,
+        category_id: CategoryId,
+    ) -> Result<Vec<Product>, InventoryError> {
         let rows = sqlx::query_as::<_, ProductRow>(
             r#"
             SELECT id, sku, barcode, name, description, category_id, brand, unit_of_measure,
@@ -301,7 +305,10 @@ impl ProductRepository for PgProductRepository {
         Ok(())
     }
 
-    async fn find_variant_by_id(&self, id: VariantId) -> Result<Option<ProductVariant>, InventoryError> {
+    async fn find_variant_by_id(
+        &self,
+        id: VariantId,
+    ) -> Result<Option<ProductVariant>, InventoryError> {
         let row = sqlx::query_as::<_, VariantRow>(
             r#"
             SELECT id, product_id, sku, barcode, name, variant_attributes, price, cost_price, is_active, created_at, updated_at
@@ -316,7 +323,10 @@ impl ProductRepository for PgProductRepository {
         Ok(row.map(|r| r.into()))
     }
 
-    async fn find_variant_by_sku(&self, sku: &Sku) -> Result<Option<ProductVariant>, InventoryError> {
+    async fn find_variant_by_sku(
+        &self,
+        sku: &Sku,
+    ) -> Result<Option<ProductVariant>, InventoryError> {
         let row = sqlx::query_as::<_, VariantRow>(
             r#"
             SELECT id, product_id, sku, barcode, name, variant_attributes, price, cost_price, is_active, created_at, updated_at
@@ -331,7 +341,10 @@ impl ProductRepository for PgProductRepository {
         Ok(row.map(|r| r.into()))
     }
 
-    async fn find_variant_by_barcode(&self, barcode: &Barcode) -> Result<Option<ProductVariant>, InventoryError> {
+    async fn find_variant_by_barcode(
+        &self,
+        barcode: &Barcode,
+    ) -> Result<Option<ProductVariant>, InventoryError> {
         let row = sqlx::query_as::<_, VariantRow>(
             r#"
             SELECT id, product_id, sku, barcode, name, variant_attributes, price, cost_price, is_active, created_at, updated_at
@@ -346,7 +359,10 @@ impl ProductRepository for PgProductRepository {
         Ok(row.map(|r| r.into()))
     }
 
-    async fn find_variants_by_product(&self, product_id: ProductId) -> Result<Vec<ProductVariant>, InventoryError> {
+    async fn find_variants_by_product(
+        &self,
+        product_id: ProductId,
+    ) -> Result<Vec<ProductVariant>, InventoryError> {
         let rows = sqlx::query_as::<_, VariantRow>(
             r#"
             SELECT id, product_id, sku, barcode, name, variant_attributes, price, cost_price, is_active, created_at, updated_at
@@ -421,7 +437,6 @@ impl ProductRepository for PgProductRepository {
     }
 }
 
-
 /// Internal row type for mapping product database results
 #[derive(sqlx::FromRow)]
 struct ProductRow {
@@ -452,7 +467,7 @@ impl TryFrom<ProductRow> for Product {
 
     fn try_from(row: ProductRow) -> Result<Self, Self::Error> {
         let unit_of_measure: UnitOfMeasure = row.unit_of_measure.parse()?;
-        
+
         Ok(Product::reconstitute(
             ProductId::from_uuid(row.id),
             Sku::from_string(row.sku),

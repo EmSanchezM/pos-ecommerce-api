@@ -60,8 +60,10 @@ impl PermissionRepository for PgPermissionRepository {
         row.map(|r| r.try_into()).transpose()
     }
 
-
-    async fn find_by_code(&self, code: &PermissionCode) -> Result<Option<Permission>, IdentityError> {
+    async fn find_by_code(
+        &self,
+        code: &PermissionCode,
+    ) -> Result<Option<Permission>, IdentityError> {
         let row = sqlx::query_as::<_, PermissionRow>(
             r#"
             SELECT id, code, description, created_at

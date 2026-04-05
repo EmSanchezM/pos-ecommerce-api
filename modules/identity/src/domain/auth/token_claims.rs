@@ -41,13 +41,7 @@ impl TokenClaims {
     /// * `email` - The user's email address
     /// * `exp` - Expiration timestamp (Unix epoch seconds)
     /// * `iat` - Issued at timestamp (Unix epoch seconds)
-    pub fn new(
-        user_id: Uuid,
-        username: String,
-        email: String,
-        exp: i64,
-        iat: i64,
-    ) -> Self {
+    pub fn new(user_id: Uuid, username: String, email: String, exp: i64, iat: i64) -> Self {
         Self {
             sub: user_id,
             username,
@@ -95,7 +89,7 @@ mod tests {
     #[test]
     fn test_new_claims() {
         let claims = sample_claims();
-        
+
         assert_eq!(
             claims.sub,
             Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap()
@@ -156,13 +150,13 @@ mod tests {
     #[test]
     fn test_serialize_deserialize() {
         let claims = sample_claims();
-        
+
         // Serialize to JSON
         let json = serde_json::to_string(&claims).unwrap();
-        
+
         // Deserialize back
         let deserialized: TokenClaims = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(claims, deserialized);
     }
 
@@ -170,11 +164,8 @@ mod tests {
     fn test_json_structure() {
         let claims = sample_claims();
         let json = serde_json::to_value(&claims).unwrap();
-        
-        assert_eq!(
-            json["sub"],
-            "550e8400-e29b-41d4-a716-446655440000"
-        );
+
+        assert_eq!(json["sub"], "550e8400-e29b-41d4-a716-446655440000");
         assert_eq!(json["username"], "john_doe");
         assert_eq!(json["email"], "john@example.com");
         assert_eq!(json["exp"], 1705150000);
@@ -201,7 +192,7 @@ mod tests {
     fn test_clone() {
         let claims = sample_claims();
         let cloned = claims.clone();
-        
+
         assert_eq!(claims, cloned);
     }
 }

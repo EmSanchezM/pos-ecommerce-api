@@ -3,10 +3,10 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::SalesError;
 use crate::application::dtos::CartResponse;
 use crate::domain::repositories::CartRepository;
 use crate::domain::value_objects::CartId;
-use crate::SalesError;
 
 /// Use case for retrieving a cart by ID
 pub struct GetCartUseCase {

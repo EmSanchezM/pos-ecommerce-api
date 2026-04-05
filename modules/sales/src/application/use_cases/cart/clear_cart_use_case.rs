@@ -3,10 +3,10 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::SalesError;
 use crate::application::dtos::CartResponse;
 use crate::domain::repositories::CartRepository;
 use crate::domain::value_objects::CartId;
-use crate::SalesError;
 
 /// Use case for clearing all items from a cart
 pub struct ClearCartUseCase {

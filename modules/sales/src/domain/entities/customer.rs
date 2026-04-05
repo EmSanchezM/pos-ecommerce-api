@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::value_objects::{CustomerId, CustomerType};
 use crate::SalesError;
+use crate::domain::value_objects::{CustomerId, CustomerType};
 use identity::{StoreId, UserId};
 
 /// Address embedded value object

@@ -3,9 +3,9 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::SalesError;
 use crate::application::dtos::ShiftResponse;
 use crate::domain::repositories::ShiftRepository;
-use crate::SalesError;
 use pos_core::TerminalId;
 
 /// Use case for getting the current open shift for a terminal

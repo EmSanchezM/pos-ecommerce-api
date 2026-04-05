@@ -3,10 +3,10 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{ApplyDiscountCommand, SaleDetailResponse};
 use crate::domain::repositories::SaleRepository;
 use crate::domain::value_objects::{DiscountType, SaleId, SaleItemId};
-use crate::SalesError;
 
 /// Use case for applying a discount to a sale or item
 pub struct ApplyDiscountUseCase {
@@ -18,7 +18,10 @@ impl ApplyDiscountUseCase {
         Self { sale_repo }
     }
 
-    pub async fn execute(&self, cmd: ApplyDiscountCommand) -> Result<SaleDetailResponse, SalesError> {
+    pub async fn execute(
+        &self,
+        cmd: ApplyDiscountCommand,
+    ) -> Result<SaleDetailResponse, SalesError> {
         let sale_id = SaleId::from_uuid(cmd.sale_id);
         let discount_type = DiscountType::from_str(&cmd.discount_type)
             .map_err(|_| SalesError::InvalidDiscountType)?;
@@ -45,7 +48,9 @@ impl ApplyDiscountUseCase {
                 .ok_or(SalesError::SaleItemNotFound(item_uuid))?;
 
             match discount_type {
-                DiscountType::Percentage => sale_item.apply_percentage_discount(cmd.discount_value)?,
+                DiscountType::Percentage => {
+                    sale_item.apply_percentage_discount(cmd.discount_value)?
+                }
                 DiscountType::Fixed => sale_item.apply_fixed_discount(cmd.discount_value)?,
             }
 

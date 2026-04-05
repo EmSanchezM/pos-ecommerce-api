@@ -3,10 +3,10 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::SalesError;
 use crate::application::dtos::CreditNoteResponse;
 use crate::domain::repositories::CreditNoteRepository;
 use crate::domain::value_objects::CreditNoteId;
-use crate::SalesError;
 
 /// Use case for submitting a credit note for approval
 pub struct SubmitCreditNoteUseCase {

@@ -9,11 +9,11 @@ use std::sync::Arc;
 
 use identity::{AuditEntry, AuditRepository, StoreRepository, UserId};
 
+use crate::CreateTerminalCommand;
 use crate::domain::entities::Terminal;
 use crate::domain::repositories::TerminalRepository;
 use crate::domain::value_objects::TerminalCode;
 use crate::error::CoreError;
-use crate::CreateTerminalCommand;
 
 /// Use case for creating a new terminal
 ///
@@ -98,7 +98,8 @@ where
         self.terminal_repo.save(&terminal).await?;
 
         // 6. Audit
-        let audit = AuditEntry::for_create("terminal", terminal.id().into_uuid(), &terminal, actor_id);
+        let audit =
+            AuditEntry::for_create("terminal", terminal.id().into_uuid(), &terminal, actor_id);
         self.audit_repo
             .save(&audit)
             .await

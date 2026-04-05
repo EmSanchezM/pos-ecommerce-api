@@ -2,9 +2,9 @@
 
 use async_trait::async_trait;
 
+use crate::InventoryError;
 use crate::domain::entities::ProductCategory;
 use crate::domain::value_objects::CategoryId;
-use crate::InventoryError;
 
 /// Repository trait for ProductCategory persistence operations.
 /// Supports hierarchical category management with parent-child relationships.
@@ -25,7 +25,10 @@ pub trait CategoryRepository: Send + Sync {
 
     /// Finds all direct children of a parent category
     /// Results are ordered by sort_order
-    async fn find_children(&self, parent_id: CategoryId) -> Result<Vec<ProductCategory>, InventoryError>;
+    async fn find_children(
+        &self,
+        parent_id: CategoryId,
+    ) -> Result<Vec<ProductCategory>, InventoryError>;
 
     /// Finds all active categories
     /// Results are ordered by sort_order within each level

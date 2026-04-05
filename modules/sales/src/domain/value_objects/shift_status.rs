@@ -38,10 +38,7 @@ impl ShiftStatus {
 
     /// Validates transition from current status to new status
     pub fn can_transition_to(&self, new_status: ShiftStatus) -> bool {
-        match (self, new_status) {
-            (ShiftStatus::Open, ShiftStatus::Closed) => true,
-            _ => false,
-        }
+        matches!((self, new_status), (ShiftStatus::Open, ShiftStatus::Closed))
     }
 }
 
@@ -74,7 +71,10 @@ mod tests {
     fn test_from_str() {
         assert_eq!(ShiftStatus::from_str("open").unwrap(), ShiftStatus::Open);
         assert_eq!(ShiftStatus::from_str("active").unwrap(), ShiftStatus::Open);
-        assert_eq!(ShiftStatus::from_str("closed").unwrap(), ShiftStatus::Closed);
+        assert_eq!(
+            ShiftStatus::from_str("closed").unwrap(),
+            ShiftStatus::Closed
+        );
     }
 
     #[test]

@@ -4,12 +4,12 @@ use async_trait::async_trait;
 use rust_decimal::Decimal;
 use sqlx::PgPool;
 
+use crate::InventoryError;
 use crate::domain::entities::{AdjustmentItem, StockAdjustment};
 use crate::domain::repositories::AdjustmentRepository;
 use crate::domain::value_objects::{
     AdjustmentId, AdjustmentReason, AdjustmentStatus, AdjustmentType, StockId,
 };
-use crate::InventoryError;
 use identity::{StoreId, UserId};
 
 /// PostgreSQL implementation of AdjustmentRepository
@@ -85,8 +85,10 @@ impl AdjustmentRepository for PgAdjustmentRepository {
         Ok(())
     }
 
-
-    async fn find_by_id(&self, id: AdjustmentId) -> Result<Option<StockAdjustment>, InventoryError> {
+    async fn find_by_id(
+        &self,
+        id: AdjustmentId,
+    ) -> Result<Option<StockAdjustment>, InventoryError> {
         let row = sqlx::query_as::<_, AdjustmentRow>(
             r#"
             SELECT id, store_id, adjustment_number, adjustment_type, adjustment_reason, status,
@@ -104,7 +106,10 @@ impl AdjustmentRepository for PgAdjustmentRepository {
         row.map(|r| r.try_into_without_items()).transpose()
     }
 
-    async fn find_by_id_with_items(&self, id: AdjustmentId) -> Result<Option<StockAdjustment>, InventoryError> {
+    async fn find_by_id_with_items(
+        &self,
+        id: AdjustmentId,
+    ) -> Result<Option<StockAdjustment>, InventoryError> {
         let row = sqlx::query_as::<_, AdjustmentRow>(
             r#"
             SELECT id, store_id, adjustment_number, adjustment_type, adjustment_reason, status,
@@ -140,7 +145,10 @@ impl AdjustmentRepository for PgAdjustmentRepository {
         }
     }
 
-    async fn find_by_store(&self, store_id: StoreId) -> Result<Vec<StockAdjustment>, InventoryError> {
+    async fn find_by_store(
+        &self,
+        store_id: StoreId,
+    ) -> Result<Vec<StockAdjustment>, InventoryError> {
         let rows = sqlx::query_as::<_, AdjustmentRow>(
             r#"
             SELECT id, store_id, adjustment_number, adjustment_type, adjustment_reason, status,
@@ -155,7 +163,9 @@ impl AdjustmentRepository for PgAdjustmentRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        rows.into_iter().map(|r| r.try_into_without_items()).collect()
+        rows.into_iter()
+            .map(|r| r.try_into_without_items())
+            .collect()
     }
 
     async fn update(&self, adjustment: &StockAdjustment) -> Result<(), InventoryError> {
@@ -185,7 +195,9 @@ impl AdjustmentRepository for PgAdjustmentRepository {
         .await?;
 
         if result.rows_affected() == 0 {
-            return Err(InventoryError::AdjustmentNotFound(adjustment.id().into_uuid()));
+            return Err(InventoryError::AdjustmentNotFound(
+                adjustment.id().into_uuid(),
+            ));
         }
 
         // Update items (delete and re-insert for simplicity)
@@ -224,7 +236,10 @@ impl AdjustmentRepository for PgAdjustmentRepository {
         Ok(())
     }
 
-    async fn generate_adjustment_number(&self, store_id: StoreId) -> Result<String, InventoryError> {
+    async fn generate_adjustment_number(
+        &self,
+        store_id: StoreId,
+    ) -> Result<String, InventoryError> {
         // Generate unique adjustment number per store: ADJ-{STORE_SHORT_ID}-{SEQUENCE}
         // Use a sequence based on count of adjustments for this store
         let count: (i64,) = sqlx::query_as(
@@ -238,7 +253,11 @@ impl AdjustmentRepository for PgAdjustmentRepository {
 
         let sequence = count.0 + 1;
         let store_short = &store_id.as_uuid().to_string()[..8];
-        Ok(format!("ADJ-{}-{:06}", store_short.to_uppercase(), sequence))
+        Ok(format!(
+            "ADJ-{}-{:06}",
+            store_short.to_uppercase(),
+            sequence
+        ))
     }
 
     async fn find_paginated(
@@ -318,7 +337,6 @@ impl AdjustmentRepository for PgAdjustmentRepository {
     }
 }
 
-
 // =============================================================================
 // Row types for database mapping
 // =============================================================================
@@ -347,7 +365,10 @@ impl AdjustmentRow {
         self.try_into_with_items(Vec::new())
     }
 
-    fn try_into_with_items(self, items: Vec<AdjustmentItem>) -> Result<StockAdjustment, InventoryError> {
+    fn try_into_with_items(
+        self,
+        items: Vec<AdjustmentItem>,
+    ) -> Result<StockAdjustment, InventoryError> {
         let adjustment_type: AdjustmentType = self.adjustment_type.parse()?;
         let adjustment_reason: AdjustmentReason = self.adjustment_reason.parse()?;
         let status: AdjustmentStatus = self.status.parse()?;

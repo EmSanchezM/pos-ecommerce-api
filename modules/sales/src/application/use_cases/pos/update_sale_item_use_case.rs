@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{SaleDetailResponse, UpdateSaleItemCommand};
 use crate::domain::repositories::SaleRepository;
 use crate::domain::value_objects::SaleItemId;
-use crate::SalesError;
 
 /// Use case for updating a sale item
 pub struct UpdateSaleItemUseCase {
@@ -17,7 +17,10 @@ impl UpdateSaleItemUseCase {
         Self { sale_repo }
     }
 
-    pub async fn execute(&self, cmd: UpdateSaleItemCommand) -> Result<SaleDetailResponse, SalesError> {
+    pub async fn execute(
+        &self,
+        cmd: UpdateSaleItemCommand,
+    ) -> Result<SaleDetailResponse, SalesError> {
         let item_id = SaleItemId::from_uuid(cmd.item_id);
 
         // Find the item to get the sale_id

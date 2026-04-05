@@ -179,8 +179,9 @@ mod tests {
 
     #[test]
     fn test_create_root_category() {
-        let category = ProductCategory::create("Electronics".to_string(), "electronics".to_string());
-        
+        let category =
+            ProductCategory::create("Electronics".to_string(), "electronics".to_string());
+
         assert!(category.is_root());
         assert_eq!(category.name(), "Electronics");
         assert_eq!(category.slug(), "electronics");
@@ -198,7 +199,7 @@ mod tests {
             "Smartphones".to_string(),
             "smartphones".to_string(),
         );
-        
+
         assert!(!category.is_root());
         assert_eq!(category.parent_id(), Some(parent_id));
         assert_eq!(category.name(), "Smartphones");
@@ -208,20 +209,20 @@ mod tests {
     fn test_setters() {
         let mut category = ProductCategory::create("Test".to_string(), "test".to_string());
         let original_updated_at = category.updated_at();
-        
+
         // Small delay to ensure timestamp changes
         std::thread::sleep(std::time::Duration::from_millis(10));
-        
+
         category.set_name("Updated Name".to_string());
         assert_eq!(category.name(), "Updated Name");
         assert!(category.updated_at() >= original_updated_at);
-        
+
         category.set_description(Some("A description".to_string()));
         assert_eq!(category.description(), Some("A description"));
-        
+
         category.set_icon(Some("icon.png".to_string()));
         assert_eq!(category.icon(), Some("icon.png"));
-        
+
         category.set_sort_order(10);
         assert_eq!(category.sort_order(), 10);
     }
@@ -230,10 +231,10 @@ mod tests {
     fn test_deactivate_activate() {
         let mut category = ProductCategory::create("Test".to_string(), "test".to_string());
         assert!(category.is_active());
-        
+
         category.deactivate();
         assert!(!category.is_active());
-        
+
         category.activate();
         assert!(category.is_active());
     }
@@ -243,7 +244,7 @@ mod tests {
         let id = CategoryId::new();
         let parent_id = Some(CategoryId::new());
         let now = Utc::now();
-        
+
         let category = ProductCategory::reconstitute(
             id,
             parent_id,
@@ -256,7 +257,7 @@ mod tests {
             now,
             now,
         );
-        
+
         assert_eq!(category.id(), id);
         assert_eq!(category.parent_id(), parent_id);
         assert_eq!(category.name(), "Reconstituted");

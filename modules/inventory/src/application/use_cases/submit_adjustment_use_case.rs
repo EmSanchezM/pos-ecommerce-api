@@ -2,12 +2,12 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::SubmitAdjustmentCommand;
 use crate::application::dtos::responses::{AdjustmentDetailResponse, AdjustmentItemResponse};
 use crate::domain::entities::StockAdjustment;
 use crate::domain::repositories::AdjustmentRepository;
 use crate::domain::value_objects::AdjustmentId;
-use crate::InventoryError;
 
 /// Use case for submitting a stock adjustment for approval.
 ///
@@ -110,7 +110,9 @@ mod tests {
     use uuid::{NoContext, Timestamp, Uuid};
 
     use crate::domain::entities::AdjustmentItem;
-    use crate::domain::value_objects::{AdjustmentReason, AdjustmentStatus, AdjustmentType, StockId};
+    use crate::domain::value_objects::{
+        AdjustmentReason, AdjustmentStatus, AdjustmentType, StockId,
+    };
     use identity::{StoreId, UserId};
 
     fn new_uuid() -> Uuid {
@@ -196,12 +198,8 @@ mod tests {
             AdjustmentReason::Damage,
             UserId::new(),
         );
-        let item = AdjustmentItem::create(
-            adjustment.id(),
-            StockId::new(),
-            dec!(-10),
-            Some(dec!(5.00)),
-        );
+        let item =
+            AdjustmentItem::create(adjustment.id(), StockId::new(), dec!(-10), Some(dec!(5.00)));
         adjustment.add_item(item).unwrap();
         adjustment
     }

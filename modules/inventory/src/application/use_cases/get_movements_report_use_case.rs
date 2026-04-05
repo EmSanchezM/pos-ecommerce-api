@@ -5,10 +5,10 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{MovementResponse, PaginatedResponse};
 use crate::domain::repositories::{InventoryMovementRepository, MovementQuery};
 use crate::domain::value_objects::StockId;
-use crate::InventoryError;
 
 /// Query parameters for movements report
 #[derive(Debug, Clone)]

@@ -2,9 +2,9 @@
 
 use async_trait::async_trait;
 
+use crate::InventoryError;
 use crate::domain::entities::InventoryStock;
 use crate::domain::value_objects::{ProductId, StockId, VariantId};
-use crate::InventoryError;
 use identity::StoreId;
 
 /// Repository trait for InventoryStock persistence operations.
@@ -33,11 +33,11 @@ pub trait InventoryStockRepository: Send + Sync {
 
     /// Updates a stock record with optimistic locking.
     /// Returns OptimisticLockError if the expected_version doesn't match the current version.
-    /// 
+    ///
     /// # Arguments
     /// * `stock` - The stock record with updated values
     /// * `expected_version` - The version number expected in the database
-    /// 
+    ///
     /// # Errors
     /// * `InventoryError::OptimisticLockError` - If version mismatch (concurrent modification)
     async fn update_with_version(
@@ -47,10 +47,14 @@ pub trait InventoryStockRepository: Send + Sync {
     ) -> Result<(), InventoryError>;
 
     /// Finds all stock records with low stock (available_quantity <= min_stock_level)
-    async fn find_low_stock(&self, store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError>;
+    async fn find_low_stock(
+        &self,
+        store_id: StoreId,
+    ) -> Result<Vec<InventoryStock>, InventoryError>;
 
     /// Finds all stock records for a specific store
-    async fn find_by_store(&self, store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError>;
+    async fn find_by_store(&self, store_id: StoreId)
+    -> Result<Vec<InventoryStock>, InventoryError>;
 
     /// Finds stock records with pagination and optional filters
     /// Returns (stocks, total_count)
@@ -64,7 +68,10 @@ pub trait InventoryStockRepository: Send + Sync {
     ) -> Result<(Vec<InventoryStock>, i64), InventoryError>;
 
     /// Finds all stock records for a specific product across all stores
-    async fn find_by_product(&self, product_id: ProductId) -> Result<Vec<InventoryStock>, InventoryError>;
+    async fn find_by_product(
+        &self,
+        product_id: ProductId,
+    ) -> Result<Vec<InventoryStock>, InventoryError>;
 
     /// Finds all stock records across all stores
     async fn find_all(&self) -> Result<Vec<InventoryStock>, InventoryError>;
@@ -73,5 +80,8 @@ pub trait InventoryStockRepository: Send + Sync {
     async fn find_all_low_stock(&self) -> Result<Vec<InventoryStock>, InventoryError>;
 
     /// Finds all stock records with low stock for a specific store
-    async fn find_low_stock_by_store(&self, store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError>;
+    async fn find_low_stock_by_store(
+        &self,
+        store_id: StoreId,
+    ) -> Result<Vec<InventoryStock>, InventoryError>;
 }

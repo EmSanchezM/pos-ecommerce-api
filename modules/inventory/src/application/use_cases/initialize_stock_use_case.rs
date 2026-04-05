@@ -3,6 +3,7 @@
 use rust_decimal::Decimal;
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::InitializeStockCommand;
 use crate::application::dtos::responses::StockResponse;
 use crate::domain::entities::{InventoryMovement, InventoryStock};
@@ -10,11 +11,10 @@ use crate::domain::repositories::{
     InventoryMovementRepository, InventoryStockRepository, ProductRepository,
 };
 use crate::domain::value_objects::{Currency, MovementType, ProductId, VariantId};
-use crate::InventoryError;
+use identity::StoreId;
 use identity::domain::entities::AuditEntry;
 use identity::domain::repositories::AuditRepository;
 use identity::domain::value_objects::UserId;
-use identity::StoreId;
 
 /// Use case for initializing stock for a product or variant in a specific store.
 ///
@@ -167,12 +167,8 @@ where
         }
 
         // 9. Create audit entry
-        let audit_entry = AuditEntry::for_create(
-            "inventory_stock",
-            stock.id().into_uuid(),
-            &stock,
-            actor_id,
-        );
+        let audit_entry =
+            AuditEntry::for_create("inventory_stock", stock.id().into_uuid(), &stock, actor_id);
         self.audit_repo
             .save(&audit_entry)
             .await
@@ -243,9 +239,10 @@ mod tests {
             product_id: ProductId,
         ) -> Result<Option<InventoryStock>, InventoryError> {
             let stocks = self.stocks.lock().unwrap();
-            Ok(stocks.values().find(|s| {
-                s.store_id() == store_id && s.product_id() == Some(product_id)
-            }).cloned())
+            Ok(stocks
+                .values()
+                .find(|s| s.store_id() == store_id && s.product_id() == Some(product_id))
+                .cloned())
         }
 
         async fn find_by_store_and_variant(
@@ -254,9 +251,10 @@ mod tests {
             variant_id: VariantId,
         ) -> Result<Option<InventoryStock>, InventoryError> {
             let stocks = self.stocks.lock().unwrap();
-            Ok(stocks.values().find(|s| {
-                s.store_id() == store_id && s.variant_id() == Some(variant_id)
-            }).cloned())
+            Ok(stocks
+                .values()
+                .find(|s| s.store_id() == store_id && s.variant_id() == Some(variant_id))
+                .cloned())
         }
 
         async fn update_with_version(
@@ -307,7 +305,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_low_stock_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_low_stock_by_store(
+            &self,
+            _store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
     }
@@ -511,7 +512,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn count_with_filters(&self, _query: &crate::domain::repositories::MovementQuery) -> Result<i64, InventoryError> {
+        async fn count_with_filters(
+            &self,
+            _query: &crate::domain::repositories::MovementQuery,
+        ) -> Result<i64, InventoryError> {
             unimplemented!()
         }
 
@@ -649,7 +653,8 @@ mod tests {
         let movement_repo = Arc::new(MockMovementRepository::new());
         let audit_repo = Arc::new(MockAuditRepository::new());
 
-        let use_case = InitializeStockUseCase::new(stock_repo, product_repo, movement_repo, audit_repo);
+        let use_case =
+            InitializeStockUseCase::new(stock_repo, product_repo, movement_repo, audit_repo);
 
         let store_id = StoreId::new();
         let non_existent_product_id = ProductId::new();
@@ -674,7 +679,8 @@ mod tests {
         let movement_repo = Arc::new(MockMovementRepository::new());
         let audit_repo = Arc::new(MockAuditRepository::new());
 
-        let use_case = InitializeStockUseCase::new(stock_repo, product_repo, movement_repo, audit_repo);
+        let use_case =
+            InitializeStockUseCase::new(stock_repo, product_repo, movement_repo, audit_repo);
 
         let store_id = StoreId::new();
         let command = InitializeStockCommand {
@@ -688,7 +694,10 @@ mod tests {
 
         let actor_id = UserId::new();
         let result = use_case.execute(command, actor_id).await;
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[tokio::test]
@@ -698,7 +707,8 @@ mod tests {
         let movement_repo = Arc::new(MockMovementRepository::new());
         let audit_repo = Arc::new(MockAuditRepository::new());
 
-        let use_case = InitializeStockUseCase::new(stock_repo, product_repo, movement_repo, audit_repo);
+        let use_case =
+            InitializeStockUseCase::new(stock_repo, product_repo, movement_repo, audit_repo);
 
         let store_id = StoreId::new();
         let command = InitializeStockCommand {
@@ -712,7 +722,10 @@ mod tests {
 
         let actor_id = UserId::new();
         let result = use_case.execute(command, actor_id).await;
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[tokio::test]
@@ -731,7 +744,8 @@ mod tests {
         let existing_stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock_repo.save(&existing_stock).await.unwrap();
 
-        let use_case = InitializeStockUseCase::new(stock_repo, product_repo, movement_repo, audit_repo);
+        let use_case =
+            InitializeStockUseCase::new(stock_repo, product_repo, movement_repo, audit_repo);
 
         let command = InitializeStockCommand {
             store_id: store_id.into_uuid(),
@@ -744,6 +758,9 @@ mod tests {
 
         let actor_id = UserId::new();
         let result = use_case.execute(command, actor_id).await;
-        assert!(matches!(result, Err(InventoryError::StockAlreadyExists { .. })));
+        assert!(matches!(
+            result,
+            Err(InventoryError::StockAlreadyExists { .. })
+        ));
     }
 }

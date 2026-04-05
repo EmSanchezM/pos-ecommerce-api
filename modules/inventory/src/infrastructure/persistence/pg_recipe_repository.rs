@@ -4,12 +4,12 @@ use async_trait::async_trait;
 use rust_decimal::Decimal;
 use sqlx::PgPool;
 
+use crate::InventoryError;
 use crate::domain::entities::{IngredientSubstitute, Recipe, RecipeIngredient};
 use crate::domain::repositories::RecipeRepository;
 use crate::domain::value_objects::{
     IngredientId, ProductId, RecipeId, SubstituteId, UnitOfMeasure, VariantId,
 };
-use crate::InventoryError;
 
 /// PostgreSQL implementation of RecipeRepository
 pub struct PgRecipeRepository {
@@ -77,7 +77,6 @@ impl RecipeRepository for PgRecipeRepository {
         row.map(|r| r.try_into()).transpose()
     }
 
-
     async fn find_by_product(&self, product_id: ProductId) -> Result<Vec<Recipe>, InventoryError> {
         let rows = sqlx::query_as::<_, RecipeRow>(
             r#"
@@ -114,7 +113,10 @@ impl RecipeRepository for PgRecipeRepository {
         rows.into_iter().map(|r| r.try_into()).collect()
     }
 
-    async fn find_active_by_product(&self, product_id: ProductId) -> Result<Option<Recipe>, InventoryError> {
+    async fn find_active_by_product(
+        &self,
+        product_id: ProductId,
+    ) -> Result<Option<Recipe>, InventoryError> {
         // Only one active recipe per product (enforced by business logic)
         let row = sqlx::query_as::<_, RecipeRow>(
             r#"
@@ -133,7 +135,10 @@ impl RecipeRepository for PgRecipeRepository {
         row.map(|r| r.try_into()).transpose()
     }
 
-    async fn find_active_by_variant(&self, variant_id: VariantId) -> Result<Option<Recipe>, InventoryError> {
+    async fn find_active_by_variant(
+        &self,
+        variant_id: VariantId,
+    ) -> Result<Option<Recipe>, InventoryError> {
         // Only one active recipe per variant (enforced by business logic)
         let row = sqlx::query_as::<_, RecipeRow>(
             r#"
@@ -259,7 +264,6 @@ impl RecipeRepository for PgRecipeRepository {
         Ok(())
     }
 
-
     // =========================================================================
     // Ingredient operations
     // =========================================================================
@@ -296,7 +300,10 @@ impl RecipeRepository for PgRecipeRepository {
         Ok(())
     }
 
-    async fn find_ingredient_by_id(&self, id: IngredientId) -> Result<Option<RecipeIngredient>, InventoryError> {
+    async fn find_ingredient_by_id(
+        &self,
+        id: IngredientId,
+    ) -> Result<Option<RecipeIngredient>, InventoryError> {
         let row = sqlx::query_as::<_, IngredientRow>(
             r#"
             SELECT id, recipe_id, ingredient_product_id, ingredient_variant_id, quantity,
@@ -313,7 +320,10 @@ impl RecipeRepository for PgRecipeRepository {
         row.map(|r| r.try_into()).transpose()
     }
 
-    async fn find_ingredients_by_recipe(&self, recipe_id: RecipeId) -> Result<Vec<RecipeIngredient>, InventoryError> {
+    async fn find_ingredients_by_recipe(
+        &self,
+        recipe_id: RecipeId,
+    ) -> Result<Vec<RecipeIngredient>, InventoryError> {
         // Order by sort_order for preparation sequence
         let rows = sqlx::query_as::<_, IngredientRow>(
             r#"
@@ -357,7 +367,9 @@ impl RecipeRepository for PgRecipeRepository {
         .await?;
 
         if result.rows_affected() == 0 {
-            return Err(InventoryError::IngredientNotFound(ingredient.id().into_uuid()));
+            return Err(InventoryError::IngredientNotFound(
+                ingredient.id().into_uuid(),
+            ));
         }
 
         Ok(())
@@ -382,12 +394,14 @@ impl RecipeRepository for PgRecipeRepository {
         Ok(())
     }
 
-
     // =========================================================================
     // Substitute operations
     // =========================================================================
 
-    async fn save_substitute(&self, substitute: &IngredientSubstitute) -> Result<(), InventoryError> {
+    async fn save_substitute(
+        &self,
+        substitute: &IngredientSubstitute,
+    ) -> Result<(), InventoryError> {
         sqlx::query(
             r#"
             INSERT INTO recipe_ingredient_substitutes (
@@ -411,7 +425,10 @@ impl RecipeRepository for PgRecipeRepository {
         Ok(())
     }
 
-    async fn find_substitutes_by_ingredient(&self, ingredient_id: IngredientId) -> Result<Vec<IngredientSubstitute>, InventoryError> {
+    async fn find_substitutes_by_ingredient(
+        &self,
+        ingredient_id: IngredientId,
+    ) -> Result<Vec<IngredientSubstitute>, InventoryError> {
         // Order by priority (lower number = higher preference)
         let rows = sqlx::query_as::<_, SubstituteRow>(
             r#"
@@ -519,7 +536,7 @@ impl TryFrom<IngredientRow> for RecipeIngredient {
 
     fn try_from(row: IngredientRow) -> Result<Self, Self::Error> {
         let unit_of_measure: UnitOfMeasure = row.unit_of_measure.parse()?;
-        
+
         RecipeIngredient::reconstitute(
             IngredientId::from_uuid(row.id),
             RecipeId::from_uuid(row.recipe_id),

@@ -12,19 +12,19 @@
 // - POST /api/inventory/adjustments/{id}/apply - Apply an approved adjustment
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::Deserialize;
 use uuid::Uuid;
 
 use inventory::{
-    ApplyAdjustmentCommand, ApplyAdjustmentUseCase, ApproveAdjustmentCommand,
-    ApproveAdjustmentUseCase, CreateAdjustmentCommand, CreateAdjustmentUseCase,
-    GetAdjustmentUseCase, ListAdjustmentsQuery, ListAdjustmentsUseCase, PaginatedResponse,
-    SubmitAdjustmentCommand, SubmitAdjustmentUseCase, AdjustmentDetailResponse, AdjustmentResponse,
+    AdjustmentDetailResponse, AdjustmentResponse, ApplyAdjustmentCommand, ApplyAdjustmentUseCase,
+    ApproveAdjustmentCommand, ApproveAdjustmentUseCase, CreateAdjustmentCommand,
+    CreateAdjustmentUseCase, GetAdjustmentUseCase, ListAdjustmentsQuery, ListAdjustmentsUseCase,
+    PaginatedResponse, SubmitAdjustmentCommand, SubmitAdjustmentUseCase,
 };
 
 use crate::error::AppError;

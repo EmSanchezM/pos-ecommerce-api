@@ -6,11 +6,11 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::UpdateRecipeCommand;
 use crate::application::dtos::responses::RecipeResponse;
 use crate::domain::repositories::RecipeRepository;
 use crate::domain::value_objects::RecipeId;
-use crate::InventoryError;
 
 /// Use case for updating an existing recipe
 ///

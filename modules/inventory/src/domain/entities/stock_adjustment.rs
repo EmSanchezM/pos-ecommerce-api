@@ -4,11 +4,11 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
+use crate::InventoryError;
 use crate::domain::entities::AdjustmentItem;
 use crate::domain::value_objects::{
     AdjustmentId, AdjustmentReason, AdjustmentStatus, AdjustmentType,
 };
-use crate::InventoryError;
 use identity::{StoreId, UserId};
 
 /// StockAdjustment entity representing a document for correcting inventory.
@@ -269,7 +269,10 @@ impl StockAdjustment {
         Ok(())
     }
 
-    pub fn set_adjustment_type(&mut self, adjustment_type: AdjustmentType) -> Result<(), InventoryError> {
+    pub fn set_adjustment_type(
+        &mut self,
+        adjustment_type: AdjustmentType,
+    ) -> Result<(), InventoryError> {
         if !self.is_editable() {
             return Err(InventoryError::AdjustmentAlreadyApplied);
         }
@@ -278,7 +281,10 @@ impl StockAdjustment {
         Ok(())
     }
 
-    pub fn set_adjustment_reason(&mut self, adjustment_reason: AdjustmentReason) -> Result<(), InventoryError> {
+    pub fn set_adjustment_reason(
+        &mut self,
+        adjustment_reason: AdjustmentReason,
+    ) -> Result<(), InventoryError> {
         if !self.is_editable() {
             return Err(InventoryError::AdjustmentAlreadyApplied);
         }
@@ -288,12 +294,11 @@ impl StockAdjustment {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rust_decimal_macros::dec;
     use crate::domain::value_objects::StockId;
+    use rust_decimal_macros::dec;
 
     fn create_test_adjustment() -> StockAdjustment {
         StockAdjustment::create(
@@ -318,7 +323,7 @@ mod tests {
     fn test_create_adjustment() {
         let store_id = StoreId::new();
         let user_id = UserId::new();
-        
+
         let adjustment = StockAdjustment::create(
             store_id,
             "ADJ-001".to_string(),
@@ -326,7 +331,7 @@ mod tests {
             AdjustmentReason::Damage,
             user_id,
         );
-        
+
         assert_eq!(adjustment.store_id(), store_id);
         assert_eq!(adjustment.adjustment_number(), "ADJ-001");
         assert_eq!(adjustment.adjustment_type(), AdjustmentType::Decrease);
@@ -345,9 +350,9 @@ mod tests {
     fn test_add_item_in_draft() {
         let mut adjustment = create_test_adjustment();
         let item = create_test_item();
-        
+
         adjustment.add_item(item).unwrap();
-        
+
         assert_eq!(adjustment.items().len(), 1);
     }
 
@@ -355,9 +360,9 @@ mod tests {
     fn test_submit_for_approval_success() {
         let mut adjustment = create_test_adjustment();
         adjustment.add_item(create_test_item()).unwrap();
-        
+
         adjustment.submit_for_approval().unwrap();
-        
+
         assert_eq!(adjustment.status(), AdjustmentStatus::PendingApproval);
         assert!(!adjustment.is_editable());
     }
@@ -365,9 +370,9 @@ mod tests {
     #[test]
     fn test_submit_for_approval_empty_items() {
         let mut adjustment = create_test_adjustment();
-        
+
         let result = adjustment.submit_for_approval();
-        
+
         assert!(matches!(result, Err(InventoryError::EmptyAdjustment)));
     }
 
@@ -376,11 +381,14 @@ mod tests {
         let mut adjustment = create_test_adjustment();
         adjustment.add_item(create_test_item()).unwrap();
         adjustment.submit_for_approval().unwrap();
-        
+
         // Try to submit again
         let result = adjustment.submit_for_approval();
-        
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
@@ -388,10 +396,10 @@ mod tests {
         let mut adjustment = create_test_adjustment();
         adjustment.add_item(create_test_item()).unwrap();
         adjustment.submit_for_approval().unwrap();
-        
+
         let approver_id = UserId::new();
         adjustment.approve(approver_id).unwrap();
-        
+
         assert_eq!(adjustment.status(), AdjustmentStatus::Approved);
         assert_eq!(adjustment.approved_by_id(), Some(approver_id));
         assert!(adjustment.approved_at().is_some());
@@ -400,10 +408,13 @@ mod tests {
     #[test]
     fn test_approve_wrong_status() {
         let mut adjustment = create_test_adjustment();
-        
+
         let result = adjustment.approve(UserId::new());
-        
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
@@ -411,10 +422,10 @@ mod tests {
         let mut adjustment = create_test_adjustment();
         adjustment.add_item(create_test_item()).unwrap();
         adjustment.submit_for_approval().unwrap();
-        
+
         let approver_id = UserId::new();
         adjustment.reject(approver_id).unwrap();
-        
+
         assert_eq!(adjustment.status(), AdjustmentStatus::Rejected);
         assert_eq!(adjustment.approved_by_id(), Some(approver_id));
         assert!(adjustment.approved_at().is_some());
@@ -424,10 +435,13 @@ mod tests {
     #[test]
     fn test_reject_wrong_status() {
         let mut adjustment = create_test_adjustment();
-        
+
         let result = adjustment.reject(UserId::new());
-        
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
@@ -436,9 +450,9 @@ mod tests {
         adjustment.add_item(create_test_item()).unwrap();
         adjustment.submit_for_approval().unwrap();
         adjustment.approve(UserId::new()).unwrap();
-        
+
         adjustment.mark_applied().unwrap();
-        
+
         assert_eq!(adjustment.status(), AdjustmentStatus::Applied);
         assert!(adjustment.applied_at().is_some());
         assert!(adjustment.is_final());
@@ -449,11 +463,14 @@ mod tests {
         let mut adjustment = create_test_adjustment();
         adjustment.add_item(create_test_item()).unwrap();
         adjustment.submit_for_approval().unwrap();
-        
+
         // Try to apply without approval
         let result = adjustment.mark_applied();
-        
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
@@ -461,18 +478,23 @@ mod tests {
         let mut adjustment = create_test_adjustment();
         adjustment.add_item(create_test_item()).unwrap();
         adjustment.submit_for_approval().unwrap();
-        
+
         let result = adjustment.add_item(create_test_item());
-        
-        assert!(matches!(result, Err(InventoryError::AdjustmentAlreadyApplied)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::AdjustmentAlreadyApplied)
+        ));
     }
 
     #[test]
     fn test_set_notes_in_draft() {
         let mut adjustment = create_test_adjustment();
-        
-        adjustment.set_notes(Some("Test notes".to_string())).unwrap();
-        
+
+        adjustment
+            .set_notes(Some("Test notes".to_string()))
+            .unwrap();
+
         assert_eq!(adjustment.notes(), Some("Test notes"));
     }
 
@@ -481,29 +503,32 @@ mod tests {
         let mut adjustment = create_test_adjustment();
         adjustment.add_item(create_test_item()).unwrap();
         adjustment.submit_for_approval().unwrap();
-        
+
         let result = adjustment.set_notes(Some("Test notes".to_string()));
-        
-        assert!(matches!(result, Err(InventoryError::AdjustmentAlreadyApplied)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::AdjustmentAlreadyApplied)
+        ));
     }
 
     #[test]
     fn test_workflow_draft_to_applied() {
         let mut adjustment = create_test_adjustment();
-        
+
         // Draft
         assert_eq!(adjustment.status(), AdjustmentStatus::Draft);
         assert!(adjustment.is_editable());
-        
+
         // Add item and submit
         adjustment.add_item(create_test_item()).unwrap();
         adjustment.submit_for_approval().unwrap();
         assert_eq!(adjustment.status(), AdjustmentStatus::PendingApproval);
-        
+
         // Approve
         adjustment.approve(UserId::new()).unwrap();
         assert_eq!(adjustment.status(), AdjustmentStatus::Approved);
-        
+
         // Apply
         adjustment.mark_applied().unwrap();
         assert_eq!(adjustment.status(), AdjustmentStatus::Applied);
@@ -513,11 +538,11 @@ mod tests {
     #[test]
     fn test_workflow_draft_to_rejected() {
         let mut adjustment = create_test_adjustment();
-        
+
         adjustment.add_item(create_test_item()).unwrap();
         adjustment.submit_for_approval().unwrap();
         adjustment.reject(UserId::new()).unwrap();
-        
+
         assert_eq!(adjustment.status(), AdjustmentStatus::Rejected);
         assert!(adjustment.is_final());
     }

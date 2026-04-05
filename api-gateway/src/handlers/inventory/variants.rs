@@ -8,10 +8,10 @@
 // - DELETE /api/products/{product_id}/variants/{variant_id} - Soft delete variant
 
 use axum::{
+    Json,
     extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use uuid::Uuid;
 

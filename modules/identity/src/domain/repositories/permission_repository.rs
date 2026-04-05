@@ -27,7 +27,10 @@ pub trait PermissionRepository: Send + Sync {
     /// Finds a permission by its code
     ///
     /// Returns `None` if no permission with the given code exists.
-    async fn find_by_code(&self, code: &PermissionCode) -> Result<Option<Permission>, IdentityError>;
+    async fn find_by_code(
+        &self,
+        code: &PermissionCode,
+    ) -> Result<Option<Permission>, IdentityError>;
 
     /// Returns all permissions in the repository
     async fn find_all(&self) -> Result<Vec<Permission>, IdentityError>;

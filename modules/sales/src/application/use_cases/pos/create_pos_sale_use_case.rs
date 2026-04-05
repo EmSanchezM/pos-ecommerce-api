@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{CreatePosSaleCommand, SaleDetailResponse};
 use crate::domain::entities::Sale;
 use crate::domain::repositories::{SaleRepository, ShiftRepository};
 use crate::domain::value_objects::ShiftId;
-use crate::SalesError;
 use identity::{StoreId, UserId};
 use inventory::Currency;
 use pos_core::TerminalId;
@@ -18,10 +18,7 @@ pub struct CreatePosSaleUseCase {
 }
 
 impl CreatePosSaleUseCase {
-    pub fn new(
-        sale_repo: Arc<dyn SaleRepository>,
-        shift_repo: Arc<dyn ShiftRepository>,
-    ) -> Self {
+    pub fn new(sale_repo: Arc<dyn SaleRepository>, shift_repo: Arc<dyn ShiftRepository>) -> Self {
         Self {
             sale_repo,
             shift_repo,

@@ -6,9 +6,11 @@ use chrono::Utc;
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
-use crate::application::dtos::responses::{ValuationItemResponse, ValuationReportResponse};
-use crate::domain::repositories::{InventoryMovementRepository, InventoryStockRepository, ProductRepository};
 use crate::InventoryError;
+use crate::application::dtos::responses::{ValuationItemResponse, ValuationReportResponse};
+use crate::domain::repositories::{
+    InventoryMovementRepository, InventoryStockRepository, ProductRepository,
+};
 
 /// Query parameters for valuation report
 #[derive(Debug, Clone)]
@@ -52,7 +54,10 @@ where
     ///
     /// # Returns
     /// ValuationReportResponse with stock values and totals
-    pub async fn execute(&self, query: ValuationReportQuery) -> Result<ValuationReportResponse, InventoryError> {
+    pub async fn execute(
+        &self,
+        query: ValuationReportQuery,
+    ) -> Result<ValuationReportResponse, InventoryError> {
         let currency = query.currency.unwrap_or_else(|| "HNL".to_string());
 
         // Get all stock records (optionally filtered by store)
@@ -82,9 +87,7 @@ where
             total_value += item_total_value;
 
             // Get product name and SKU
-            let (product_name, variant_name, sku) = self
-                .get_product_info(&stock)
-                .await?;
+            let (product_name, variant_name, sku) = self.get_product_info(&stock).await?;
 
             items.push(ValuationItemResponse {
                 stock_id: stock.id().into_uuid(),
@@ -119,22 +122,25 @@ where
         let mut sku = None;
 
         if let Some(product_id) = stock.product_id()
-            && let Some(product) = self.product_repo.find_by_id(product_id).await? {
-                product_name = Some(product.name().to_string());
-                sku = Some(product.sku().to_string());
-            }
+            && let Some(product) = self.product_repo.find_by_id(product_id).await?
+        {
+            product_name = Some(product.name().to_string());
+            sku = Some(product.sku().to_string());
+        }
 
         if let Some(variant_id) = stock.variant_id()
-            && let Some(variant) = self.product_repo.find_variant_by_id(variant_id).await? {
-                variant_name = Some(variant.name().to_string());
-                sku = Some(variant.sku().to_string());
+            && let Some(variant) = self.product_repo.find_variant_by_id(variant_id).await?
+        {
+            variant_name = Some(variant.name().to_string());
+            sku = Some(variant.sku().to_string());
 
-                // Also get parent product name if not already set
-                if product_name.is_none()
-                    && let Some(product) = self.product_repo.find_by_id(variant.product_id()).await? {
-                        product_name = Some(product.name().to_string());
-                    }
+            // Also get parent product name if not already set
+            if product_name.is_none()
+                && let Some(product) = self.product_repo.find_by_id(variant.product_id()).await?
+            {
+                product_name = Some(product.name().to_string());
             }
+        }
 
         Ok((product_name, variant_name, sku))
     }

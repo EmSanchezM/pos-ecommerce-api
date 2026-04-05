@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::ConfirmReservationCommand;
 use crate::application::dtos::responses::ReservationResponse;
 use crate::domain::entities::InventoryMovement;
@@ -9,7 +10,6 @@ use crate::domain::repositories::{
     InventoryMovementRepository, InventoryStockRepository, ReservationRepository,
 };
 use crate::domain::value_objects::{Currency, MovementType, ReservationId};
-use crate::InventoryError;
 use identity::domain::value_objects::UserId;
 
 /// Use case for confirming an inventory reservation.
@@ -328,7 +328,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_low_stock_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_low_stock_by_store(
+            &self,
+            _store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
     }
@@ -408,7 +411,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn count_with_filters(&self, _query: &crate::domain::repositories::MovementQuery) -> Result<i64, InventoryError> {
+        async fn count_with_filters(
+            &self,
+            _query: &crate::domain::repositories::MovementQuery,
+        ) -> Result<i64, InventoryError> {
             unimplemented!()
         }
     }
@@ -444,8 +450,11 @@ mod tests {
         let reservation_id = reservation.id();
         reservation_repo.add_reservation(reservation);
 
-        let use_case =
-            ConfirmReservationUseCase::new(reservation_repo.clone(), stock_repo.clone(), movement_repo.clone());
+        let use_case = ConfirmReservationUseCase::new(
+            reservation_repo.clone(),
+            stock_repo.clone(),
+            movement_repo.clone(),
+        );
 
         let command = ConfirmReservationCommand {
             reservation_id: reservation_id.into_uuid(),
@@ -484,7 +493,10 @@ mod tests {
 
         let actor_id = UserId::new();
         let result = use_case.execute(command, actor_id).await;
-        assert!(matches!(result, Err(InventoryError::ReservationNotFound(_))));
+        assert!(matches!(
+            result,
+            Err(InventoryError::ReservationNotFound(_))
+        ));
     }
 
     #[tokio::test]

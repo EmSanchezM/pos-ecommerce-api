@@ -5,12 +5,14 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{
     MovementResponse, ProductResponse, StockHistoryResponse, VariantResponse,
 };
-use crate::domain::repositories::{InventoryMovementRepository, InventoryStockRepository, ProductRepository};
+use crate::domain::repositories::{
+    InventoryMovementRepository, InventoryStockRepository, ProductRepository,
+};
 use crate::domain::value_objects::StockId;
-use crate::InventoryError;
 
 /// Query parameters for stock history
 #[derive(Debug, Clone)]
@@ -60,7 +62,10 @@ where
     ///
     /// # Returns
     /// StockHistoryResponse with stock info and paginated movements
-    pub async fn execute(&self, query: StockHistoryQuery) -> Result<StockHistoryResponse, InventoryError> {
+    pub async fn execute(
+        &self,
+        query: StockHistoryQuery,
+    ) -> Result<StockHistoryResponse, InventoryError> {
         let stock_id = StockId::from_uuid(query.stock_id);
         let offset = (query.page - 1) * query.page_size;
 

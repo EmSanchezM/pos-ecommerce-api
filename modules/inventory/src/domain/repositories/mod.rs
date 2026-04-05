@@ -19,21 +19,21 @@
 //! The [`InventoryStockRepository`] supports optimistic locking via the
 //! `update_with_version` method, which prevents concurrent update conflicts.
 
-mod category_repository;
-mod product_repository;
-mod inventory_stock_repository;
-mod inventory_movement_repository;
-mod reservation_repository;
-mod recipe_repository;
 mod adjustment_repository;
+mod category_repository;
+mod inventory_movement_repository;
+mod inventory_stock_repository;
+mod product_repository;
+mod recipe_repository;
+mod reservation_repository;
 mod transfer_repository;
 
 // Re-exports
-pub use category_repository::CategoryRepository;
-pub use product_repository::ProductRepository;
-pub use inventory_stock_repository::InventoryStockRepository;
-pub use inventory_movement_repository::{InventoryMovementRepository, MovementQuery};
-pub use reservation_repository::ReservationRepository;
-pub use recipe_repository::RecipeRepository;
 pub use adjustment_repository::AdjustmentRepository;
+pub use category_repository::CategoryRepository;
+pub use inventory_movement_repository::{InventoryMovementRepository, MovementQuery};
+pub use inventory_stock_repository::InventoryStockRepository;
+pub use product_repository::ProductRepository;
+pub use recipe_repository::RecipeRepository;
+pub use reservation_repository::ReservationRepository;
 pub use transfer_repository::TransferRepository;

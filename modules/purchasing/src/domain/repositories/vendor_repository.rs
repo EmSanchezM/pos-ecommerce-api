@@ -2,9 +2,9 @@
 
 use async_trait::async_trait;
 
+use crate::PurchasingError;
 use crate::domain::entities::Vendor;
 use crate::domain::value_objects::VendorId;
-use crate::PurchasingError;
 
 /// Filter options for listing vendors
 #[derive(Debug, Clone, Default)]

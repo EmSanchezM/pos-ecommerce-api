@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{CancelCreditNoteCommand, CreditNoteResponse};
 use crate::domain::repositories::CreditNoteRepository;
 use crate::domain::value_objects::CreditNoteId;
-use crate::SalesError;
 
 /// Use case for cancelling a credit note
 pub struct CancelCreditNoteUseCase {

@@ -166,7 +166,6 @@ impl InventoryMovement {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -181,7 +180,7 @@ mod tests {
     fn test_create_movement() {
         let stock_id = StockId::new();
         let actor_id = UserId::new();
-        
+
         let movement = InventoryMovement::create(
             stock_id,
             MovementType::In,
@@ -195,7 +194,7 @@ mod tests {
             actor_id,
             Some("Initial stock".to_string()),
         );
-        
+
         assert_eq!(movement.stock_id(), stock_id);
         assert_eq!(movement.movement_type(), MovementType::In);
         assert_eq!(movement.movement_reason(), Some("purchase"));
@@ -210,7 +209,7 @@ mod tests {
     fn test_total_cost_calculation() {
         let stock_id = StockId::new();
         let actor_id = UserId::new();
-        
+
         let movement = InventoryMovement::create(
             stock_id,
             MovementType::In,
@@ -224,7 +223,7 @@ mod tests {
             actor_id,
             None,
         );
-        
+
         assert_eq!(movement.total_cost(), Some(dec!(500.00)));
     }
 
@@ -232,7 +231,7 @@ mod tests {
     fn test_total_cost_with_negative_quantity() {
         let stock_id = StockId::new();
         let actor_id = UserId::new();
-        
+
         let movement = InventoryMovement::create(
             stock_id,
             MovementType::Out,
@@ -246,7 +245,7 @@ mod tests {
             actor_id,
             None,
         );
-        
+
         assert_eq!(movement.total_cost(), Some(dec!(300.00)));
     }
 
@@ -254,7 +253,7 @@ mod tests {
     fn test_total_cost_without_unit_cost() {
         let stock_id = StockId::new();
         let actor_id = UserId::new();
-        
+
         let movement = InventoryMovement::create(
             stock_id,
             MovementType::Adjustment,
@@ -268,7 +267,7 @@ mod tests {
             actor_id,
             None,
         );
-        
+
         assert!(movement.total_cost().is_none());
     }
 
@@ -276,7 +275,7 @@ mod tests {
     fn test_movement_types() {
         let stock_id = StockId::new();
         let actor_id = UserId::new();
-        
+
         let types = [
             MovementType::In,
             MovementType::Out,
@@ -286,7 +285,7 @@ mod tests {
             MovementType::Reservation,
             MovementType::Release,
         ];
-        
+
         for movement_type in types {
             let movement = InventoryMovement::create(
                 stock_id,
@@ -310,7 +309,7 @@ mod tests {
         let stock_id = StockId::new();
         let actor_id = UserId::new();
         let reference_id = new_uuid();
-        
+
         let movement = InventoryMovement::create(
             stock_id,
             MovementType::Out,
@@ -324,7 +323,7 @@ mod tests {
             actor_id,
             None,
         );
-        
+
         assert_eq!(movement.reference_type(), Some("order"));
         assert_eq!(movement.reference_id(), Some(reference_id));
     }
@@ -336,7 +335,7 @@ mod tests {
         let actor_id = UserId::new();
         let now = Utc::now();
         let metadata = serde_json::json!({"source": "import"});
-        
+
         let movement = InventoryMovement::reconstitute(
             id,
             stock_id,
@@ -353,7 +352,7 @@ mod tests {
             metadata.clone(),
             now,
         );
-        
+
         assert_eq!(movement.id(), id);
         assert_eq!(movement.stock_id(), stock_id);
         assert_eq!(movement.movement_type(), MovementType::In);
@@ -365,7 +364,7 @@ mod tests {
     fn test_currency() {
         let stock_id = StockId::new();
         let actor_id = UserId::new();
-        
+
         let movement_usd = InventoryMovement::create(
             stock_id,
             MovementType::In,
@@ -380,7 +379,7 @@ mod tests {
             None,
         );
         assert_eq!(movement_usd.currency().as_str(), "USD");
-        
+
         let movement_hnl = InventoryMovement::create(
             stock_id,
             MovementType::In,

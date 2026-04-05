@@ -13,14 +13,15 @@
 // - PUT /api/v1/purchase-orders/{id}/close - Close purchase order
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::Deserialize;
 use uuid::Uuid;
 
+use inventory::PaginatedResponse;
 use purchasing::{
     ApprovePurchaseOrderUseCase, CancelOrderCommand, CancelPurchaseOrderUseCase,
     ClosePurchaseOrderUseCase, CreatePurchaseOrderCommand, CreatePurchaseOrderUseCase,
@@ -28,7 +29,6 @@ use purchasing::{
     PurchaseOrderDetailResponse, PurchaseOrderResponse, RejectOrderCommand,
     RejectPurchaseOrderUseCase, SubmitPurchaseOrderUseCase,
 };
-use inventory::PaginatedResponse;
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
@@ -127,10 +127,8 @@ pub async fn create_purchase_order_handler(
 ) -> Result<(StatusCode, Json<PurchaseOrderDetailResponse>), Response> {
     require_permission(&ctx, "purchase_orders:create")?;
 
-    let use_case = CreatePurchaseOrderUseCase::new(
-        state.purchase_order_repo(),
-        state.vendor_repo(),
-    );
+    let use_case =
+        CreatePurchaseOrderUseCase::new(state.purchase_order_repo(), state.vendor_repo());
 
     let actor_id = *ctx.user_id();
     let response = use_case

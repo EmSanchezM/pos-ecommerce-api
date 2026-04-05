@@ -3,12 +3,12 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::UpdateStockCommand;
 use crate::application::dtos::responses::StockResponse;
 use crate::domain::entities::InventoryMovement;
 use crate::domain::repositories::{InventoryMovementRepository, InventoryStockRepository};
 use crate::domain::value_objects::{Currency, MovementType, StockId};
-use crate::InventoryError;
 use identity::domain::entities::AuditEntry;
 use identity::domain::repositories::AuditRepository;
 use identity::domain::value_objects::UserId;
@@ -109,8 +109,13 @@ where
         self.movement_repo.save(&movement).await?;
 
         // 7. Create audit entry
-        let audit_entry =
-            AuditEntry::for_update("inventory_stock", stock_id.into_uuid(), &old_stock, &stock, actor_id);
+        let audit_entry = AuditEntry::for_update(
+            "inventory_stock",
+            stock_id.into_uuid(),
+            &old_stock,
+            &stock,
+            actor_id,
+        );
         self.audit_repo
             .save(&audit_entry)
             .await
@@ -259,7 +264,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_low_stock_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_low_stock_by_store(
+            &self,
+            _store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
     }
@@ -339,7 +347,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn count_with_filters(&self, _query: &crate::domain::repositories::MovementQuery) -> Result<i64, InventoryError> {
+        async fn count_with_filters(
+            &self,
+            _query: &crate::domain::repositories::MovementQuery,
+        ) -> Result<i64, InventoryError> {
             unimplemented!()
         }
     }

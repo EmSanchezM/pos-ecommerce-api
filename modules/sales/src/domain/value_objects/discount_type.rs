@@ -67,9 +67,18 @@ mod tests {
             DiscountType::from_str("percent").unwrap(),
             DiscountType::Percentage
         );
-        assert_eq!(DiscountType::from_str("%").unwrap(), DiscountType::Percentage);
-        assert_eq!(DiscountType::from_str("fixed").unwrap(), DiscountType::Fixed);
-        assert_eq!(DiscountType::from_str("amount").unwrap(), DiscountType::Fixed);
+        assert_eq!(
+            DiscountType::from_str("%").unwrap(),
+            DiscountType::Percentage
+        );
+        assert_eq!(
+            DiscountType::from_str("fixed").unwrap(),
+            DiscountType::Fixed
+        );
+        assert_eq!(
+            DiscountType::from_str("amount").unwrap(),
+            DiscountType::Fixed
+        );
     }
 
     #[test]

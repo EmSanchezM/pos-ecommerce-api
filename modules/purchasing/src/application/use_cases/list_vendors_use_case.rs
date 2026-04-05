@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
+use crate::PurchasingError;
 use crate::application::dtos::responses::VendorResponse;
 use crate::domain::repositories::{VendorFilter, VendorRepository};
-use crate::PurchasingError;
 use inventory::PaginatedResponse;
 
 /// Query parameters for listing vendors

@@ -3,11 +3,11 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{ProcessPaymentCommand, SaleDetailResponse};
 use crate::domain::entities::Payment;
 use crate::domain::repositories::{SaleRepository, ShiftRepository};
 use crate::domain::value_objects::{PaymentMethod, SaleId};
-use crate::SalesError;
 
 /// Use case for processing a payment
 pub struct ProcessPaymentUseCase {
@@ -16,17 +16,17 @@ pub struct ProcessPaymentUseCase {
 }
 
 impl ProcessPaymentUseCase {
-    pub fn new(
-        sale_repo: Arc<dyn SaleRepository>,
-        shift_repo: Arc<dyn ShiftRepository>,
-    ) -> Self {
+    pub fn new(sale_repo: Arc<dyn SaleRepository>, shift_repo: Arc<dyn ShiftRepository>) -> Self {
         Self {
             sale_repo,
             shift_repo,
         }
     }
 
-    pub async fn execute(&self, cmd: ProcessPaymentCommand) -> Result<SaleDetailResponse, SalesError> {
+    pub async fn execute(
+        &self,
+        cmd: ProcessPaymentCommand,
+    ) -> Result<SaleDetailResponse, SalesError> {
         let sale_id = SaleId::from_uuid(cmd.sale_id);
         let payment_method = PaymentMethod::from_str(&cmd.payment_method)
             .map_err(|_| SalesError::InvalidPaymentMethod)?;
@@ -51,12 +51,8 @@ impl ProcessPaymentUseCase {
         };
 
         // Set optional fields
-        if let Some(ref reference) = cmd.reference {
-            payment.set_reference_number(Some(reference.clone()));
-        }
-        if let Some(ref notes) = cmd.notes {
-            payment.set_notes(Some(notes.clone()));
-        }
+        payment.set_reference_number(cmd.reference.clone());
+        payment.set_notes(cmd.notes.clone());
 
         // Add payment to sale
         sale.add_payment(payment.clone())?;
@@ -68,17 +64,17 @@ impl ProcessPaymentUseCase {
         self.sale_repo.update(&sale).await?;
 
         // Update shift sales totals if this is a POS sale
-        if let Some(shift_id) = sale.shift_id() {
-            if let Some(mut shift) = self.shift_repo.find_by_id(shift_id).await? {
-                match payment_method {
-                    PaymentMethod::Cash => shift.record_cash_sale(cmd.amount)?,
-                    PaymentMethod::CreditCard | PaymentMethod::DebitCard => {
-                        shift.record_card_sale(cmd.amount)?
-                    }
-                    _ => shift.record_other_sale(cmd.amount)?,
+        if let Some(shift_id) = sale.shift_id()
+            && let Some(mut shift) = self.shift_repo.find_by_id(shift_id).await?
+        {
+            match payment_method {
+                PaymentMethod::Cash => shift.record_cash_sale(cmd.amount)?,
+                PaymentMethod::CreditCard | PaymentMethod::DebitCard => {
+                    shift.record_card_sale(cmd.amount)?
                 }
-                self.shift_repo.update(&shift).await?;
+                _ => shift.record_other_sale(cmd.amount)?,
             }
+            self.shift_repo.update(&shift).await?;
         }
 
         Ok(SaleDetailResponse::from(sale))

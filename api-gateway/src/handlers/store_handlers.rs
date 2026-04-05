@@ -9,10 +9,10 @@
 // - POST /stores/:id/deactivate - Deactivate store (requires super_admin)
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
@@ -212,7 +212,7 @@ pub async fn get_store_handler(
 /// - 401 Unauthorized: Missing or invalid token
 /// - 404 Not Found: Store doesn't exist
 /// - 500 Internal Server Error: Unexpected error
-/// 
+///
 /// - Update store details
 pub async fn update_store_handler(
     State(state): State<AppState>,

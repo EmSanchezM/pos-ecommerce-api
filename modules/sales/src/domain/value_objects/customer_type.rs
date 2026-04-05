@@ -6,10 +6,11 @@ use std::fmt;
 use std::str::FromStr;
 
 /// Type of customer
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum CustomerType {
     /// Individual person
+    #[default]
     Individual,
     /// Business/Company
     Business,
@@ -29,12 +30,6 @@ impl CustomerType {
     /// Returns true if this is a business customer
     pub fn is_business(&self) -> bool {
         matches!(self, CustomerType::Business)
-    }
-}
-
-impl Default for CustomerType {
-    fn default() -> Self {
-        CustomerType::Individual
     }
 }
 

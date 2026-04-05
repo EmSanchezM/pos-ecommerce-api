@@ -146,14 +146,9 @@ mod tests {
     fn test_create_adjustment_item() {
         let adjustment_id = AdjustmentId::new();
         let stock_id = StockId::new();
-        
-        let item = AdjustmentItem::create(
-            adjustment_id,
-            stock_id,
-            dec!(-10),
-            Some(dec!(5.00)),
-        );
-        
+
+        let item = AdjustmentItem::create(adjustment_id, stock_id, dec!(-10), Some(dec!(5.00)));
+
         assert_eq!(item.adjustment_id(), adjustment_id);
         assert_eq!(item.stock_id(), stock_id);
         assert_eq!(item.quantity(), dec!(-10));
@@ -170,9 +165,9 @@ mod tests {
             dec!(-10),
             Some(dec!(5.00)),
         );
-        
+
         item.record_balances(dec!(100), dec!(90));
-        
+
         assert_eq!(item.balance_before(), Some(dec!(100)));
         assert_eq!(item.balance_after(), Some(dec!(90)));
     }
@@ -185,7 +180,7 @@ mod tests {
             dec!(-10),
             Some(dec!(5.00)),
         );
-        
+
         // Total cost should be absolute value of quantity * unit_cost
         assert_eq!(item.total_cost(), Some(dec!(50.00)));
     }
@@ -198,33 +193,23 @@ mod tests {
             dec!(10),
             Some(dec!(5.00)),
         );
-        
+
         assert_eq!(item.total_cost(), Some(dec!(50.00)));
     }
 
     #[test]
     fn test_total_cost_without_unit_cost() {
-        let item = AdjustmentItem::create(
-            AdjustmentId::new(),
-            StockId::new(),
-            dec!(-10),
-            None,
-        );
-        
+        let item = AdjustmentItem::create(AdjustmentId::new(), StockId::new(), dec!(-10), None);
+
         assert!(item.total_cost().is_none());
     }
 
     #[test]
     fn test_set_notes() {
-        let mut item = AdjustmentItem::create(
-            AdjustmentId::new(),
-            StockId::new(),
-            dec!(-10),
-            None,
-        );
-        
+        let mut item = AdjustmentItem::create(AdjustmentId::new(), StockId::new(), dec!(-10), None);
+
         item.set_notes(Some("Damaged goods".to_string()));
-        
+
         assert_eq!(item.notes(), Some("Damaged goods"));
     }
 
@@ -234,7 +219,7 @@ mod tests {
         let adjustment_id = AdjustmentId::new();
         let stock_id = StockId::new();
         let now = Utc::now();
-        
+
         let item = AdjustmentItem::reconstitute(
             id,
             adjustment_id,
@@ -246,7 +231,7 @@ mod tests {
             Some("Test notes".to_string()),
             now,
         );
-        
+
         assert_eq!(item.id(), id);
         assert_eq!(item.adjustment_id(), adjustment_id);
         assert_eq!(item.stock_id(), stock_id);

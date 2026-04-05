@@ -3,10 +3,10 @@
 use async_trait::async_trait;
 use sqlx::PgPool;
 
+use crate::SalesError;
 use crate::domain::entities::{Address, Customer};
 use crate::domain::repositories::{CustomerFilter, CustomerRepository};
 use crate::domain::value_objects::{CustomerId, CustomerType};
-use crate::SalesError;
 use identity::{StoreId, UserId};
 
 /// PostgreSQL implementation of CustomerRepository
@@ -266,7 +266,7 @@ impl CustomerRepository for PgCustomerRepository {
 
     async fn generate_customer_code(&self, store_id: StoreId) -> Result<String, SalesError> {
         let count: (i64,) = sqlx::query_as(
-            "SELECT COUNT(*) FROM customers WHERE store_id = $1 AND code LIKE 'CUS-%'"
+            "SELECT COUNT(*) FROM customers WHERE store_id = $1 AND code LIKE 'CUS-%'",
         )
         .bind(store_id.into_uuid())
         .fetch_one(&self.pool)

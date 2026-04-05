@@ -93,7 +93,11 @@ pub struct CreditNoteResponse {
 
 impl From<CreditNote> for CreditNoteResponse {
     fn from(cn: CreditNote) -> Self {
-        let items = cn.items().iter().map(CreditNoteItemResponse::from).collect();
+        let items = cn
+            .items()
+            .iter()
+            .map(CreditNoteItemResponse::from)
+            .collect();
         Self {
             id: cn.id().into_uuid(),
             credit_note_number: cn.credit_note_number().to_string(),

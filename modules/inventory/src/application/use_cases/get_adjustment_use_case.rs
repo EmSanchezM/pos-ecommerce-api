@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{AdjustmentDetailResponse, AdjustmentItemResponse};
 use crate::domain::repositories::AdjustmentRepository;
 use crate::domain::value_objects::AdjustmentId;
-use crate::InventoryError;
 
 /// Use case for getting an adjustment by ID with full details
 ///

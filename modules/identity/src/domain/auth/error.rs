@@ -101,7 +101,10 @@ mod tests {
     #[test]
     fn test_duplicate_email_message() {
         let err = AuthError::DuplicateEmail("test@example.com".to_string());
-        assert_eq!(err.to_string(), "Email already registered: test@example.com");
+        assert_eq!(
+            err.to_string(),
+            "Email already registered: test@example.com"
+        );
     }
 
     #[test]

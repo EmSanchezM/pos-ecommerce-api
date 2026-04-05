@@ -2,9 +2,9 @@
 
 use async_trait::async_trait;
 
+use crate::InventoryError;
 use crate::domain::entities::{Product, ProductVariant};
 use crate::domain::value_objects::{Barcode, CategoryId, ProductId, Sku, VariantId};
-use crate::InventoryError;
 
 /// Repository trait for Product persistence operations.
 /// Handles both products and their variants.
@@ -33,7 +33,10 @@ pub trait ProductRepository: Send + Sync {
     async fn find_active(&self) -> Result<Vec<Product>, InventoryError>;
 
     /// Finds all products in a specific category
-    async fn find_by_category(&self, category_id: CategoryId) -> Result<Vec<Product>, InventoryError>;
+    async fn find_by_category(
+        &self,
+        category_id: CategoryId,
+    ) -> Result<Vec<Product>, InventoryError>;
 
     /// Finds products with pagination and filters
     /// Returns (products, total_count)
@@ -62,16 +65,28 @@ pub trait ProductRepository: Send + Sync {
     async fn save_variant(&self, variant: &ProductVariant) -> Result<(), InventoryError>;
 
     /// Finds a variant by its unique ID
-    async fn find_variant_by_id(&self, id: VariantId) -> Result<Option<ProductVariant>, InventoryError>;
+    async fn find_variant_by_id(
+        &self,
+        id: VariantId,
+    ) -> Result<Option<ProductVariant>, InventoryError>;
 
     /// Finds a variant by its unique SKU
-    async fn find_variant_by_sku(&self, sku: &Sku) -> Result<Option<ProductVariant>, InventoryError>;
+    async fn find_variant_by_sku(
+        &self,
+        sku: &Sku,
+    ) -> Result<Option<ProductVariant>, InventoryError>;
 
     /// Finds a variant by its barcode
-    async fn find_variant_by_barcode(&self, barcode: &Barcode) -> Result<Option<ProductVariant>, InventoryError>;
+    async fn find_variant_by_barcode(
+        &self,
+        barcode: &Barcode,
+    ) -> Result<Option<ProductVariant>, InventoryError>;
 
     /// Finds all variants for a product
-    async fn find_variants_by_product(&self, product_id: ProductId) -> Result<Vec<ProductVariant>, InventoryError>;
+    async fn find_variants_by_product(
+        &self,
+        product_id: ProductId,
+    ) -> Result<Vec<ProductVariant>, InventoryError>;
 
     /// Updates an existing variant
     async fn update_variant(&self, variant: &ProductVariant) -> Result<(), InventoryError>;

@@ -3,10 +3,10 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::SalesError;
 use crate::application::dtos::CreditNoteResponse;
 use crate::domain::repositories::CreditNoteRepository;
 use crate::domain::value_objects::{CreditNoteId, CreditNoteItemId};
-use crate::SalesError;
 
 /// Use case for removing an item from a credit note
 pub struct RemoveCreditNoteItemUseCase {
@@ -18,7 +18,11 @@ impl RemoveCreditNoteItemUseCase {
         Self { credit_note_repo }
     }
 
-    pub async fn execute(&self, credit_note_id: Uuid, item_id: Uuid) -> Result<CreditNoteResponse, SalesError> {
+    pub async fn execute(
+        &self,
+        credit_note_id: Uuid,
+        item_id: Uuid,
+    ) -> Result<CreditNoteResponse, SalesError> {
         let cn_id = CreditNoteId::from_uuid(credit_note_id);
         let item_id_vo = CreditNoteItemId::from_uuid(item_id);
 

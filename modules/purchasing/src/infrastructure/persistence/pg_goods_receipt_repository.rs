@@ -5,12 +5,12 @@ use chrono::NaiveDate;
 use rust_decimal::Decimal;
 use sqlx::PgPool;
 
+use crate::PurchasingError;
 use crate::domain::entities::{GoodsReceipt, GoodsReceiptItem};
 use crate::domain::repositories::{GoodsReceiptFilter, GoodsReceiptRepository};
 use crate::domain::value_objects::{
     GoodsReceiptId, GoodsReceiptItemId, GoodsReceiptStatus, PurchaseOrderId, PurchaseOrderItemId,
 };
-use crate::PurchasingError;
 use identity::{StoreId, UserId};
 use inventory::{ProductId, VariantId};
 
@@ -118,7 +118,8 @@ impl GoodsReceiptRepository for PgGoodsReceiptRepository {
                 .fetch_all(&self.pool)
                 .await?;
 
-                let items: Vec<GoodsReceiptItem> = item_rows.into_iter().map(|r| r.into()).collect();
+                let items: Vec<GoodsReceiptItem> =
+                    item_rows.into_iter().map(|r| r.into()).collect();
 
                 Ok(Some(receipt_row.try_into_with_items(items)?))
             }

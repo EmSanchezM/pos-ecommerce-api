@@ -5,10 +5,10 @@ use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use std::str::FromStr;
 
+use crate::SalesError;
 use crate::domain::entities::{Cart, CartItem};
 use crate::domain::repositories::CartRepository;
 use crate::domain::value_objects::{CartId, CartItemId, CustomerId};
-use crate::SalesError;
 use identity::StoreId;
 use inventory::{Currency, ProductId, ReservationId, UnitOfMeasure, VariantId};
 
@@ -223,9 +223,7 @@ impl CartRepository for PgCartRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        rows.into_iter()
-            .map(|r| r.into_cart(Vec::new()))
-            .collect()
+        rows.into_iter().map(|r| r.into_cart(Vec::new())).collect()
     }
 
     async fn delete_expired(&self, before: DateTime<Utc>) -> Result<i64, SalesError> {

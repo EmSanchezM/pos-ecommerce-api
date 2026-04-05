@@ -12,11 +12,11 @@ use chrono::Utc;
 use identity::{AuditEntry, AuditRepository, UserId};
 use uuid::{NoContext, Timestamp, Uuid};
 
+use crate::AssignCaiCommand;
 use crate::domain::entities::CaiRange;
 use crate::domain::repositories::TerminalRepository;
 use crate::domain::value_objects::{CaiNumber, TerminalId};
 use crate::error::CoreError;
-use crate::AssignCaiCommand;
 
 /// Use case for assigning a CAI range to a terminal
 ///
@@ -127,12 +127,7 @@ where
         self.terminal_repo.update(&terminal).await?;
 
         // 8. Audit
-        let audit = AuditEntry::for_create(
-            "cai_range",
-            cai_range.id(),
-            &cai_range,
-            actor_id,
-        );
+        let audit = AuditEntry::for_create("cai_range", cai_range.id(), &cai_range, actor_id);
         self.audit_repo
             .save(&audit)
             .await

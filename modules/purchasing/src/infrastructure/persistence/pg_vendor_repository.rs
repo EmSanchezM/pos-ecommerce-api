@@ -3,10 +3,10 @@
 use async_trait::async_trait;
 use sqlx::PgPool;
 
+use crate::PurchasingError;
 use crate::domain::entities::Vendor;
 use crate::domain::repositories::{VendorFilter, VendorRepository};
 use crate::domain::value_objects::VendorId;
-use crate::PurchasingError;
 use inventory::Currency;
 
 /// PostgreSQL implementation of VendorRepository
@@ -137,8 +137,7 @@ impl VendorRepository for PgVendorRepository {
         if filter.search.is_some() {
             count_query.push_str(&format!(
                 " AND (name ILIKE ${} OR code ILIKE ${})",
-                param_idx,
-                param_idx
+                param_idx, param_idx
             ));
         }
 
@@ -168,8 +167,7 @@ impl VendorRepository for PgVendorRepository {
         if filter.search.is_some() {
             data_query.push_str(&format!(
                 " AND (name ILIKE ${} OR code ILIKE ${})",
-                param_idx,
-                param_idx
+                param_idx, param_idx
             ));
             param_idx += 1;
         }
@@ -208,8 +206,7 @@ impl VendorRepository for PgVendorRepository {
         if filter.search.is_some() {
             query.push_str(&format!(
                 " AND (name ILIKE ${} OR code ILIKE ${})",
-                param_idx,
-                param_idx
+                param_idx, param_idx
             ));
         }
 

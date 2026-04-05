@@ -3,10 +3,10 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{ListShiftsQuery, ShiftListResponse, ShiftResponse};
 use crate::domain::repositories::{ShiftFilter, ShiftRepository};
 use crate::domain::value_objects::ShiftStatus;
-use crate::SalesError;
 use identity::{StoreId, UserId};
 use pos_core::TerminalId;
 
@@ -22,7 +22,7 @@ impl ListShiftsUseCase {
 
     pub async fn execute(&self, query: ListShiftsQuery) -> Result<ShiftListResponse, SalesError> {
         let page = query.page.unwrap_or(1).max(1);
-        let page_size = query.page_size.unwrap_or(20).min(100).max(1);
+        let page_size = query.page_size.unwrap_or(20).clamp(1, 100);
 
         let filter = ShiftFilter {
             store_id: query.store_id.map(StoreId::from_uuid),
@@ -34,7 +34,10 @@ impl ListShiftsUseCase {
                 .and_then(|s| ShiftStatus::from_str(s).ok()),
         };
 
-        let (shifts, total) = self.shift_repo.find_paginated(filter, page, page_size).await?;
+        let (shifts, total) = self
+            .shift_repo
+            .find_paginated(filter, page, page_size)
+            .await?;
 
         let total_pages = (total as f64 / page_size as f64).ceil() as i64;
 

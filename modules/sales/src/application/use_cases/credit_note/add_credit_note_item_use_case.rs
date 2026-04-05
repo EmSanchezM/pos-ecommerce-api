@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{AddCreditNoteItemCommand, CreditNoteResponse};
 use crate::domain::entities::CreditNoteItem;
 use crate::domain::repositories::CreditNoteRepository;
 use crate::domain::value_objects::{CreditNoteId, SaleItemId};
-use crate::SalesError;
 use inventory::{ProductId, VariantId};
 
 /// Use case for adding an item to a credit note
@@ -19,7 +19,10 @@ impl AddCreditNoteItemUseCase {
         Self { credit_note_repo }
     }
 
-    pub async fn execute(&self, cmd: AddCreditNoteItemCommand) -> Result<CreditNoteResponse, SalesError> {
+    pub async fn execute(
+        &self,
+        cmd: AddCreditNoteItemCommand,
+    ) -> Result<CreditNoteResponse, SalesError> {
         let credit_note_id = CreditNoteId::from_uuid(cmd.credit_note_id);
 
         let mut credit_note = self
@@ -28,7 +31,9 @@ impl AddCreditNoteItemUseCase {
             .await?
             .ok_or(SalesError::CreditNoteNotFound(cmd.credit_note_id))?;
 
-        let uom: inventory::UnitOfMeasure = cmd.unit_of_measure.parse()
+        let uom: inventory::UnitOfMeasure = cmd
+            .unit_of_measure
+            .parse()
             .map_err(|_| SalesError::InvalidUnitOfMeasure)?;
 
         let item = CreditNoteItem::create(

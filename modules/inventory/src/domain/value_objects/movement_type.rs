@@ -41,12 +41,18 @@ impl MovementType {
 
     /// Returns true if this movement type increases stock
     pub fn is_increase(&self) -> bool {
-        matches!(self, MovementType::In | MovementType::TransferIn | MovementType::Release)
+        matches!(
+            self,
+            MovementType::In | MovementType::TransferIn | MovementType::Release
+        )
     }
 
     /// Returns true if this movement type decreases stock
     pub fn is_decrease(&self) -> bool {
-        matches!(self, MovementType::Out | MovementType::TransferOut | MovementType::Reservation)
+        matches!(
+            self,
+            MovementType::Out | MovementType::TransferOut | MovementType::Reservation
+        )
     }
 }
 
@@ -89,18 +95,36 @@ mod tests {
     fn test_from_str() {
         assert_eq!(MovementType::from_str("in").unwrap(), MovementType::In);
         assert_eq!(MovementType::from_str("out").unwrap(), MovementType::Out);
-        assert_eq!(MovementType::from_str("adjustment").unwrap(), MovementType::Adjustment);
-        assert_eq!(MovementType::from_str("transfer_out").unwrap(), MovementType::TransferOut);
-        assert_eq!(MovementType::from_str("transfer_in").unwrap(), MovementType::TransferIn);
-        assert_eq!(MovementType::from_str("reservation").unwrap(), MovementType::Reservation);
-        assert_eq!(MovementType::from_str("release").unwrap(), MovementType::Release);
+        assert_eq!(
+            MovementType::from_str("adjustment").unwrap(),
+            MovementType::Adjustment
+        );
+        assert_eq!(
+            MovementType::from_str("transfer_out").unwrap(),
+            MovementType::TransferOut
+        );
+        assert_eq!(
+            MovementType::from_str("transfer_in").unwrap(),
+            MovementType::TransferIn
+        );
+        assert_eq!(
+            MovementType::from_str("reservation").unwrap(),
+            MovementType::Reservation
+        );
+        assert_eq!(
+            MovementType::from_str("release").unwrap(),
+            MovementType::Release
+        );
     }
 
     #[test]
     fn test_from_str_aliases() {
         assert_eq!(MovementType::from_str("receive").unwrap(), MovementType::In);
         assert_eq!(MovementType::from_str("sale").unwrap(), MovementType::Out);
-        assert_eq!(MovementType::from_str("reserve").unwrap(), MovementType::Reservation);
+        assert_eq!(
+            MovementType::from_str("reserve").unwrap(),
+            MovementType::Reservation
+        );
     }
 
     #[test]
