@@ -205,8 +205,8 @@ pub use application::use_cases::UpdateCartItemUseCase;
 
 // Credit Note Use Cases
 pub use application::use_cases::AddCreditNoteItemUseCase;
-pub use application::use_cases::ApproveCreditNoteUseCase;
 pub use application::use_cases::ApplyCreditNoteUseCase;
+pub use application::use_cases::ApproveCreditNoteUseCase;
 pub use application::use_cases::CancelCreditNoteUseCase;
 pub use application::use_cases::CreateCreditNoteUseCase;
 pub use application::use_cases::GetCreditNoteUseCase;

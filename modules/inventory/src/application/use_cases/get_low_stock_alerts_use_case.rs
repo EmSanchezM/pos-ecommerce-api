@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{ListResponse, StockResponse};
 use crate::domain::repositories::InventoryStockRepository;
-use crate::InventoryError;
 use identity::StoreId;
 
 /// Use case for retrieving low stock alerts for a store.

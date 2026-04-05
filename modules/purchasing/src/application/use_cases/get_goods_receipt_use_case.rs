@@ -3,13 +3,11 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::application::dtos::responses::{
-    GoodsReceiptDetailResponse, GoodsReceiptItemResponse,
-};
+use crate::PurchasingError;
+use crate::application::dtos::responses::{GoodsReceiptDetailResponse, GoodsReceiptItemResponse};
 use crate::domain::entities::GoodsReceipt;
 use crate::domain::repositories::GoodsReceiptRepository;
 use crate::domain::value_objects::GoodsReceiptId;
-use crate::PurchasingError;
 
 /// Use case for retrieving a goods receipt by ID
 pub struct GetGoodsReceiptUseCase<G>

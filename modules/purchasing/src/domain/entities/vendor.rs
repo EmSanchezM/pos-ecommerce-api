@@ -3,8 +3,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::domain::value_objects::VendorId;
 use crate::PurchasingError;
+use crate::domain::value_objects::VendorId;
 use inventory::Currency;
 
 /// Vendor entity representing a supplier in the purchasing system.

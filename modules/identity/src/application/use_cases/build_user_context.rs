@@ -91,10 +91,8 @@ where
 
         // 4. Convert to HashSet of PermissionCode for deduplication
         // (Requirement 4.2, 4.3 - deduplicated list, merge from all roles)
-        let permission_set: HashSet<PermissionCode> = permissions
-            .into_iter()
-            .map(|p| p.code().clone())
-            .collect();
+        let permission_set: HashSet<PermissionCode> =
+            permissions.into_iter().map(|p| p.code().clone()).collect();
 
         // 5. Build and return the UserContext
         // If user has no roles in the store, permission_set will be empty (Requirement 4.4)

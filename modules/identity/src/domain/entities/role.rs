@@ -143,7 +143,8 @@ mod tests {
 
     #[test]
     fn test_role_create_protected() {
-        let role = Role::create_protected("SuperAdmin".to_string(), Some("System admin".to_string()));
+        let role =
+            Role::create_protected("SuperAdmin".to_string(), Some("System admin".to_string()));
 
         assert_eq!(role.name(), "SuperAdmin");
         assert!(role.is_system_protected());

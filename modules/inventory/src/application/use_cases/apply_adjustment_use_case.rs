@@ -2,12 +2,14 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::ApplyAdjustmentCommand;
 use crate::application::dtos::responses::{AdjustmentDetailResponse, AdjustmentItemResponse};
 use crate::domain::entities::{InventoryMovement, StockAdjustment};
-use crate::domain::repositories::{AdjustmentRepository, InventoryMovementRepository, InventoryStockRepository};
+use crate::domain::repositories::{
+    AdjustmentRepository, InventoryMovementRepository, InventoryStockRepository,
+};
 use crate::domain::value_objects::{AdjustmentId, Currency, MovementType};
-use crate::InventoryError;
 use identity::UserId;
 
 /// Use case for applying an approved stock adjustment to inventory.
@@ -362,7 +364,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_low_stock_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_low_stock_by_store(
+            &self,
+            _store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
     }
@@ -446,7 +451,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn count_with_filters(&self, _query: &crate::domain::repositories::MovementQuery) -> Result<i64, InventoryError> {
+        async fn count_with_filters(
+            &self,
+            _query: &crate::domain::repositories::MovementQuery,
+        ) -> Result<i64, InventoryError> {
             unimplemented!()
         }
     }
@@ -459,12 +467,7 @@ mod tests {
             AdjustmentReason::Damage,
             UserId::new(),
         );
-        let item = AdjustmentItem::create(
-            adjustment.id(),
-            stock_id,
-            dec!(-10),
-            Some(dec!(5.00)),
-        );
+        let item = AdjustmentItem::create(adjustment.id(), stock_id, dec!(-10), Some(dec!(5.00)));
         adjustment.add_item(item).unwrap();
         adjustment.submit_for_approval().unwrap();
         adjustment.approve(UserId::new()).unwrap();

@@ -35,10 +35,7 @@ impl PaymentStatus {
 
     /// Returns true if the payment is in a final state
     pub fn is_final(&self) -> bool {
-        matches!(
-            self,
-            PaymentStatus::Failed | PaymentStatus::Refunded
-        )
+        matches!(self, PaymentStatus::Failed | PaymentStatus::Refunded)
     }
 
     /// Returns true if the payment was successful

@@ -6,10 +6,10 @@ use rust_decimal::Decimal;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::InventoryError;
 use crate::domain::entities::InventoryMovement;
 use crate::domain::repositories::{InventoryMovementRepository, MovementQuery};
 use crate::domain::value_objects::{Currency, MovementId, MovementType, StockId};
-use crate::InventoryError;
 use identity::UserId;
 
 /// PostgreSQL implementation of InventoryMovementRepository
@@ -285,7 +285,7 @@ impl TryFrom<MovementRow> for InventoryMovement {
 
     fn try_from(row: MovementRow) -> Result<Self, Self::Error> {
         let movement_type: MovementType = row.movement_type.parse()?;
-        
+
         Ok(InventoryMovement::reconstitute(
             MovementId::from_uuid(row.id),
             StockId::from_uuid(row.stock_id),

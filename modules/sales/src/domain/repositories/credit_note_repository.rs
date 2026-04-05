@@ -2,11 +2,9 @@
 
 use async_trait::async_trait;
 
-use crate::domain::entities::{CreditNote, CreditNoteItem};
-use crate::domain::value_objects::{
-    CreditNoteId, CreditNoteItemId, CreditNoteStatus, SaleId,
-};
 use crate::SalesError;
+use crate::domain::entities::{CreditNote, CreditNoteItem};
+use crate::domain::value_objects::{CreditNoteId, CreditNoteItemId, CreditNoteStatus, SaleId};
 use identity::StoreId;
 
 /// Filter for querying credit notes
@@ -41,10 +39,7 @@ pub trait CreditNoteRepository: Send + Sync {
     ) -> Result<Option<CreditNote>, SalesError>;
 
     /// Finds credit notes for an original sale
-    async fn find_by_sale(
-        &self,
-        sale_id: SaleId,
-    ) -> Result<Vec<CreditNote>, SalesError>;
+    async fn find_by_sale(&self, sale_id: SaleId) -> Result<Vec<CreditNote>, SalesError>;
 
     /// Updates an existing credit note
     async fn update(&self, credit_note: &CreditNote) -> Result<(), SalesError>;
@@ -58,10 +53,7 @@ pub trait CreditNoteRepository: Send + Sync {
     ) -> Result<(Vec<CreditNote>, i64), SalesError>;
 
     /// Generates a unique credit note number for a store
-    async fn generate_credit_note_number(
-        &self,
-        store_id: StoreId,
-    ) -> Result<String, SalesError>;
+    async fn generate_credit_note_number(&self, store_id: StoreId) -> Result<String, SalesError>;
 
     // -------------------------------------------------------------------------
     // Credit Note Item operations

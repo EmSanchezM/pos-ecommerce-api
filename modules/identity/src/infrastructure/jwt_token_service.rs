@@ -4,7 +4,7 @@
 // using the jsonwebtoken crate with HS256 algorithm.
 
 use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 
 use crate::domain::auth::{AuthError, TokenClaims, TokenService};
@@ -215,10 +215,10 @@ mod tests {
     #[test]
     fn test_new_creates_service_with_default_durations() {
         let service = create_service();
-        
+
         // Access token: 15 minutes = 900 seconds
         assert_eq!(service.access_token_duration_secs(), 900);
-        
+
         // Refresh token: 7 days = 604800 seconds
         assert_eq!(service.refresh_token_duration_secs(), 604800);
     }
@@ -230,7 +230,7 @@ mod tests {
             Duration::minutes(30),
             Duration::days(14),
         );
-        
+
         assert_eq!(service.access_token_duration_secs(), 1800); // 30 minutes
         assert_eq!(service.refresh_token_duration_secs(), 1209600); // 14 days
     }
@@ -239,9 +239,9 @@ mod tests {
     fn test_generate_access_token_success() {
         let service = create_service();
         let user = create_test_user();
-        
+
         let token = service.generate_access_token(&user);
-        
+
         assert!(token.is_ok());
         let token = token.unwrap();
         assert!(!token.is_empty());
@@ -253,9 +253,9 @@ mod tests {
     fn test_generate_refresh_token_success() {
         let service = create_service();
         let user_id = UserId::new();
-        
+
         let token = service.generate_refresh_token(user_id);
-        
+
         assert!(token.is_ok());
         let token = token.unwrap();
         assert!(!token.is_empty());
@@ -266,10 +266,10 @@ mod tests {
     fn test_validate_access_token_success() {
         let service = create_service();
         let user = create_test_user();
-        
+
         let token = service.generate_access_token(&user).unwrap();
         let claims = service.validate_access_token(&token);
-        
+
         assert!(claims.is_ok());
         let claims = claims.unwrap();
         assert_eq!(claims.sub, *user.id().as_uuid());
@@ -282,31 +282,31 @@ mod tests {
         let service = create_service();
         let other_service = JwtTokenService::new("different-secret-key-also-32-bytes".to_string());
         let user = create_test_user();
-        
+
         // Generate token with different secret
         let token = other_service.generate_access_token(&user).unwrap();
-        
+
         // Validate with original service should fail
         let result = service.validate_access_token(&token);
-        
+
         assert!(matches!(result, Err(AuthError::InvalidToken)));
     }
 
     #[test]
     fn test_validate_access_token_malformed() {
         let service = create_service();
-        
+
         let result = service.validate_access_token("not.a.valid.token");
-        
+
         assert!(matches!(result, Err(AuthError::InvalidToken)));
     }
 
     #[test]
     fn test_validate_access_token_empty() {
         let service = create_service();
-        
+
         let result = service.validate_access_token("");
-        
+
         assert!(matches!(result, Err(AuthError::InvalidToken)));
     }
 
@@ -314,10 +314,10 @@ mod tests {
     fn test_validate_refresh_token_success() {
         let service = create_service();
         let user_id = UserId::new();
-        
+
         let token = service.generate_refresh_token(user_id).unwrap();
         let result = service.validate_refresh_token(&token);
-        
+
         assert!(result.is_ok());
         assert_eq!(result.unwrap().as_uuid(), user_id.as_uuid());
     }
@@ -327,10 +327,10 @@ mod tests {
         let service = create_service();
         let other_service = JwtTokenService::new("different-secret-key-also-32-bytes".to_string());
         let user_id = UserId::new();
-        
+
         let token = other_service.generate_refresh_token(user_id).unwrap();
         let result = service.validate_refresh_token(&token);
-        
+
         assert!(matches!(result, Err(AuthError::InvalidToken)));
     }
 
@@ -338,14 +338,14 @@ mod tests {
     fn test_validate_refresh_token_rejects_access_token() {
         let service = create_service();
         let user = create_test_user();
-        
+
         // Generate an access token
         let access_token = service.generate_access_token(&user).unwrap();
-        
+
         // Try to validate it as a refresh token - should fail
         // because access tokens don't have the "token_type": "refresh" claim
         let result = service.validate_refresh_token(&access_token);
-        
+
         assert!(matches!(result, Err(AuthError::InvalidToken)));
     }
 
@@ -353,21 +353,21 @@ mod tests {
     fn test_access_token_contains_correct_claims() {
         let service = create_service();
         let user = create_test_user();
-        
+
         let token = service.generate_access_token(&user).unwrap();
         let claims = service.validate_access_token(&token).unwrap();
-        
+
         // Verify all required claims are present
         assert_eq!(claims.sub, *user.id().as_uuid());
         assert_eq!(claims.username, "testuser");
         assert_eq!(claims.email, "test@example.com");
-        
+
         // Verify expiration is approximately 15 minutes from now
         let now = Utc::now().timestamp();
         let expected_exp = now + 900; // 15 minutes
         // Allow 5 second tolerance for test execution time
         assert!((claims.exp - expected_exp).abs() < 5);
-        
+
         // Verify iat is approximately now
         assert!((claims.iat - now).abs() < 5);
     }
@@ -378,7 +378,7 @@ mod tests {
         let service = create_service();
         let now = Utc::now();
         let past = now - Duration::hours(1); // 1 hour ago
-        
+
         let claims = TokenClaims::new(
             UserId::new().into_uuid(),
             "testuser".to_string(),
@@ -386,7 +386,7 @@ mod tests {
             past.timestamp(), // Already expired
             (past - Duration::minutes(15)).timestamp(),
         );
-        
+
         // Manually encode the expired token
         let token = encode(
             &Header::default(),
@@ -394,9 +394,9 @@ mod tests {
             &EncodingKey::from_secret("test-secret-key-at-least-32-bytes-long".as_bytes()),
         )
         .unwrap();
-        
+
         let result = service.validate_access_token(&token);
-        
+
         assert!(matches!(result, Err(AuthError::TokenExpired)));
     }
 
@@ -406,14 +406,14 @@ mod tests {
         let service = create_service();
         let now = Utc::now();
         let past = now - Duration::hours(1); // 1 hour ago
-        
+
         let claims = RefreshTokenClaims {
             sub: UserId::new().into_uuid(),
             exp: past.timestamp(), // Already expired
             iat: (past - Duration::days(7)).timestamp(),
             token_type: "refresh".to_string(),
         };
-        
+
         // Manually encode the expired token
         let token = encode(
             &Header::default(),
@@ -421,16 +421,16 @@ mod tests {
             &EncodingKey::from_secret("test-secret-key-at-least-32-bytes-long".as_bytes()),
         )
         .unwrap();
-        
+
         let result = service.validate_refresh_token(&token);
-        
+
         assert!(matches!(result, Err(AuthError::TokenExpired)));
     }
 
     #[test]
     fn test_different_users_get_different_tokens() {
         let service = create_service();
-        
+
         let user1 = User::create(
             Username::new("user1").unwrap(),
             Email::new("user1@example.com").unwrap(),
@@ -438,7 +438,7 @@ mod tests {
             "One".to_string(),
             "hash1".to_string(),
         );
-        
+
         let user2 = User::create(
             Username::new("user2").unwrap(),
             Email::new("user2@example.com").unwrap(),
@@ -446,15 +446,15 @@ mod tests {
             "Two".to_string(),
             "hash2".to_string(),
         );
-        
+
         let token1 = service.generate_access_token(&user1).unwrap();
         let token2 = service.generate_access_token(&user2).unwrap();
-        
+
         assert_ne!(token1, token2);
-        
+
         let claims1 = service.validate_access_token(&token1).unwrap();
         let claims2 = service.validate_access_token(&token2).unwrap();
-        
+
         assert_ne!(claims1.sub, claims2.sub);
         assert_eq!(claims1.username, "user1");
         assert_eq!(claims2.username, "user2");

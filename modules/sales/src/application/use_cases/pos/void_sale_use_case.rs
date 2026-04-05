@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{SaleDetailResponse, VoidSaleCommand};
 use crate::domain::repositories::SaleRepository;
 use crate::domain::value_objects::SaleId;
-use crate::SalesError;
 use identity::UserId;
 
 /// Use case for voiding a sale

@@ -16,7 +16,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Customer errors
     // -------------------------------------------------------------------------
-
     /// The requested customer was not found in the database.
     #[error("Customer not found: {0}")]
     CustomerNotFound(Uuid),
@@ -36,7 +35,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Cashier Shift errors
     // -------------------------------------------------------------------------
-
     /// The requested cashier shift was not found.
     #[error("Cashier shift not found: {0}")]
     ShiftNotFound(Uuid),
@@ -64,7 +62,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Sale errors
     // -------------------------------------------------------------------------
-
     /// The requested sale was not found in the database.
     #[error("Sale not found: {0}")]
     SaleNotFound(Uuid),
@@ -108,7 +105,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Sale Item errors
     // -------------------------------------------------------------------------
-
     /// The requested sale item was not found.
     #[error("Sale item not found: {0}")]
     SaleItemNotFound(Uuid),
@@ -128,7 +124,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Payment errors
     // -------------------------------------------------------------------------
-
     /// The requested payment was not found.
     #[error("Payment not found: {0}")]
     PaymentNotFound(Uuid),
@@ -156,7 +151,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Cart errors
     // -------------------------------------------------------------------------
-
     /// The requested cart was not found.
     #[error("Cart not found: {0}")]
     CartNotFound(Uuid),
@@ -176,7 +170,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Credit Note / Return errors
     // -------------------------------------------------------------------------
-
     /// The requested credit note was not found.
     #[error("Credit note not found: {0}")]
     CreditNoteNotFound(Uuid),
@@ -220,7 +213,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Order (E-commerce) errors
     // -------------------------------------------------------------------------
-
     /// Cannot cancel order that has been shipped.
     #[error("Cannot cancel order that has been shipped")]
     CannotCancelShippedOrder,
@@ -240,7 +232,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Workflow errors
     // -------------------------------------------------------------------------
-
     /// The requested status transition is not valid for the current state.
     #[error("Invalid status transition")]
     InvalidStatusTransition,
@@ -248,7 +239,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Validation errors
     // -------------------------------------------------------------------------
-
     /// Currency code must be exactly 3 uppercase letters (ISO 4217 format).
     #[error("Invalid currency code: must be 3 uppercase letters (ISO 4217)")]
     InvalidCurrency,
@@ -320,7 +310,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Reservation errors
     // -------------------------------------------------------------------------
-
     /// Failed to create inventory reservation.
     #[error("Failed to create inventory reservation")]
     ReservationFailed,
@@ -336,7 +325,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // Database errors
     // -------------------------------------------------------------------------
-
     /// A database error occurred during the operation.
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
@@ -344,7 +332,6 @@ pub enum SalesError {
     // -------------------------------------------------------------------------
     // General errors
     // -------------------------------------------------------------------------
-
     /// The requested functionality is not yet implemented.
     #[error("Not implemented")]
     NotImplemented,

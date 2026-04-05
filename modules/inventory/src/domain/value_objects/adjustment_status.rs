@@ -65,7 +65,9 @@ impl FromStr for AdjustmentStatus {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().replace('-', "_").as_str() {
             "draft" => Ok(AdjustmentStatus::Draft),
-            "pending_approval" | "pendingapproval" | "pending" => Ok(AdjustmentStatus::PendingApproval),
+            "pending_approval" | "pendingapproval" | "pending" => {
+                Ok(AdjustmentStatus::PendingApproval)
+            }
             "approved" => Ok(AdjustmentStatus::Approved),
             "rejected" => Ok(AdjustmentStatus::Rejected),
             "applied" => Ok(AdjustmentStatus::Applied),
@@ -92,29 +94,56 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        assert_eq!(AdjustmentStatus::from_str("draft").unwrap(), AdjustmentStatus::Draft);
-        assert_eq!(AdjustmentStatus::from_str("pending_approval").unwrap(), AdjustmentStatus::PendingApproval);
-        assert_eq!(AdjustmentStatus::from_str("approved").unwrap(), AdjustmentStatus::Approved);
-        assert_eq!(AdjustmentStatus::from_str("rejected").unwrap(), AdjustmentStatus::Rejected);
-        assert_eq!(AdjustmentStatus::from_str("applied").unwrap(), AdjustmentStatus::Applied);
+        assert_eq!(
+            AdjustmentStatus::from_str("draft").unwrap(),
+            AdjustmentStatus::Draft
+        );
+        assert_eq!(
+            AdjustmentStatus::from_str("pending_approval").unwrap(),
+            AdjustmentStatus::PendingApproval
+        );
+        assert_eq!(
+            AdjustmentStatus::from_str("approved").unwrap(),
+            AdjustmentStatus::Approved
+        );
+        assert_eq!(
+            AdjustmentStatus::from_str("rejected").unwrap(),
+            AdjustmentStatus::Rejected
+        );
+        assert_eq!(
+            AdjustmentStatus::from_str("applied").unwrap(),
+            AdjustmentStatus::Applied
+        );
     }
 
     #[test]
     fn test_from_str_aliases() {
-        assert_eq!(AdjustmentStatus::from_str("pending").unwrap(), AdjustmentStatus::PendingApproval);
-        assert_eq!(AdjustmentStatus::from_str("pendingapproval").unwrap(), AdjustmentStatus::PendingApproval);
+        assert_eq!(
+            AdjustmentStatus::from_str("pending").unwrap(),
+            AdjustmentStatus::PendingApproval
+        );
+        assert_eq!(
+            AdjustmentStatus::from_str("pendingapproval").unwrap(),
+            AdjustmentStatus::PendingApproval
+        );
     }
 
     #[test]
     fn test_invalid() {
         let result = AdjustmentStatus::from_str("invalid");
-        assert!(matches!(result, Err(InventoryError::InvalidAdjustmentStatus)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidAdjustmentStatus)
+        ));
     }
 
     #[test]
     fn test_display() {
         assert_eq!(AdjustmentStatus::Draft.to_string(), "draft");
-        assert_eq!(AdjustmentStatus::PendingApproval.to_string(), "pending_approval");
+        assert_eq!(
+            AdjustmentStatus::PendingApproval.to_string(),
+            "pending_approval"
+        );
     }
 
     #[test]

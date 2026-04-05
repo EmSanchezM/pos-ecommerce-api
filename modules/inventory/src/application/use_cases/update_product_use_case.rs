@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::UpdateProductCommand;
 use crate::application::dtos::responses::ProductResponse;
 use crate::domain::repositories::{CategoryRepository, ProductRepository};
 use crate::domain::value_objects::{Barcode, CategoryId, Currency, ProductId, UnitOfMeasure};
-use crate::InventoryError;
 use identity::domain::entities::AuditEntry;
 use identity::domain::repositories::AuditRepository;
 use identity::domain::value_objects::UserId;
@@ -131,9 +131,10 @@ where
 
             // Check if barcode is already used by another product
             if let Some(existing) = self.product_repo.find_by_barcode(&barcode).await?
-                && existing.id() != product.id() {
-                    return Err(InventoryError::DuplicateBarcode(barcode_str));
-                }
+                && existing.id() != product.id()
+            {
+                return Err(InventoryError::DuplicateBarcode(barcode_str));
+            }
             product.set_barcode(Some(barcode));
         }
 

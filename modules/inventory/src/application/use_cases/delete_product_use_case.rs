@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::domain::repositories::ProductRepository;
 use crate::domain::value_objects::ProductId;
-use crate::InventoryError;
 use identity::domain::entities::AuditEntry;
 use identity::domain::repositories::AuditRepository;
 use identity::domain::value_objects::UserId;
@@ -64,12 +64,8 @@ where
         self.product_repo.update(&product).await?;
 
         // Create audit entry
-        let audit_entry = AuditEntry::for_delete(
-            "product",
-            product.id().into_uuid(),
-            &product,
-            actor_id,
-        );
+        let audit_entry =
+            AuditEntry::for_delete("product", product.id().into_uuid(), &product, actor_id);
         self.audit_repo
             .save(&audit_entry)
             .await

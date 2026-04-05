@@ -3,14 +3,12 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::PurchasingError;
 use crate::application::dtos::commands::CancelOrderCommand;
-use crate::application::dtos::responses::{
-    PurchaseOrderDetailResponse, PurchaseOrderItemResponse,
-};
+use crate::application::dtos::responses::{PurchaseOrderDetailResponse, PurchaseOrderItemResponse};
 use crate::domain::entities::PurchaseOrder;
 use crate::domain::repositories::PurchaseOrderRepository;
 use crate::domain::value_objects::PurchaseOrderId;
-use crate::PurchasingError;
 use identity::UserId;
 
 /// Use case for cancelling a purchase order

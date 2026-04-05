@@ -8,9 +8,8 @@
 // Inventory: /api/v1/inventory
 
 use axum::{
-    middleware,
+    Router, middleware,
     routing::{get, post, put},
-    Router,
 };
 
 use crate::handlers::{
@@ -20,13 +19,12 @@ use crate::handlers::{
     create_reservation_handler, create_variant_handler, delete_product_handler,
     delete_variant_handler, expire_reservations_handler, get_adjustment_handler,
     get_low_stock_report_handler, get_movements_report_handler, get_product_handler,
-    get_product_recipe_handler, get_product_stock_handler, get_recipe_handler,
-    get_stock_handler, get_stock_history_handler, get_valuation_report_handler,
-    get_variant_handler, initialize_stock_handler, list_adjustments_handler,
-    list_products_handler, list_recipes_handler, list_reservations_handler, list_stock_handler,
-    list_variants_handler, reject_adjustment_handler, submit_adjustment_handler,
-    update_product_handler, update_recipe_handler, update_stock_levels_handler,
-    update_variant_handler,
+    get_product_recipe_handler, get_product_stock_handler, get_recipe_handler, get_stock_handler,
+    get_stock_history_handler, get_valuation_report_handler, get_variant_handler,
+    initialize_stock_handler, list_adjustments_handler, list_products_handler,
+    list_recipes_handler, list_reservations_handler, list_stock_handler, list_variants_handler,
+    reject_adjustment_handler, submit_adjustment_handler, update_product_handler,
+    update_recipe_handler, update_stock_levels_handler, update_variant_handler,
 };
 use crate::middleware::auth_middleware;
 use crate::state::AppState;
@@ -114,12 +112,12 @@ pub fn recipes_router(state: AppState) -> Router<AppState> {
         // Collection routes
         .route("/", post(create_recipe_handler).get(list_recipes_handler))
         // Individual recipe routes
-        .route(
-            "/{id}",
-            get(get_recipe_handler).put(update_recipe_handler),
-        )
+        .route("/{id}", get(get_recipe_handler).put(update_recipe_handler))
         // Recipe cost calculation
-        .route("/{recipe_id}/calculate-cost", post(calculate_recipe_cost_handler))
+        .route(
+            "/{recipe_id}/calculate-cost",
+            post(calculate_recipe_cost_handler),
+        )
         // Apply authentication middleware to all routes
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }
@@ -167,7 +165,10 @@ pub fn recipes_router(state: AppState) -> Router<AppState> {
 pub fn inventory_router(state: AppState) -> Router<AppState> {
     Router::new()
         // Stock collection routes
-        .route("/stock", post(initialize_stock_handler).get(list_stock_handler))
+        .route(
+            "/stock",
+            post(initialize_stock_handler).get(list_stock_handler),
+        )
         // Bulk stock initialization
         .route("/stock/bulk", post(bulk_initialize_stock_handler))
         // Individual stock routes
@@ -182,7 +183,10 @@ pub fn inventory_router(state: AppState) -> Router<AppState> {
             post(create_reservation_handler).get(list_reservations_handler),
         )
         // Reservation action routes
-        .route("/reservations/{id}/confirm", put(confirm_reservation_handler))
+        .route(
+            "/reservations/{id}/confirm",
+            put(confirm_reservation_handler),
+        )
         .route("/reservations/{id}/cancel", put(cancel_reservation_handler))
         // Reservation batch operations
         .route("/reservations/expire", post(expire_reservations_handler))

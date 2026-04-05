@@ -4,10 +4,10 @@ use async_trait::async_trait;
 use rust_decimal::Decimal;
 use sqlx::PgPool;
 
+use crate::InventoryError;
 use crate::domain::entities::InventoryStock;
 use crate::domain::repositories::InventoryStockRepository;
 use crate::domain::value_objects::{ProductId, StockId, VariantId};
-use crate::InventoryError;
 use identity::StoreId;
 
 /// PostgreSQL implementation of InventoryStockRepository
@@ -66,7 +66,6 @@ impl InventoryStockRepository for PgInventoryStockRepository {
 
         row.map(|r| r.try_into()).transpose()
     }
-
 
     async fn find_by_store_and_product(
         &self,
@@ -147,7 +146,10 @@ impl InventoryStockRepository for PgInventoryStockRepository {
         Ok(())
     }
 
-    async fn find_low_stock(&self, store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+    async fn find_low_stock(
+        &self,
+        store_id: StoreId,
+    ) -> Result<Vec<InventoryStock>, InventoryError> {
         let rows = sqlx::query_as::<_, StockRow>(
             r#"
             SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
@@ -164,7 +166,10 @@ impl InventoryStockRepository for PgInventoryStockRepository {
         rows.into_iter().map(|r| r.try_into()).collect()
     }
 
-    async fn find_by_store(&self, store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+    async fn find_by_store(
+        &self,
+        store_id: StoreId,
+    ) -> Result<Vec<InventoryStock>, InventoryError> {
         let rows = sqlx::query_as::<_, StockRow>(
             r#"
             SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
@@ -270,9 +275,7 @@ impl InventoryStockRepository for PgInventoryStockRepository {
                 (rows, count.0)
             }
             (None, None) => {
-                let count: (i64,) = sqlx::query_as(&count_query)
-                    .fetch_one(&self.pool)
-                    .await?;
+                let count: (i64,) = sqlx::query_as(&count_query).fetch_one(&self.pool).await?;
                 let rows = sqlx::query_as::<_, StockRow>(&data_query)
                     .fetch_all(&self.pool)
                     .await?;
@@ -286,7 +289,10 @@ impl InventoryStockRepository for PgInventoryStockRepository {
         Ok((stocks?, total))
     }
 
-    async fn find_by_product(&self, product_id: ProductId) -> Result<Vec<InventoryStock>, InventoryError> {
+    async fn find_by_product(
+        &self,
+        product_id: ProductId,
+    ) -> Result<Vec<InventoryStock>, InventoryError> {
         let rows = sqlx::query_as::<_, StockRow>(
             r#"
             SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
@@ -334,7 +340,10 @@ impl InventoryStockRepository for PgInventoryStockRepository {
         rows.into_iter().map(|r| r.try_into()).collect()
     }
 
-    async fn find_low_stock_by_store(&self, store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+    async fn find_low_stock_by_store(
+        &self,
+        store_id: StoreId,
+    ) -> Result<Vec<InventoryStock>, InventoryError> {
         let rows = sqlx::query_as::<_, StockRow>(
             r#"
             SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,

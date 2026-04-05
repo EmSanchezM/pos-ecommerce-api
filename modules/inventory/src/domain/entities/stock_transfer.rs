@@ -3,9 +3,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+use crate::InventoryError;
 use crate::domain::entities::TransferItem;
 use crate::domain::value_objects::{TransferId, TransferStatus};
-use crate::InventoryError;
 use identity::{StoreId, UserId};
 
 /// StockTransfer entity representing a document for transferring inventory between stores.
@@ -48,7 +48,7 @@ impl StockTransfer {
         if from_store_id == to_store_id {
             return Err(InventoryError::SameStoreTransfer);
         }
-        
+
         let now = Utc::now();
         Ok(Self {
             id: TransferId::new(),
@@ -301,22 +301,16 @@ impl StockTransfer {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rust_decimal_macros::dec;
     use crate::domain::value_objects::ProductId;
+    use rust_decimal_macros::dec;
 
     fn create_test_transfer() -> StockTransfer {
         let from_store = StoreId::new();
         let to_store = StoreId::new();
-        StockTransfer::create(
-            "TRF-001".to_string(),
-            from_store,
-            to_store,
-            UserId::new(),
-        ).unwrap()
+        StockTransfer::create("TRF-001".to_string(), from_store, to_store, UserId::new()).unwrap()
     }
 
     fn create_test_item() -> TransferItem {
@@ -325,7 +319,8 @@ mod tests {
             ProductId::new(),
             dec!(10),
             Some(dec!(5.00)),
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
@@ -333,14 +328,10 @@ mod tests {
         let from_store = StoreId::new();
         let to_store = StoreId::new();
         let user_id = UserId::new();
-        
-        let transfer = StockTransfer::create(
-            "TRF-001".to_string(),
-            from_store,
-            to_store,
-            user_id,
-        ).unwrap();
-        
+
+        let transfer =
+            StockTransfer::create("TRF-001".to_string(), from_store, to_store, user_id).unwrap();
+
         assert_eq!(transfer.transfer_number(), "TRF-001");
         assert_eq!(transfer.from_store_id(), from_store);
         assert_eq!(transfer.to_store_id(), to_store);
@@ -358,14 +349,10 @@ mod tests {
     #[test]
     fn test_create_transfer_same_store() {
         let store_id = StoreId::new();
-        
-        let result = StockTransfer::create(
-            "TRF-001".to_string(),
-            store_id,
-            store_id,
-            UserId::new(),
-        );
-        
+
+        let result =
+            StockTransfer::create("TRF-001".to_string(), store_id, store_id, UserId::new());
+
         assert!(matches!(result, Err(InventoryError::SameStoreTransfer)));
     }
 
@@ -373,9 +360,9 @@ mod tests {
     fn test_add_item_in_draft() {
         let mut transfer = create_test_transfer();
         let item = create_test_item();
-        
+
         transfer.add_item(item).unwrap();
-        
+
         assert_eq!(transfer.items().len(), 1);
     }
 
@@ -383,9 +370,9 @@ mod tests {
     fn test_submit_success() {
         let mut transfer = create_test_transfer();
         transfer.add_item(create_test_item()).unwrap();
-        
+
         transfer.submit().unwrap();
-        
+
         assert_eq!(transfer.status(), TransferStatus::Pending);
         assert!(!transfer.is_editable());
     }
@@ -393,9 +380,9 @@ mod tests {
     #[test]
     fn test_submit_empty_items() {
         let mut transfer = create_test_transfer();
-        
+
         let result = transfer.submit();
-        
+
         assert!(matches!(result, Err(InventoryError::EmptyTransfer)));
     }
 
@@ -404,10 +391,13 @@ mod tests {
         let mut transfer = create_test_transfer();
         transfer.add_item(create_test_item()).unwrap();
         transfer.submit().unwrap();
-        
+
         let result = transfer.submit();
-        
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
@@ -415,10 +405,10 @@ mod tests {
         let mut transfer = create_test_transfer();
         transfer.add_item(create_test_item()).unwrap();
         transfer.submit().unwrap();
-        
+
         let shipper_id = UserId::new();
         transfer.ship(shipper_id).unwrap();
-        
+
         assert_eq!(transfer.status(), TransferStatus::InTransit);
         assert_eq!(transfer.shipped_by_id(), Some(shipper_id));
         assert!(transfer.shipped_date().is_some());
@@ -427,10 +417,13 @@ mod tests {
     #[test]
     fn test_ship_wrong_status() {
         let mut transfer = create_test_transfer();
-        
+
         let result = transfer.ship(UserId::new());
-        
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
@@ -439,10 +432,10 @@ mod tests {
         transfer.add_item(create_test_item()).unwrap();
         transfer.submit().unwrap();
         transfer.ship(UserId::new()).unwrap();
-        
+
         let receiver_id = UserId::new();
         transfer.receive(receiver_id).unwrap();
-        
+
         assert_eq!(transfer.status(), TransferStatus::Completed);
         assert_eq!(transfer.received_by_id(), Some(receiver_id));
         assert!(transfer.received_date().is_some());
@@ -454,18 +447,21 @@ mod tests {
         let mut transfer = create_test_transfer();
         transfer.add_item(create_test_item()).unwrap();
         transfer.submit().unwrap();
-        
+
         let result = transfer.receive(UserId::new());
-        
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
     fn test_cancel_from_draft() {
         let mut transfer = create_test_transfer();
-        
+
         transfer.cancel().unwrap();
-        
+
         assert_eq!(transfer.status(), TransferStatus::Cancelled);
         assert!(transfer.is_final());
     }
@@ -475,9 +471,9 @@ mod tests {
         let mut transfer = create_test_transfer();
         transfer.add_item(create_test_item()).unwrap();
         transfer.submit().unwrap();
-        
+
         transfer.cancel().unwrap();
-        
+
         assert_eq!(transfer.status(), TransferStatus::Cancelled);
     }
 
@@ -487,10 +483,13 @@ mod tests {
         transfer.add_item(create_test_item()).unwrap();
         transfer.submit().unwrap();
         transfer.ship(UserId::new()).unwrap();
-        
+
         let result = transfer.cancel();
-        
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
@@ -498,18 +497,21 @@ mod tests {
         let mut transfer = create_test_transfer();
         transfer.add_item(create_test_item()).unwrap();
         transfer.submit().unwrap();
-        
+
         let result = transfer.add_item(create_test_item());
-        
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
     fn test_set_notes_in_draft() {
         let mut transfer = create_test_transfer();
-        
+
         transfer.set_notes(Some("Test notes".to_string())).unwrap();
-        
+
         assert_eq!(transfer.notes(), Some("Test notes"));
     }
 
@@ -518,10 +520,13 @@ mod tests {
         let mut transfer = create_test_transfer();
         transfer.add_item(create_test_item()).unwrap();
         transfer.submit().unwrap();
-        
+
         let result = transfer.set_notes(Some("Test notes".to_string()));
-        
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
@@ -530,9 +535,11 @@ mod tests {
         transfer.add_item(create_test_item()).unwrap();
         transfer.submit().unwrap();
         transfer.ship(UserId::new()).unwrap();
-        
-        transfer.set_tracking_number(Some("TRACK123".to_string())).unwrap();
-        
+
+        transfer
+            .set_tracking_number(Some("TRACK123".to_string()))
+            .unwrap();
+
         assert_eq!(transfer.tracking_number(), Some("TRACK123"));
     }
 
@@ -543,29 +550,32 @@ mod tests {
         transfer.submit().unwrap();
         transfer.ship(UserId::new()).unwrap();
         transfer.receive(UserId::new()).unwrap();
-        
+
         let result = transfer.set_tracking_number(Some("TRACK123".to_string()));
-        
-        assert!(matches!(result, Err(InventoryError::InvalidStatusTransition)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidStatusTransition)
+        ));
     }
 
     #[test]
     fn test_workflow_draft_to_completed() {
         let mut transfer = create_test_transfer();
-        
+
         // Draft
         assert_eq!(transfer.status(), TransferStatus::Draft);
         assert!(transfer.is_editable());
-        
+
         // Add item and submit
         transfer.add_item(create_test_item()).unwrap();
         transfer.submit().unwrap();
         assert_eq!(transfer.status(), TransferStatus::Pending);
-        
+
         // Ship
         transfer.ship(UserId::new()).unwrap();
         assert_eq!(transfer.status(), TransferStatus::InTransit);
-        
+
         // Receive/Complete
         transfer.receive(UserId::new()).unwrap();
         assert_eq!(transfer.status(), TransferStatus::Completed);
@@ -575,11 +585,11 @@ mod tests {
     #[test]
     fn test_workflow_draft_to_cancelled() {
         let mut transfer = create_test_transfer();
-        
+
         transfer.add_item(create_test_item()).unwrap();
         transfer.submit().unwrap();
         transfer.cancel().unwrap();
-        
+
         assert_eq!(transfer.status(), TransferStatus::Cancelled);
         assert!(transfer.is_final());
     }

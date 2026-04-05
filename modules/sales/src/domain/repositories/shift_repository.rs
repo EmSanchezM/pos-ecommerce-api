@@ -2,11 +2,11 @@
 
 use async_trait::async_trait;
 
+use crate::SalesError;
 use crate::domain::entities::CashierShift;
 use crate::domain::value_objects::{ShiftId, ShiftStatus};
-use crate::SalesError;
-use pos_core::TerminalId;
 use identity::{StoreId, UserId};
+use pos_core::TerminalId;
 
 /// Filter for querying shifts
 #[derive(Debug, Clone, Default)]

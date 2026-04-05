@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{CloseShiftCommand, ShiftResponse};
 use crate::domain::repositories::ShiftRepository;
 use crate::domain::value_objects::ShiftId;
-use crate::SalesError;
 use identity::UserId;
 
 /// Use case for closing a cashier shift

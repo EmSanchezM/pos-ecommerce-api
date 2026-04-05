@@ -2,9 +2,9 @@
 
 use async_trait::async_trait;
 
+use crate::PurchasingError;
 use crate::domain::entities::GoodsReceipt;
 use crate::domain::value_objects::{GoodsReceiptId, GoodsReceiptStatus, PurchaseOrderId};
-use crate::PurchasingError;
 use identity::StoreId;
 
 /// Filter options for listing goods receipts
@@ -25,10 +25,8 @@ pub trait GoodsReceiptRepository: Send + Sync {
     async fn save(&self, receipt: &GoodsReceipt) -> Result<(), PurchasingError>;
 
     /// Finds a goods receipt by its unique ID (without items)
-    async fn find_by_id(
-        &self,
-        id: GoodsReceiptId,
-    ) -> Result<Option<GoodsReceipt>, PurchasingError>;
+    async fn find_by_id(&self, id: GoodsReceiptId)
+    -> Result<Option<GoodsReceipt>, PurchasingError>;
 
     /// Finds a goods receipt by its unique ID with all items loaded
     async fn find_by_id_with_items(

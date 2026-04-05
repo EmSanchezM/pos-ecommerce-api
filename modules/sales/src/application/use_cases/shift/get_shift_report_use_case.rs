@@ -5,10 +5,10 @@ use uuid::Uuid;
 
 use rust_decimal::Decimal;
 
+use crate::SalesError;
 use crate::application::dtos::{SalesBreakdown, ShiftReportResponse, ShiftResponse};
 use crate::domain::repositories::ShiftRepository;
 use crate::domain::value_objects::ShiftId;
-use crate::SalesError;
 
 /// Use case for getting a detailed shift report
 pub struct GetShiftReportUseCase {

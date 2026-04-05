@@ -4,9 +4,8 @@
 // with authentication middleware.
 
 use axum::{
-    middleware,
+    Router, middleware,
     routing::{get, post},
-    Router,
 };
 
 use crate::handlers::{
@@ -37,7 +36,10 @@ use crate::state::AppState;
 /// ```
 pub fn store_terminals_router(state: AppState) -> Router<AppState> {
     Router::new()
-        .route("/", post(create_terminal_handler).get(list_terminals_handler))
+        .route(
+            "/",
+            post(create_terminal_handler).get(list_terminals_handler),
+        )
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }
 
@@ -67,14 +69,20 @@ pub fn store_terminals_router(state: AppState) -> Router<AppState> {
 pub fn terminals_router(state: AppState) -> Router<AppState> {
     Router::new()
         // Individual terminal routes
-        .route("/{id}", get(get_terminal_handler).put(update_terminal_handler))
+        .route(
+            "/{id}",
+            get(get_terminal_handler).put(update_terminal_handler),
+        )
         // Terminal activation routes
         .route("/{id}/activate", post(activate_terminal_handler))
         .route("/{id}/deactivate", post(deactivate_terminal_handler))
         // CAI management routes
         .route("/{id}/cai", post(assign_cai_handler))
         .route("/{id}/cai/status", get(get_cai_status_handler))
-        .route("/{id}/cai/next-number", post(get_next_invoice_number_handler))
+        .route(
+            "/{id}/cai/next-number",
+            post(get_next_invoice_number_handler),
+        )
         .route("/{id}/cai/history", get(get_cai_history_handler))
         // Apply authentication middleware to all routes
         .layer(middleware::from_fn_with_state(state, auth_middleware))

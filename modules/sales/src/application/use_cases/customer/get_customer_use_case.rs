@@ -3,10 +3,10 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::SalesError;
 use crate::application::dtos::CustomerResponse;
 use crate::domain::repositories::CustomerRepository;
 use crate::domain::value_objects::CustomerId;
-use crate::SalesError;
 
 /// Use case for retrieving a customer by ID
 pub struct GetCustomerUseCase {

@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{CreateCreditNoteCommand, CreditNoteResponse};
 use crate::domain::repositories::CreditNoteRepository;
 use crate::domain::value_objects::{ReturnReason, ReturnType, SaleId};
-use crate::SalesError;
 use identity::StoreId;
 
 /// Use case for creating a new credit note

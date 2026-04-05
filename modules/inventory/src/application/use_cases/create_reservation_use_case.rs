@@ -4,12 +4,12 @@ use std::sync::Arc;
 
 use chrono::Utc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::CreateReservationCommand;
 use crate::application::dtos::responses::ReservationResponse;
 use crate::domain::entities::InventoryReservation;
 use crate::domain::repositories::{InventoryStockRepository, ReservationRepository};
 use crate::domain::value_objects::StockId;
-use crate::InventoryError;
 
 /// Use case for creating an inventory reservation.
 ///
@@ -231,7 +231,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn find_low_stock_by_store(&self, _store_id: StoreId) -> Result<Vec<InventoryStock>, InventoryError> {
+        async fn find_low_stock_by_store(
+            &self,
+            _store_id: StoreId,
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
     }

@@ -29,7 +29,10 @@ impl Sku {
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| "GEN".to_string());
 
-        Self(format!("PRD-{}-{}-{}", cat_code, timestamp_base36, random_suffix))
+        Self(format!(
+            "PRD-{}-{}-{}",
+            cat_code, timestamp_base36, random_suffix
+        ))
     }
 
     /// Generates a variant SKU derived from parent SKU
@@ -59,11 +62,11 @@ impl std::fmt::Display for Sku {
 fn base36_encode(mut n: u64) -> String {
     const CHARS: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     let mut result = Vec::new();
-    
+
     if n == 0 {
         return "0".to_string();
     }
-    
+
     while n > 0 {
         result.push(CHARS[(n % 36) as usize] as char);
         n /= 36;

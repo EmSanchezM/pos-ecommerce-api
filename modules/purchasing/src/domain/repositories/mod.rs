@@ -9,10 +9,10 @@
 //! - [`PurchaseOrderRepository`]: Purchase order persistence with items
 //! - [`GoodsReceiptRepository`]: Goods receipt persistence
 
-mod vendor_repository;
-mod purchase_order_repository;
 mod goods_receipt_repository;
+mod purchase_order_repository;
+mod vendor_repository;
 
-pub use vendor_repository::{VendorFilter, VendorRepository};
-pub use purchase_order_repository::{PurchaseOrderFilter, PurchaseOrderRepository};
 pub use goods_receipt_repository::{GoodsReceiptFilter, GoodsReceiptRepository};
+pub use purchase_order_repository::{PurchaseOrderFilter, PurchaseOrderRepository};
+pub use vendor_repository::{VendorFilter, VendorRepository};

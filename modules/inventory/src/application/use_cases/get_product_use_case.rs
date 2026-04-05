@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{ProductDetailResponse, VariantResponse};
 use crate::domain::repositories::ProductRepository;
 use crate::domain::value_objects::ProductId;
-use crate::InventoryError;
 
 /// Use case for retrieving a product with full details including variants
 pub struct GetProductUseCase<P>

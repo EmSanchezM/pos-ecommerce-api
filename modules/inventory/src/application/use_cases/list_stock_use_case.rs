@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{PaginatedResponse, StockResponse};
 use crate::domain::repositories::InventoryStockRepository;
 use crate::domain::value_objects::ProductId;
-use crate::InventoryError;
 use identity::StoreId;
 
 /// Query parameters for listing stock

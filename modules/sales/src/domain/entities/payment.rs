@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::value_objects::{PaymentId, PaymentMethod, PaymentStatus, SaleId};
 use crate::SalesError;
+use crate::domain::value_objects::{PaymentId, PaymentMethod, PaymentStatus, SaleId};
 use inventory::Currency;
 
 /// Payment entity representing a payment transaction for a sale.
@@ -377,7 +377,10 @@ mod tests {
             dec!(50.00),
         );
 
-        assert!(matches!(result, Err(SalesError::InsufficientAmountTendered)));
+        assert!(matches!(
+            result,
+            Err(SalesError::InsufficientAmountTendered)
+        ));
     }
 
     #[test]

@@ -6,12 +6,12 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::CreateRecipeCommand;
 use crate::application::dtos::responses::RecipeResponse;
 use crate::domain::entities::{IngredientSubstitute, Recipe, RecipeIngredient};
 use crate::domain::repositories::{ProductRepository, RecipeRepository};
 use crate::domain::value_objects::{ProductId, UnitOfMeasure, VariantId};
-use crate::InventoryError;
 
 /// Use case for creating a new recipe
 ///
@@ -54,12 +54,13 @@ where
     /// * `InventoryError::ActiveRecipeExists` - If an active recipe already exists for the product/variant
     /// * `InventoryError::InvalidYieldQuantity` - If yield_quantity is not positive
     /// * `InventoryError::InvalidUnitOfMeasure` - If ingredient unit of measure is invalid
-    pub async fn execute(&self, command: CreateRecipeCommand) -> Result<RecipeResponse, InventoryError> {
+    pub async fn execute(
+        &self,
+        command: CreateRecipeCommand,
+    ) -> Result<RecipeResponse, InventoryError> {
         // Validate XOR constraint: exactly one of product_id or variant_id must be set
-        let (product_id, variant_id) = self.validate_product_variant_constraint(
-            command.product_id,
-            command.variant_id,
-        )?;
+        let (product_id, variant_id) =
+            self.validate_product_variant_constraint(command.product_id, command.variant_id)?;
 
         // Validate product/variant exists and check for active recipe
         if let Some(pid) = product_id {
@@ -68,7 +69,12 @@ where
                 return Err(InventoryError::ProductNotFound(pid.into_uuid()));
             }
             // Check no active recipe exists (Requirement 6.4)
-            if self.recipe_repo.find_active_by_product(pid).await?.is_some() {
+            if self
+                .recipe_repo
+                .find_active_by_product(pid)
+                .await?
+                .is_some()
+            {
                 return Err(InventoryError::ActiveRecipeExists);
             }
         }
@@ -79,7 +85,12 @@ where
                 return Err(InventoryError::VariantNotFound(vid.into_uuid()));
             }
             // Check no active recipe exists (Requirement 6.4)
-            if self.recipe_repo.find_active_by_variant(vid).await?.is_some() {
+            if self
+                .recipe_repo
+                .find_active_by_variant(vid)
+                .await?
+                .is_some()
+            {
                 return Err(InventoryError::ActiveRecipeExists);
             }
         }
@@ -88,7 +99,11 @@ where
         let recipe = if let Some(pid) = product_id {
             Recipe::create_for_product(pid, command.name.clone(), command.yield_quantity)?
         } else {
-            Recipe::create_for_variant(variant_id.unwrap(), command.name.clone(), command.yield_quantity)?
+            Recipe::create_for_variant(
+                variant_id.unwrap(),
+                command.name.clone(),
+                command.yield_quantity,
+            )?
         };
 
         // Save recipe first
@@ -151,13 +166,15 @@ where
 
         // Validate ingredient product/variant exists
         if let Some(pid) = ing_product_id
-            && self.product_repo.find_by_id(pid).await?.is_none() {
-                return Err(InventoryError::ProductNotFound(pid.into_uuid()));
-            }
+            && self.product_repo.find_by_id(pid).await?.is_none()
+        {
+            return Err(InventoryError::ProductNotFound(pid.into_uuid()));
+        }
         if let Some(vid) = ing_variant_id
-            && self.product_repo.find_variant_by_id(vid).await?.is_none() {
-                return Err(InventoryError::VariantNotFound(vid.into_uuid()));
-            }
+            && self.product_repo.find_variant_by_id(vid).await?.is_none()
+        {
+            return Err(InventoryError::VariantNotFound(vid.into_uuid()));
+        }
 
         // Parse unit of measure
         let unit_of_measure = UnitOfMeasure::from_str(&cmd.unit_of_measure)?;
@@ -166,7 +183,12 @@ where
         let mut ingredient = if let Some(pid) = ing_product_id {
             RecipeIngredient::create_for_product(recipe.id(), pid, cmd.quantity, unit_of_measure)?
         } else {
-            RecipeIngredient::create_for_variant(recipe.id(), ing_variant_id.unwrap(), cmd.quantity, unit_of_measure)?
+            RecipeIngredient::create_for_variant(
+                recipe.id(),
+                ing_variant_id.unwrap(),
+                cmd.quantity,
+                unit_of_measure,
+            )?
         };
 
         // Apply optional fields
@@ -202,22 +224,18 @@ where
 
         // Validate XOR constraint for substitute
         match (cmd.substitute_product_id, cmd.substitute_variant_id) {
-            (Some(pid), None) => {
-                IngredientSubstitute::create_for_product(
-                    ingredient.id(),
-                    ProductId::from_uuid(pid),
-                    cmd.conversion_ratio,
-                    cmd.priority,
-                )
-            }
-            (None, Some(vid)) => {
-                IngredientSubstitute::create_for_variant(
-                    ingredient.id(),
-                    VariantId::from_uuid(vid),
-                    cmd.conversion_ratio,
-                    cmd.priority,
-                )
-            }
+            (Some(pid), None) => IngredientSubstitute::create_for_product(
+                ingredient.id(),
+                ProductId::from_uuid(pid),
+                cmd.conversion_ratio,
+                cmd.priority,
+            ),
+            (None, Some(vid)) => IngredientSubstitute::create_for_variant(
+                ingredient.id(),
+                VariantId::from_uuid(vid),
+                cmd.conversion_ratio,
+                cmd.priority,
+            ),
             _ => Err(InventoryError::InvalidProductVariantConstraint),
         }
     }

@@ -3,12 +3,12 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::PurchasingError;
 use crate::application::dtos::responses::GoodsReceiptResponse;
 use crate::domain::repositories::{GoodsReceiptFilter, GoodsReceiptRepository};
 use crate::domain::value_objects::{GoodsReceiptStatus, PurchaseOrderId};
-use crate::PurchasingError;
-use inventory::PaginatedResponse;
 use identity::StoreId;
+use inventory::PaginatedResponse;
 
 /// Query parameters for listing goods receipts
 #[derive(Debug, Clone, Default)]

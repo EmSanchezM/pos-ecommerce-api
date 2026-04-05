@@ -5,13 +5,15 @@
 use std::sync::Arc;
 
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2,
+    password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
 };
 
 use crate::application::dtos::{CreateUserCommand, UpdateUserCommand};
 use crate::domain::entities::{AuditAction, AuditEntry, User};
-use crate::domain::repositories::{AuditRepository, RoleRepository, StoreRepository, UserRepository};
+use crate::domain::repositories::{
+    AuditRepository, RoleRepository, StoreRepository, UserRepository,
+};
 use crate::domain::value_objects::{Email, RoleId, StoreId, UserId, Username};
 use crate::error::IdentityError;
 
@@ -96,12 +98,7 @@ where
         self.user_repo.save(&user).await?;
 
         // Create audit entry
-        let audit_entry = AuditEntry::for_create(
-            "user",
-            user.id().into_uuid(),
-            &user,
-            actor_id,
-        );
+        let audit_entry = AuditEntry::for_create("user", user.id().into_uuid(), &user, actor_id);
         self.audit_repo.save(&audit_entry).await?;
 
         Ok(user)
@@ -112,13 +109,12 @@ where
 fn hash_password(password: &str) -> Result<String, IdentityError> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    
+
     argon2
         .hash_password(password.as_bytes(), &salt)
         .map(|hash| hash.to_string())
         .map_err(|_| IdentityError::NotImplemented) // Using NotImplemented as a placeholder for password hash error
 }
-
 
 // =============================================================================
 // UpdateUserUseCase
@@ -195,7 +191,7 @@ where
         // Update email if provided (Requirement 6.5, 6.6)
         if let Some(email_str) = command.email {
             let new_email = Email::new(&email_str)?;
-            
+
             // Check uniqueness only if email is actually changing
             if new_email.as_str() != user.email().as_str() {
                 // Check if new email is already in use by another user (Requirement 6.6)
@@ -212,19 +208,13 @@ where
         self.user_repo.update(&user).await?;
 
         // Create audit entry
-        let audit_entry = AuditEntry::for_update(
-            "user",
-            user_id.into_uuid(),
-            &old_user,
-            &user,
-            actor_id,
-        );
+        let audit_entry =
+            AuditEntry::for_update("user", user_id.into_uuid(), &old_user, &user, actor_id);
         self.audit_repo.save(&audit_entry).await?;
 
         Ok(user)
     }
 }
-
 
 // =============================================================================
 // SetUserActiveUseCase
@@ -296,19 +286,13 @@ where
         self.user_repo.update(&user).await?;
 
         // Create audit entry
-        let audit_entry = AuditEntry::for_update(
-            "user",
-            user_id.into_uuid(),
-            &old_user,
-            &user,
-            actor_id,
-        );
+        let audit_entry =
+            AuditEntry::for_update("user", user_id.into_uuid(), &old_user, &user, actor_id);
         self.audit_repo.save(&audit_entry).await?;
 
         Ok(user)
     }
 }
-
 
 // =============================================================================
 // AssignRoleUseCase
@@ -401,7 +385,9 @@ where
         }
 
         // Assign role to user in store (Requirement 3.1)
-        self.user_repo.assign_role(user_id, role_id, store_id).await?;
+        self.user_repo
+            .assign_role(user_id, role_id, store_id)
+            .await?;
 
         // Create audit entry
         let audit_entry = AuditEntry::create(
@@ -423,7 +409,6 @@ where
         Ok(())
     }
 }
-
 
 // =============================================================================
 // RemoveRoleUseCase
@@ -493,7 +478,9 @@ where
             .map(|r| r.name().to_string());
 
         // Remove role from user in store (Requirement 3.1)
-        self.user_repo.remove_role(user_id, role_id, store_id).await?;
+        self.user_repo
+            .remove_role(user_id, role_id, store_id)
+            .await?;
 
         // Create audit entry
         let audit_entry = AuditEntry::create(
@@ -515,7 +502,6 @@ where
         Ok(())
     }
 }
-
 
 // =============================================================================
 // Tests
@@ -554,11 +540,13 @@ mod tests {
         }
 
         fn with_user_in_store(self, user_id: UserId, store_id: StoreId) -> Self {
-            self.user_stores.lock().unwrap().insert((user_id, store_id), true);
+            self.user_stores
+                .lock()
+                .unwrap()
+                .insert((user_id, store_id), true);
             self
         }
     }
-
 
     #[async_trait]
     impl UserRepository for MockUserRepository {
@@ -578,7 +566,10 @@ mod tests {
             Ok(users.values().find(|u| u.email() == email).cloned())
         }
 
-        async fn find_by_username(&self, username: &Username) -> Result<Option<User>, IdentityError> {
+        async fn find_by_username(
+            &self,
+            username: &Username,
+        ) -> Result<Option<User>, IdentityError> {
             let users = self.users.lock().unwrap();
             Ok(users.values().find(|u| u.username() == username).cloned())
         }
@@ -613,7 +604,6 @@ mod tests {
             Ok(())
         }
 
-
         async fn get_roles_for_store(
             &self,
             _user_id: UserId,
@@ -634,13 +624,21 @@ mod tests {
             Ok(())
         }
 
-        async fn add_to_store(&self, user_id: UserId, store_id: StoreId) -> Result<(), IdentityError> {
+        async fn add_to_store(
+            &self,
+            user_id: UserId,
+            store_id: StoreId,
+        ) -> Result<(), IdentityError> {
             let mut stores = self.user_stores.lock().unwrap();
             stores.insert((user_id, store_id), true);
             Ok(())
         }
 
-        async fn remove_from_store(&self, user_id: UserId, store_id: StoreId) -> Result<(), IdentityError> {
+        async fn remove_from_store(
+            &self,
+            user_id: UserId,
+            store_id: StoreId,
+        ) -> Result<(), IdentityError> {
             let mut stores = self.user_stores.lock().unwrap();
             stores.remove(&(user_id, store_id));
             Ok(())
@@ -659,7 +657,6 @@ mod tests {
             Ok(stores.get(&(user_id, store_id)).copied().unwrap_or(false))
         }
     }
-
 
     // Mock AuditRepository for testing
     struct MockAuditRepository {
@@ -712,7 +709,6 @@ mod tests {
                 .collect())
         }
     }
-
 
     // Mock RoleRepository for testing
     struct MockRoleRepository {
@@ -767,7 +763,6 @@ mod tests {
             Ok(())
         }
 
-
         async fn add_permission(
             &self,
             _role_id: RoleId,
@@ -784,7 +779,10 @@ mod tests {
             Ok(())
         }
 
-        async fn get_permissions(&self, _role_id: RoleId) -> Result<Vec<Permission>, IdentityError> {
+        async fn get_permissions(
+            &self,
+            _role_id: RoleId,
+        ) -> Result<Vec<Permission>, IdentityError> {
             Ok(vec![])
         }
 
@@ -813,7 +811,6 @@ mod tests {
             self
         }
     }
-
 
     #[async_trait]
     impl StoreRepository for MockStoreRepository {
@@ -848,7 +845,6 @@ mod tests {
             Ok(vec![])
         }
     }
-
 
     // =============================================================================
     // CreateUserUseCase Tests
@@ -887,7 +883,6 @@ mod tests {
         assert_eq!(entries[0].entity_type(), "user");
         assert_eq!(entries[0].action(), &AuditAction::Created);
     }
-
 
     #[tokio::test]
     async fn test_create_user_duplicate_username() {
@@ -940,7 +935,6 @@ mod tests {
         let result = use_case.execute(command, actor_id).await;
         assert!(matches!(result, Err(IdentityError::DuplicateEmail(_))));
     }
-
 
     #[tokio::test]
     async fn test_create_user_invalid_email() {
@@ -999,7 +993,6 @@ mod tests {
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].action(), &AuditAction::Updated);
     }
-
 
     #[tokio::test]
     async fn test_update_user_email_success() {
@@ -1061,7 +1054,6 @@ mod tests {
         assert!(matches!(result, Err(IdentityError::DuplicateEmail(_))));
     }
 
-
     #[tokio::test]
     async fn test_update_user_not_found() {
         let user_repo = Arc::new(MockUserRepository::new());
@@ -1113,7 +1105,6 @@ mod tests {
         assert_eq!(entries[0].action(), &AuditAction::Updated);
     }
 
-
     #[tokio::test]
     async fn test_set_user_active_activate() {
         let mut user = User::create(
@@ -1152,7 +1143,6 @@ mod tests {
         assert!(matches!(result, Err(IdentityError::UserNotFound(_))));
     }
 
-
     // =============================================================================
     // AssignRoleUseCase Tests
     // =============================================================================
@@ -1175,7 +1165,7 @@ mod tests {
         let user_repo = Arc::new(
             MockUserRepository::new()
                 .with_user(user)
-                .with_user_in_store(user_id, store_id)
+                .with_user_in_store(user_id, store_id),
         );
         let role_repo = Arc::new(MockRoleRepository::new().with_role(role));
         let store_repo = Arc::new(MockStoreRepository::new().with_store(store));
@@ -1193,7 +1183,6 @@ mod tests {
         assert_eq!(entries[0].action(), &AuditAction::RoleAssigned);
     }
 
-
     #[tokio::test]
     async fn test_assign_role_user_not_found() {
         let role = Role::create("Admin".to_string(), None);
@@ -1209,7 +1198,9 @@ mod tests {
 
         let actor_id = UserId::new();
         let non_existent_user_id = UserId::new();
-        let result = use_case.execute(non_existent_user_id, role_id, store_id, actor_id).await;
+        let result = use_case
+            .execute(non_existent_user_id, role_id, store_id, actor_id)
+            .await;
 
         assert!(matches!(result, Err(IdentityError::UserNotFound(_))));
     }
@@ -1230,7 +1221,7 @@ mod tests {
         let user_repo = Arc::new(
             MockUserRepository::new()
                 .with_user(user)
-                .with_user_in_store(user_id, store_id)
+                .with_user_in_store(user_id, store_id),
         );
         let role_repo = Arc::new(MockRoleRepository::new());
         let store_repo = Arc::new(MockStoreRepository::new().with_store(store));
@@ -1239,11 +1230,12 @@ mod tests {
 
         let actor_id = UserId::new();
         let non_existent_role_id = RoleId::new();
-        let result = use_case.execute(user_id, non_existent_role_id, store_id, actor_id).await;
+        let result = use_case
+            .execute(user_id, non_existent_role_id, store_id, actor_id)
+            .await;
 
         assert!(matches!(result, Err(IdentityError::RoleNotFound(_))));
     }
-
 
     #[tokio::test]
     async fn test_assign_role_user_not_in_store() {
@@ -1307,7 +1299,6 @@ mod tests {
         assert_eq!(entries[0].action(), &AuditAction::RoleUnassigned);
     }
 
-
     #[tokio::test]
     async fn test_remove_role_user_not_found() {
         let role = Role::create("Admin".to_string(), None);
@@ -1321,7 +1312,9 @@ mod tests {
 
         let actor_id = UserId::new();
         let non_existent_user_id = UserId::new();
-        let result = use_case.execute(non_existent_user_id, role_id, store_id, actor_id).await;
+        let result = use_case
+            .execute(non_existent_user_id, role_id, store_id, actor_id)
+            .await;
 
         assert!(matches!(result, Err(IdentityError::UserNotFound(_))));
     }

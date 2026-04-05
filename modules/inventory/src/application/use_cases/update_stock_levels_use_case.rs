@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::UpdateStockLevelsCommand;
 use crate::application::dtos::responses::StockResponse;
 use crate::domain::repositories::InventoryStockRepository;
 use crate::domain::value_objects::StockId;
-use crate::InventoryError;
 use identity::domain::entities::AuditEntry;
 use identity::domain::repositories::AuditRepository;
 use identity::domain::value_objects::UserId;

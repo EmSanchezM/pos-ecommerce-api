@@ -70,18 +70,12 @@ where
         self.store_repo.save(&store).await?;
 
         // Create audit entry
-        let audit_entry = AuditEntry::for_create(
-            "store",
-            store.id().into_uuid(),
-            &store,
-            actor_id,
-        );
+        let audit_entry = AuditEntry::for_create("store", store.id().into_uuid(), &store, actor_id);
         self.audit_repo.save(&audit_entry).await?;
 
         Ok(store)
     }
 }
-
 
 // =============================================================================
 // UpdateStoreUseCase
@@ -161,19 +155,13 @@ where
         self.store_repo.update(&store).await?;
 
         // Create audit entry
-        let audit_entry = AuditEntry::for_update(
-            "store",
-            store_id.into_uuid(),
-            &old_store,
-            &store,
-            actor_id,
-        );
+        let audit_entry =
+            AuditEntry::for_update("store", store_id.into_uuid(), &old_store, &store, actor_id);
         self.audit_repo.save(&audit_entry).await?;
 
         Ok(store)
     }
 }
-
 
 // =============================================================================
 // SetStoreActiveUseCase
@@ -245,19 +233,13 @@ where
         self.store_repo.update(&store).await?;
 
         // Create audit entry
-        let audit_entry = AuditEntry::for_update(
-            "store",
-            store_id.into_uuid(),
-            &old_store,
-            &store,
-            actor_id,
-        );
+        let audit_entry =
+            AuditEntry::for_update("store", store_id.into_uuid(), &old_store, &store, actor_id);
         self.audit_repo.save(&audit_entry).await?;
 
         Ok(store)
     }
 }
-
 
 // =============================================================================
 // AddUserToStoreUseCase
@@ -347,7 +329,6 @@ where
         Ok(())
     }
 }
-
 
 // =============================================================================
 // RemoveUserFromStoreUseCase

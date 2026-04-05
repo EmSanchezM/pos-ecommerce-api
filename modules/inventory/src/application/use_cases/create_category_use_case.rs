@@ -2,12 +2,12 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::CreateCategoryCommand;
 use crate::application::dtos::responses::CategoryResponse;
 use crate::domain::entities::ProductCategory;
 use crate::domain::repositories::CategoryRepository;
 use crate::domain::value_objects::CategoryId;
-use crate::InventoryError;
 
 /// Use case for creating a new product category
 ///
@@ -230,7 +230,8 @@ mod tests {
         let use_case = CreateCategoryUseCase::new(repo.clone());
 
         // Create first category
-        let category = ProductCategory::create("Electronics".to_string(), "electronics".to_string());
+        let category =
+            ProductCategory::create("Electronics".to_string(), "electronics".to_string());
         repo.save(&category).await.unwrap();
 
         // Try to create another with same slug

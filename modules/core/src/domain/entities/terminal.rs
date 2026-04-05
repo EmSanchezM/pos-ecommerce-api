@@ -8,7 +8,7 @@ use crate::domain::entities::CaiRange;
 use crate::domain::value_objects::{TerminalCode, TerminalId};
 
 /// Terminal entity for invoice emission
-/// 
+///
 /// Represents a physical or virtual terminal associated with a store
 /// that can emit fiscal documents using assigned CAI ranges.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,7 +25,7 @@ pub struct Terminal {
 
 impl Terminal {
     /// Creates a new Terminal with the given store, code, and name
-    /// 
+    ///
     /// The terminal is created as active by default with no CAI assigned.
     pub fn create(store_id: StoreId, code: TerminalCode, name: String) -> Self {
         let now = Utc::now();

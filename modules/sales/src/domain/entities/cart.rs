@@ -4,9 +4,9 @@ use chrono::{DateTime, Duration, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
+use crate::SalesError;
 use crate::domain::entities::CartItem;
 use crate::domain::value_objects::{CartId, CartItemId, CustomerId};
-use crate::SalesError;
 use identity::StoreId;
 use inventory::Currency;
 
@@ -361,9 +361,9 @@ impl Cart {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use inventory::{ProductId, UnitOfMeasure};
     use rust_decimal_macros::dec;
     use std::str::FromStr;
-    use inventory::{ProductId, UnitOfMeasure};
 
     fn create_test_cart() -> Cart {
         Cart::create(

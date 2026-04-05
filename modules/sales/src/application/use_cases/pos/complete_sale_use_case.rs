@@ -3,10 +3,10 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::SalesError;
 use crate::application::dtos::SaleDetailResponse;
 use crate::domain::repositories::SaleRepository;
 use crate::domain::value_objects::SaleId;
-use crate::SalesError;
 
 /// Use case for completing a POS sale
 pub struct CompleteSaleUseCase {

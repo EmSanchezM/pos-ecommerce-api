@@ -5,8 +5,8 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::{NoContext, Timestamp, Uuid};
 
-use crate::domain::value_objects::{ProductId, TransferId, VariantId};
 use crate::InventoryError;
+use crate::domain::value_objects::{ProductId, TransferId, VariantId};
 
 /// TransferItem entity representing a line item in a stock transfer.
 /// Tracks requested, shipped, and received quantities to handle discrepancies.
@@ -50,7 +50,6 @@ impl TransferItem {
         })
     }
 
-
     /// Creates a new TransferItem for a variant
     pub fn create_for_variant(
         transfer_id: TransferId,
@@ -88,7 +87,7 @@ impl TransferItem {
     ) -> Result<Self, InventoryError> {
         // Validate XOR constraint
         Self::validate_product_variant_constraint(product_id, variant_id)?;
-        
+
         Ok(Self {
             id,
             transfer_id,
@@ -154,23 +153,48 @@ impl TransferItem {
     }
 
     // Getters
-    pub fn id(&self) -> Uuid { self.id }
-    pub fn transfer_id(&self) -> TransferId { self.transfer_id }
-    pub fn product_id(&self) -> Option<ProductId> { self.product_id }
-    pub fn variant_id(&self) -> Option<VariantId> { self.variant_id }
-    pub fn quantity_requested(&self) -> Decimal { self.quantity_requested }
-    pub fn quantity_shipped(&self) -> Option<Decimal> { self.quantity_shipped }
-    pub fn quantity_received(&self) -> Option<Decimal> { self.quantity_received }
-    pub fn unit_cost(&self) -> Option<Decimal> { self.unit_cost }
-    pub fn notes(&self) -> Option<&str> { self.notes.as_deref() }
-    pub fn created_at(&self) -> DateTime<Utc> { self.created_at }
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+    pub fn transfer_id(&self) -> TransferId {
+        self.transfer_id
+    }
+    pub fn product_id(&self) -> Option<ProductId> {
+        self.product_id
+    }
+    pub fn variant_id(&self) -> Option<VariantId> {
+        self.variant_id
+    }
+    pub fn quantity_requested(&self) -> Decimal {
+        self.quantity_requested
+    }
+    pub fn quantity_shipped(&self) -> Option<Decimal> {
+        self.quantity_shipped
+    }
+    pub fn quantity_received(&self) -> Option<Decimal> {
+        self.quantity_received
+    }
+    pub fn unit_cost(&self) -> Option<Decimal> {
+        self.unit_cost
+    }
+    pub fn notes(&self) -> Option<&str> {
+        self.notes.as_deref()
+    }
+    pub fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
 
     // Setters
-    pub fn set_notes(&mut self, notes: Option<String>) { self.notes = notes; }
-    pub fn set_unit_cost(&mut self, unit_cost: Option<Decimal>) { self.unit_cost = unit_cost; }
-    pub fn set_quantity_requested(&mut self, quantity: Decimal) { self.quantity_requested = quantity; }
+    pub fn set_notes(&mut self, notes: Option<String>) {
+        self.notes = notes;
+    }
+    pub fn set_unit_cost(&mut self, unit_cost: Option<Decimal>) {
+        self.unit_cost = unit_cost;
+    }
+    pub fn set_quantity_requested(&mut self, quantity: Decimal) {
+        self.quantity_requested = quantity;
+    }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -181,11 +205,11 @@ mod tests {
     fn test_create_for_product() {
         let transfer_id = TransferId::new();
         let product_id = ProductId::new();
-        
-        let item = TransferItem::create_for_product(
-            transfer_id, product_id, dec!(10), Some(dec!(5.00)),
-        ).unwrap();
-        
+
+        let item =
+            TransferItem::create_for_product(transfer_id, product_id, dec!(10), Some(dec!(5.00)))
+                .unwrap();
+
         assert_eq!(item.transfer_id(), transfer_id);
         assert_eq!(item.product_id(), Some(product_id));
         assert!(item.variant_id().is_none());
@@ -199,11 +223,11 @@ mod tests {
     fn test_create_for_variant() {
         let transfer_id = TransferId::new();
         let variant_id = VariantId::new();
-        
-        let item = TransferItem::create_for_variant(
-            transfer_id, variant_id, dec!(10), Some(dec!(5.00)),
-        ).unwrap();
-        
+
+        let item =
+            TransferItem::create_for_variant(transfer_id, variant_id, dec!(10), Some(dec!(5.00)))
+                .unwrap();
+
         assert!(item.product_id().is_none());
         assert_eq!(item.variant_id(), Some(variant_id));
     }
@@ -211,12 +235,16 @@ mod tests {
     #[test]
     fn test_record_shipped_and_received() {
         let mut item = TransferItem::create_for_product(
-            TransferId::new(), ProductId::new(), dec!(10), Some(dec!(5.00)),
-        ).unwrap();
-        
+            TransferId::new(),
+            ProductId::new(),
+            dec!(10),
+            Some(dec!(5.00)),
+        )
+        .unwrap();
+
         item.record_shipped(dec!(10));
         assert_eq!(item.quantity_shipped(), Some(dec!(10)));
-        
+
         item.record_received(dec!(9));
         assert_eq!(item.quantity_received(), Some(dec!(9)));
     }
@@ -224,14 +252,18 @@ mod tests {
     #[test]
     fn test_shipping_discrepancy() {
         let mut item = TransferItem::create_for_product(
-            TransferId::new(), ProductId::new(), dec!(10), Some(dec!(5.00)),
-        ).unwrap();
-        
+            TransferId::new(),
+            ProductId::new(),
+            dec!(10),
+            Some(dec!(5.00)),
+        )
+        .unwrap();
+
         assert!(item.shipping_discrepancy().is_none());
-        
+
         item.record_shipped(dec!(10));
         assert!(item.shipping_discrepancy().is_none());
-        
+
         item.record_received(dec!(8));
         assert_eq!(item.shipping_discrepancy(), Some(dec!(2)));
     }
@@ -239,15 +271,19 @@ mod tests {
     #[test]
     fn test_total_costs() {
         let mut item = TransferItem::create_for_product(
-            TransferId::new(), ProductId::new(), dec!(10), Some(dec!(5.00)),
-        ).unwrap();
-        
+            TransferId::new(),
+            ProductId::new(),
+            dec!(10),
+            Some(dec!(5.00)),
+        )
+        .unwrap();
+
         assert_eq!(item.total_requested_cost(), Some(dec!(50.00)));
         assert!(item.total_shipped_cost().is_none());
-        
+
         item.record_shipped(dec!(8));
         assert_eq!(item.total_shipped_cost(), Some(dec!(40.00)));
-        
+
         item.record_received(dec!(9));
         assert_eq!(item.total_received_cost(), Some(dec!(45.00)));
     }
@@ -259,9 +295,17 @@ mod tests {
             TransferId::new(),
             Some(ProductId::new()),
             Some(VariantId::new()),
-            dec!(10), None, None, None, None, Utc::now(),
+            dec!(10),
+            None,
+            None,
+            None,
+            None,
+            Utc::now(),
         );
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[test]
@@ -269,10 +313,19 @@ mod tests {
         let result = TransferItem::reconstitute(
             Uuid::new_v7(Timestamp::now(NoContext)),
             TransferId::new(),
-            None, None,
-            dec!(10), None, None, None, None, Utc::now(),
+            None,
+            None,
+            dec!(10),
+            None,
+            None,
+            None,
+            None,
+            Utc::now(),
         );
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[test]
@@ -280,13 +333,21 @@ mod tests {
         let id = Uuid::new_v7(Timestamp::now(NoContext));
         let transfer_id = TransferId::new();
         let product_id = ProductId::new();
-        
+
         let item = TransferItem::reconstitute(
-            id, transfer_id, Some(product_id), None,
-            dec!(10), Some(dec!(10)), Some(dec!(9)),
-            Some(dec!(5.00)), Some("Test notes".to_string()), Utc::now(),
-        ).unwrap();
-        
+            id,
+            transfer_id,
+            Some(product_id),
+            None,
+            dec!(10),
+            Some(dec!(10)),
+            Some(dec!(9)),
+            Some(dec!(5.00)),
+            Some("Test notes".to_string()),
+            Utc::now(),
+        )
+        .unwrap();
+
         assert_eq!(item.id(), id);
         assert_eq!(item.transfer_id(), transfer_id);
         assert_eq!(item.product_id(), Some(product_id));

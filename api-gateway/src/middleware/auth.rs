@@ -4,17 +4,15 @@
 // builds the UserContext with permissions, and injects it into request extensions.
 
 use axum::{
+    Json,
     body::Body,
     extract::State,
-    http::{header::AUTHORIZATION, Request, StatusCode},
+    http::{Request, StatusCode, header::AUTHORIZATION},
     middleware::Next,
     response::{IntoResponse, Response},
-    Json,
 };
 
-use identity::{
-    BuildUserContextUseCase, ErrorResponse, StoreId, TokenService, UserId,
-};
+use identity::{BuildUserContextUseCase, ErrorResponse, StoreId, TokenService, UserId};
 
 use crate::state::AppState;
 
@@ -112,7 +110,9 @@ fn extract_bearer_token(request: &Request<Body>) -> Result<String, Response> {
                     Ok(token.to_string())
                 }
             } else {
-                Err(unauthorized_response("Invalid authorization scheme, expected Bearer"))
+                Err(unauthorized_response(
+                    "Invalid authorization scheme, expected Bearer",
+                ))
             }
         }
         None => Err(unauthorized_response("Missing authorization header")),
@@ -136,9 +136,10 @@ fn extract_store_id(request: &Request<Body>) -> StoreId {
     // Try to get store_id from X-Store-Id header
     if let Some(store_id_header) = request.headers().get("X-Store-Id")
         && let Ok(store_id_str) = store_id_header.to_str()
-            && let Ok(uuid) = uuid::Uuid::parse_str(store_id_str) {
-                return StoreId::from_uuid(uuid);
-            }
+        && let Ok(uuid) = uuid::Uuid::parse_str(store_id_str)
+    {
+        return StoreId::from_uuid(uuid);
+    }
 
     // Default to nil UUID for system-wide operations
     // In a real application, you might want to require a store_id
@@ -165,10 +166,7 @@ mod tests {
     use super::*;
 
     fn create_test_request() -> Request<Body> {
-        Request::builder()
-            .uri("/test")
-            .body(Body::empty())
-            .unwrap()
+        Request::builder().uri("/test").body(Body::empty()).unwrap()
     }
 
     fn create_request_with_auth(auth_value: &str) -> Request<Body> {

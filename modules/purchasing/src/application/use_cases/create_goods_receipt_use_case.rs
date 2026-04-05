@@ -4,14 +4,12 @@ use std::sync::Arc;
 
 use chrono::NaiveDate;
 
+use crate::PurchasingError;
 use crate::application::dtos::commands::CreateGoodsReceiptCommand;
-use crate::application::dtos::responses::{
-    GoodsReceiptDetailResponse, GoodsReceiptItemResponse,
-};
+use crate::application::dtos::responses::{GoodsReceiptDetailResponse, GoodsReceiptItemResponse};
 use crate::domain::entities::{GoodsReceipt, GoodsReceiptItem};
 use crate::domain::repositories::{GoodsReceiptRepository, PurchaseOrderRepository};
 use crate::domain::value_objects::{PurchaseOrderId, PurchaseOrderItemId};
-use crate::PurchasingError;
 use identity::{StoreId, UserId};
 use inventory::ProductId;
 
@@ -53,11 +51,9 @@ where
     ) -> Result<GoodsReceiptDetailResponse, PurchasingError> {
         // Validate purchase order exists and is approved
         let order_id = PurchaseOrderId::from_uuid(command.purchase_order_id);
-        let order = self
-            .order_repo
-            .find_by_id(order_id)
-            .await?
-            .ok_or(PurchasingError::PurchaseOrderNotFound(command.purchase_order_id))?;
+        let order = self.order_repo.find_by_id(order_id).await?.ok_or(
+            PurchasingError::PurchaseOrderNotFound(command.purchase_order_id),
+        )?;
 
         // Check order is approved (can receive goods)
         if !order.status().can_receive() {
@@ -73,13 +69,8 @@ where
         let receipt_number = self.receipt_repo.generate_receipt_number(store_id).await?;
 
         // Create receipt entity
-        let mut receipt = GoodsReceipt::create(
-            receipt_number,
-            order_id,
-            store_id,
-            receipt_date,
-            actor_id,
-        );
+        let mut receipt =
+            GoodsReceipt::create(receipt_number, order_id, store_id, receipt_date, actor_id);
 
         // Set notes
         if let Some(notes) = command.notes {

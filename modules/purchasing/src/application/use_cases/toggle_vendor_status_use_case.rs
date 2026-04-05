@@ -3,10 +3,10 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::PurchasingError;
 use crate::application::dtos::responses::VendorResponse;
 use crate::domain::repositories::VendorRepository;
 use crate::domain::value_objects::VendorId;
-use crate::PurchasingError;
 
 /// Use case for toggling vendor active status
 pub struct ToggleVendorStatusUseCase<V>

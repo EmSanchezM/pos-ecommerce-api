@@ -161,9 +161,6 @@ mod tests {
 
         let cmd: RefreshCommand = serde_json::from_str(json).unwrap();
 
-        assert_eq!(
-            cmd.refresh_token,
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        );
+        assert_eq!(cmd.refresh_token, "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...");
     }
 }

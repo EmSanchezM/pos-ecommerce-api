@@ -13,7 +13,10 @@ use inventory::{
 };
 use pos_core::PgTerminalRepository;
 use purchasing::{PgGoodsReceiptRepository, PgPurchaseOrderRepository, PgVendorRepository};
-use sales::{PgCartRepository, PgCreditNoteRepository, PgCustomerRepository, PgSaleRepository, PgShiftRepository};
+use sales::{
+    PgCartRepository, PgCreditNoteRepository, PgCustomerRepository, PgSaleRepository,
+    PgShiftRepository,
+};
 use sqlx::PgPool;
 
 /// Application state shared across all HTTP handlers.

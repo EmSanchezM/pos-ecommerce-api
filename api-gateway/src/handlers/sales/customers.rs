@@ -1,6 +1,11 @@
 // Customer handlers for the Sales module
 
-use axum::{extract::{Path, Query, State}, http::StatusCode, Json, response::{IntoResponse, Response}};
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use uuid::Uuid;
 
 use crate::error::AppError;

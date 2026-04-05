@@ -5,10 +5,10 @@
 //
 
 use axum::{
-    extract::FromRequestParts,
-    http::{request::Parts, StatusCode},
-    response::{IntoResponse, Response},
     Json,
+    extract::FromRequestParts,
+    http::{StatusCode, request::Parts},
+    response::{IntoResponse, Response},
 };
 use identity::{ErrorResponse, UserContext};
 
@@ -103,10 +103,7 @@ mod tests {
         let store_id = *ctx.store_id();
 
         // Create a request with UserContext in extensions
-        let mut request = Request::builder()
-            .uri("/test")
-            .body(())
-            .unwrap();
+        let mut request = Request::builder().uri("/test").body(()).unwrap();
         request.extensions_mut().insert(ctx);
 
         // Extract parts
@@ -124,10 +121,7 @@ mod tests {
     #[tokio::test]
     async fn test_current_user_extraction_missing_context() {
         // Create a request without UserContext
-        let request = Request::builder()
-            .uri("/test")
-            .body(())
-            .unwrap();
+        let request = Request::builder().uri("/test").body(()).unwrap();
 
         // Extract parts
         let (mut parts, _body) = request.into_parts();

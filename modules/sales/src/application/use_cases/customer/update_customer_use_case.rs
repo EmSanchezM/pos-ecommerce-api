@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{CustomerResponse, UpdateCustomerCommand};
 use crate::domain::repositories::CustomerRepository;
 use crate::domain::value_objects::CustomerId;
-use crate::SalesError;
 
 /// Use case for updating an existing customer
 pub struct UpdateCustomerUseCase {
@@ -17,7 +17,10 @@ impl UpdateCustomerUseCase {
         Self { customer_repo }
     }
 
-    pub async fn execute(&self, cmd: UpdateCustomerCommand) -> Result<CustomerResponse, SalesError> {
+    pub async fn execute(
+        &self,
+        cmd: UpdateCustomerCommand,
+    ) -> Result<CustomerResponse, SalesError> {
         let customer_id = CustomerId::from_uuid(cmd.customer_id);
 
         let customer = self
@@ -27,18 +30,15 @@ impl UpdateCustomerUseCase {
             .ok_or(SalesError::CustomerNotFound(cmd.customer_id))?;
 
         // Check email uniqueness if changing
-        if let Some(ref new_email) = cmd.email {
-            if customer.email() != Some(new_email.as_str()) {
-                if let Some(existing) = self
-                    .customer_repo
-                    .find_by_email(customer.store_id(), new_email)
-                    .await?
-                {
-                    if existing.id() != customer_id {
-                        return Err(SalesError::DuplicateCustomerEmail(new_email.clone()));
-                    }
-                }
-            }
+        if let Some(ref new_email) = cmd.email
+            && customer.email() != Some(new_email.as_str())
+            && let Some(existing) = self
+                .customer_repo
+                .find_by_email(customer.store_id(), new_email)
+                .await?
+            && existing.id() != customer_id
+        {
+            return Err(SalesError::DuplicateCustomerEmail(new_email.clone()));
         }
 
         // Note: Customer entity needs update methods for full implementation.

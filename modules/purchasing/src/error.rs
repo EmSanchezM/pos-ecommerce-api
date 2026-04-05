@@ -16,7 +16,6 @@ pub enum PurchasingError {
     // -------------------------------------------------------------------------
     // Vendor errors
     // -------------------------------------------------------------------------
-
     /// The requested vendor was not found in the database.
     #[error("Vendor not found: {0}")]
     VendorNotFound(Uuid),
@@ -36,7 +35,6 @@ pub enum PurchasingError {
     // -------------------------------------------------------------------------
     // Purchase Order errors
     // -------------------------------------------------------------------------
-
     /// The requested purchase order was not found in the database.
     #[error("Purchase order not found: {0}")]
     PurchaseOrderNotFound(Uuid),
@@ -76,7 +74,6 @@ pub enum PurchasingError {
     // -------------------------------------------------------------------------
     // Purchase Order Item errors
     // -------------------------------------------------------------------------
-
     /// The requested purchase order item was not found.
     #[error("Purchase order item not found: {0}")]
     PurchaseOrderItemNotFound(Uuid),
@@ -96,7 +93,6 @@ pub enum PurchasingError {
     // -------------------------------------------------------------------------
     // Goods Receipt errors
     // -------------------------------------------------------------------------
-
     /// The requested goods receipt was not found in the database.
     #[error("Goods receipt not found: {0}")]
     GoodsReceiptNotFound(Uuid),
@@ -124,7 +120,6 @@ pub enum PurchasingError {
     // -------------------------------------------------------------------------
     // Goods Receipt Item errors
     // -------------------------------------------------------------------------
-
     /// The requested goods receipt item was not found.
     #[error("Goods receipt item not found: {0}")]
     GoodsReceiptItemNotFound(Uuid),
@@ -136,7 +131,6 @@ pub enum PurchasingError {
     // -------------------------------------------------------------------------
     // Workflow errors
     // -------------------------------------------------------------------------
-
     /// The requested status transition is not valid for the current state.
     #[error("Invalid status transition")]
     InvalidStatusTransition,
@@ -144,7 +138,6 @@ pub enum PurchasingError {
     // -------------------------------------------------------------------------
     // Validation errors
     // -------------------------------------------------------------------------
-
     /// Currency code must be exactly 3 uppercase letters (ISO 4217 format).
     #[error("Invalid currency code: must be 3 uppercase letters (ISO 4217)")]
     InvalidCurrency,
@@ -172,7 +165,6 @@ pub enum PurchasingError {
     // -------------------------------------------------------------------------
     // Database errors
     // -------------------------------------------------------------------------
-
     /// A database error occurred during the operation.
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
@@ -180,7 +172,6 @@ pub enum PurchasingError {
     // -------------------------------------------------------------------------
     // General errors
     // -------------------------------------------------------------------------
-
     /// The requested functionality is not yet implemented.
     #[error("Not implemented")]
     NotImplemented,

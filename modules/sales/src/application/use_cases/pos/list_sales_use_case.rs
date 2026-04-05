@@ -3,10 +3,10 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{ListSalesQuery, SaleListResponse, SaleResponse};
 use crate::domain::repositories::{SaleFilter, SaleRepository};
 use crate::domain::value_objects::{CustomerId, SaleStatus, SaleType, ShiftId};
-use crate::SalesError;
 use identity::StoreId;
 use pos_core::TerminalId;
 
@@ -22,7 +22,7 @@ impl ListSalesUseCase {
 
     pub async fn execute(&self, query: ListSalesQuery) -> Result<SaleListResponse, SalesError> {
         let page = query.page.unwrap_or(1).max(1);
-        let page_size = query.page_size.unwrap_or(20).min(100).max(1);
+        let page_size = query.page_size.unwrap_or(20).clamp(1, 100);
 
         let filter = SaleFilter {
             store_id: query.store_id.map(StoreId::from_uuid),
@@ -40,7 +40,10 @@ impl ListSalesUseCase {
             search: query.search,
         };
 
-        let (sales, total) = self.sale_repo.find_paginated(filter, page, page_size).await?;
+        let (sales, total) = self
+            .sale_repo
+            .find_paginated(filter, page, page_size)
+            .await?;
 
         let total_pages = (total as f64 / page_size as f64).ceil() as i64;
 

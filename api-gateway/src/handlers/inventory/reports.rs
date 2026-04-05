@@ -8,9 +8,9 @@
 // - GET /api/reports/inventory/movements - Get movements report
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     response::{IntoResponse, Response},
-    Json,
 };
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
@@ -18,9 +18,9 @@ use uuid::Uuid;
 
 use inventory::{
     GetLowStockReportUseCase, GetMovementsReportUseCase, GetStockHistoryUseCase,
-    GetValuationReportUseCase, LowStockReportQuery, LowStockReportResponse,
-    MovementsReportQuery, MovementResponse, PaginatedResponse, StockHistoryQuery,
-    StockHistoryResponse, ValuationReportQuery, ValuationReportResponse,
+    GetValuationReportUseCase, LowStockReportQuery, LowStockReportResponse, MovementResponse,
+    MovementsReportQuery, PaginatedResponse, StockHistoryQuery, StockHistoryResponse,
+    ValuationReportQuery, ValuationReportResponse,
 };
 
 use crate::error::AppError;

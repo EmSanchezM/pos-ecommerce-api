@@ -10,10 +10,10 @@
 //
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use uuid::Uuid;
 

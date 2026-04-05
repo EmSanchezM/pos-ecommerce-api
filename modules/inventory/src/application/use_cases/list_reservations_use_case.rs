@@ -4,10 +4,10 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{PaginatedResponse, ReservationResponse};
 use crate::domain::repositories::ReservationRepository;
 use crate::domain::value_objects::StockId;
-use crate::InventoryError;
 
 /// Query parameters for listing reservations
 #[derive(Debug, Clone)]
@@ -87,7 +87,12 @@ where
             })
             .collect();
 
-        Ok(PaginatedResponse::new(responses, page, page_size, total_count))
+        Ok(PaginatedResponse::new(
+            responses,
+            page,
+            page_size,
+            total_count,
+        ))
     }
 }
 

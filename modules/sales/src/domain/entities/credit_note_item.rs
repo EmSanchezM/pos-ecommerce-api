@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::value_objects::{CreditNoteId, CreditNoteItemId, SaleItemId};
 use crate::SalesError;
+use crate::domain::value_objects::{CreditNoteId, CreditNoteItemId, SaleItemId};
 use inventory::{ProductId, UnitOfMeasure, VariantId};
 
 /// CreditNoteItem entity representing a line item in a credit note.

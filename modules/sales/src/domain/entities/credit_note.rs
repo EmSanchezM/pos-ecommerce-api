@@ -4,11 +4,11 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
+use crate::SalesError;
 use crate::domain::entities::CreditNoteItem;
 use crate::domain::value_objects::{
     CreditNoteId, CreditNoteItemId, CreditNoteStatus, ReturnReason, ReturnType, SaleId,
 };
-use crate::SalesError;
 use identity::{StoreId, UserId};
 use inventory::Currency;
 
@@ -54,6 +54,7 @@ pub struct CreditNote {
 
 impl CreditNote {
     /// Creates a new CreditNote
+    #[allow(clippy::too_many_arguments)]
     pub fn create(
         credit_note_number: String,
         store_id: StoreId,
@@ -221,11 +222,7 @@ impl CreditNote {
     }
 
     /// Cancels the credit note
-    pub fn cancel(
-        &mut self,
-        cancelled_by_id: UserId,
-        reason: String,
-    ) -> Result<(), SalesError> {
+    pub fn cancel(&mut self, cancelled_by_id: UserId, reason: String) -> Result<(), SalesError> {
         if !self.status.can_cancel() {
             return Err(SalesError::InvalidStatusTransition);
         }

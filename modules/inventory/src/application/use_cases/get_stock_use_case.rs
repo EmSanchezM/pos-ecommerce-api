@@ -2,12 +2,10 @@
 
 use std::sync::Arc;
 
-use crate::application::dtos::responses::{
-    StockDetailResponse, VariantResponse, ProductResponse
-};
+use crate::InventoryError;
+use crate::application::dtos::responses::{ProductResponse, StockDetailResponse, VariantResponse};
 use crate::domain::repositories::{InventoryStockRepository, ProductRepository};
 use crate::domain::value_objects::StockId;
-use crate::InventoryError;
 
 /// Use case for getting a stock record by ID with full details
 pub struct GetStockUseCase<S, P>

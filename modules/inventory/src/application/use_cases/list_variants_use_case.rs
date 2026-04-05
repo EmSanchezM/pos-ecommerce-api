@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{ListResponse, VariantResponse};
 use crate::domain::repositories::ProductRepository;
 use crate::domain::value_objects::ProductId;
-use crate::InventoryError;
 
 /// Use case for listing all variants of a product
 pub struct ListVariantsUseCase<P>

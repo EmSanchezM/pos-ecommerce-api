@@ -3,12 +3,12 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::CreateProductCommand;
 use crate::application::dtos::responses::ProductResponse;
 use crate::domain::entities::Product;
 use crate::domain::repositories::{CategoryRepository, ProductRepository};
 use crate::domain::value_objects::{Barcode, CategoryId, Currency, UnitOfMeasure};
-use crate::InventoryError;
 use identity::domain::entities::AuditEntry;
 use identity::domain::repositories::AuditRepository;
 use identity::domain::value_objects::UserId;
@@ -69,12 +69,7 @@ where
         // Validate barcode uniqueness if provided (Requirement 1.2)
         let barcode = if let Some(barcode_str) = &command.barcode {
             let barcode = Barcode::new(barcode_str)?;
-            if self
-                .product_repo
-                .find_by_barcode(&barcode)
-                .await?
-                .is_some()
-            {
+            if self.product_repo.find_by_barcode(&barcode).await?.is_some() {
                 return Err(InventoryError::DuplicateBarcode(barcode_str.clone()));
             }
             Some(barcode)
@@ -140,12 +135,8 @@ where
         self.product_repo.save(&product).await?;
 
         // Create audit entry (Requirement 1.3)
-        let audit_entry = AuditEntry::for_create(
-            "product",
-            product.id().into_uuid(),
-            &product,
-            actor_id,
-        );
+        let audit_entry =
+            AuditEntry::for_create("product", product.id().into_uuid(), &product, actor_id);
         self.audit_repo
             .save(&audit_entry)
             .await

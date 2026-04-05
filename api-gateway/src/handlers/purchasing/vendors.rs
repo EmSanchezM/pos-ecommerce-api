@@ -11,20 +11,20 @@
 // - PUT /api/v1/vendors/{id}/deactivate - Deactivate a vendor
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::Deserialize;
 use uuid::Uuid;
 
-use purchasing::{
-    CreateVendorCommand, CreateVendorUseCase, GetVendorUseCase,
-    ListVendorsQuery, ListVendorsUseCase, ToggleVendorStatusUseCase,
-    UpdateVendorCommand, UpdateVendorUseCase, VendorResponse,
-};
 use inventory::PaginatedResponse;
+use purchasing::{
+    CreateVendorCommand, CreateVendorUseCase, GetVendorUseCase, ListVendorsQuery,
+    ListVendorsUseCase, ToggleVendorStatusUseCase, UpdateVendorCommand, UpdateVendorUseCase,
+    VendorResponse,
+};
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;

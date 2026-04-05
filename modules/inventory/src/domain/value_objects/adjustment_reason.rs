@@ -88,27 +88,63 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        assert_eq!(AdjustmentReason::from_str("damage").unwrap(), AdjustmentReason::Damage);
-        assert_eq!(AdjustmentReason::from_str("theft").unwrap(), AdjustmentReason::Theft);
-        assert_eq!(AdjustmentReason::from_str("loss").unwrap(), AdjustmentReason::Loss);
-        assert_eq!(AdjustmentReason::from_str("found").unwrap(), AdjustmentReason::Found);
-        assert_eq!(AdjustmentReason::from_str("correction").unwrap(), AdjustmentReason::Correction);
-        assert_eq!(AdjustmentReason::from_str("expiration").unwrap(), AdjustmentReason::Expiration);
+        assert_eq!(
+            AdjustmentReason::from_str("damage").unwrap(),
+            AdjustmentReason::Damage
+        );
+        assert_eq!(
+            AdjustmentReason::from_str("theft").unwrap(),
+            AdjustmentReason::Theft
+        );
+        assert_eq!(
+            AdjustmentReason::from_str("loss").unwrap(),
+            AdjustmentReason::Loss
+        );
+        assert_eq!(
+            AdjustmentReason::from_str("found").unwrap(),
+            AdjustmentReason::Found
+        );
+        assert_eq!(
+            AdjustmentReason::from_str("correction").unwrap(),
+            AdjustmentReason::Correction
+        );
+        assert_eq!(
+            AdjustmentReason::from_str("expiration").unwrap(),
+            AdjustmentReason::Expiration
+        );
     }
 
     #[test]
     fn test_from_str_aliases() {
-        assert_eq!(AdjustmentReason::from_str("damaged").unwrap(), AdjustmentReason::Damage);
-        assert_eq!(AdjustmentReason::from_str("stolen").unwrap(), AdjustmentReason::Theft);
-        assert_eq!(AdjustmentReason::from_str("lost").unwrap(), AdjustmentReason::Loss);
-        assert_eq!(AdjustmentReason::from_str("count").unwrap(), AdjustmentReason::Correction);
-        assert_eq!(AdjustmentReason::from_str("expired").unwrap(), AdjustmentReason::Expiration);
+        assert_eq!(
+            AdjustmentReason::from_str("damaged").unwrap(),
+            AdjustmentReason::Damage
+        );
+        assert_eq!(
+            AdjustmentReason::from_str("stolen").unwrap(),
+            AdjustmentReason::Theft
+        );
+        assert_eq!(
+            AdjustmentReason::from_str("lost").unwrap(),
+            AdjustmentReason::Loss
+        );
+        assert_eq!(
+            AdjustmentReason::from_str("count").unwrap(),
+            AdjustmentReason::Correction
+        );
+        assert_eq!(
+            AdjustmentReason::from_str("expired").unwrap(),
+            AdjustmentReason::Expiration
+        );
     }
 
     #[test]
     fn test_invalid() {
         let result = AdjustmentReason::from_str("invalid");
-        assert!(matches!(result, Err(InventoryError::InvalidAdjustmentReason)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidAdjustmentReason)
+        ));
     }
 
     #[test]

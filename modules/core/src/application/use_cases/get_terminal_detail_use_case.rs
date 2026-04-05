@@ -4,9 +4,7 @@
 
 use std::sync::Arc;
 
-use crate::application::dtos::{
-    CaiHistoryItemResponse, CaiStatusResponse, TerminalDetailResponse,
-};
+use crate::application::dtos::{CaiHistoryItemResponse, CaiStatusResponse, TerminalDetailResponse};
 use crate::domain::repositories::TerminalRepository;
 use crate::domain::value_objects::TerminalId;
 use crate::error::CoreError;
@@ -57,8 +55,10 @@ where
         let cai_history = self.terminal_repo.get_cai_history(terminal_id).await?;
 
         // 3. Convert CAI history to response DTOs
-        let cai_history_response: Vec<CaiHistoryItemResponse> =
-            cai_history.iter().map(CaiHistoryItemResponse::from).collect();
+        let cai_history_response: Vec<CaiHistoryItemResponse> = cai_history
+            .iter()
+            .map(CaiHistoryItemResponse::from)
+            .collect();
 
         // 4. Get current CAI status if assigned
         let cai_status = terminal.current_cai().map(CaiStatusResponse::from);

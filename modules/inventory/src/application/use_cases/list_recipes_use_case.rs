@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{PaginatedResponse, RecipeResponse};
 use crate::domain::repositories::RecipeRepository;
-use crate::InventoryError;
 
 /// Query parameters for listing recipes
 #[derive(Debug, Clone)]
@@ -65,12 +65,7 @@ where
         // Fetch recipes with pagination
         let (recipes, total_items) = self
             .recipe_repo
-            .find_paginated(
-                query.is_active,
-                query.search.as_deref(),
-                page,
-                page_size,
-            )
+            .find_paginated(query.is_active, query.search.as_deref(), page, page_size)
             .await?;
 
         // Convert to response DTOs

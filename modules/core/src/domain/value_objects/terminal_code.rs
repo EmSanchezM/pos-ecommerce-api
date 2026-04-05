@@ -5,7 +5,7 @@ use crate::CoreError;
 use serde::{Deserialize, Serialize};
 
 /// Terminal code - unique identifier within a store
-/// 
+///
 /// Validation rules:
 /// - Length: 3-20 characters
 /// - Allowed characters: alphanumeric (A-Z, a-z, 0-9) and hyphens (-)
@@ -15,14 +15,14 @@ pub struct TerminalCode(String);
 
 impl TerminalCode {
     /// Creates a new TerminalCode with validation
-    /// 
+    ///
     /// # Arguments
     /// * `code` - The terminal code string
-    /// 
+    ///
     /// # Returns
     /// * `Ok(TerminalCode)` - If validation passes
     /// * `Err(CoreError::InvalidTerminalCode)` - If validation fails
-    /// 
+    ///
     /// # Validation Rules
     /// - Must be 3-20 characters long
     /// - Only alphanumeric characters and hyphens allowed

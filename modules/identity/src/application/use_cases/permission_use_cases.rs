@@ -84,7 +84,6 @@ where
     }
 }
 
-
 // =============================================================================
 // DeletePermissionUseCase
 // =============================================================================
@@ -161,7 +160,6 @@ where
         Ok(())
     }
 }
-
 
 // =============================================================================
 // ListPermissionsUseCase
@@ -380,7 +378,10 @@ mod tests {
             Ok(())
         }
 
-        async fn get_permissions(&self, _role_id: RoleId) -> Result<Vec<Permission>, IdentityError> {
+        async fn get_permissions(
+            &self,
+            _role_id: RoleId,
+        ) -> Result<Vec<Permission>, IdentityError> {
             Ok(vec![])
         }
 
@@ -404,7 +405,11 @@ mod tests {
 
         let actor_id = UserId::new();
         let result = use_case
-            .execute("sales:create_invoice", Some("Create invoices".to_string()), actor_id)
+            .execute(
+                "sales:create_invoice",
+                Some("Create invoices".to_string()),
+                actor_id,
+            )
             .await;
 
         assert!(result.is_ok());
@@ -427,7 +432,10 @@ mod tests {
         let actor_id = UserId::new();
         let result = use_case.execute("invalid_format", None, actor_id).await;
 
-        assert!(matches!(result, Err(IdentityError::InvalidPermissionFormat)));
+        assert!(matches!(
+            result,
+            Err(IdentityError::InvalidPermissionFormat)
+        ));
     }
 
     #[tokio::test]
@@ -512,8 +520,14 @@ mod tests {
         // Create some permissions
         let code1 = PermissionCode::new("sales:create").unwrap();
         let code2 = PermissionCode::new("inventory:view").unwrap();
-        perm_repo.save(&Permission::create(code1, None)).await.unwrap();
-        perm_repo.save(&Permission::create(code2, None)).await.unwrap();
+        perm_repo
+            .save(&Permission::create(code1, None))
+            .await
+            .unwrap();
+        perm_repo
+            .save(&Permission::create(code2, None))
+            .await
+            .unwrap();
 
         let use_case = ListPermissionsUseCase::new(perm_repo);
 
@@ -533,9 +547,18 @@ mod tests {
         let code1 = PermissionCode::new("sales:create").unwrap();
         let code2 = PermissionCode::new("sales:delete").unwrap();
         let code3 = PermissionCode::new("inventory:view").unwrap();
-        perm_repo.save(&Permission::create(code1, None)).await.unwrap();
-        perm_repo.save(&Permission::create(code2, None)).await.unwrap();
-        perm_repo.save(&Permission::create(code3, None)).await.unwrap();
+        perm_repo
+            .save(&Permission::create(code1, None))
+            .await
+            .unwrap();
+        perm_repo
+            .save(&Permission::create(code2, None))
+            .await
+            .unwrap();
+        perm_repo
+            .save(&Permission::create(code3, None))
+            .await
+            .unwrap();
 
         let use_case = ListPermissionsUseCase::new(perm_repo);
 
@@ -554,7 +577,10 @@ mod tests {
 
         // Create permissions in different modules
         let code1 = PermissionCode::new("sales:create").unwrap();
-        perm_repo.save(&Permission::create(code1, None)).await.unwrap();
+        perm_repo
+            .save(&Permission::create(code1, None))
+            .await
+            .unwrap();
 
         let use_case = ListPermissionsUseCase::new(perm_repo);
 

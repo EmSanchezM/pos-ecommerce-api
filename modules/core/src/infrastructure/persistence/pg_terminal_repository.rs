@@ -103,7 +103,7 @@ impl TerminalRepository for PgTerminalRepository {
                 // Fetch the current (most recent non-exhausted, non-expired) CAI range
                 let cai = self.get_current_cai(id).await?;
                 let terminal_code = TerminalCode::new(&terminal_row.code)?;
-                
+
                 Ok(Some(Terminal::reconstitute(
                     TerminalId::from_uuid(terminal_row.id),
                     StoreId::from_uuid(terminal_row.store_id),
@@ -137,7 +137,7 @@ impl TerminalRepository for PgTerminalRepository {
             let terminal_id = TerminalId::from_uuid(row.id);
             let cai = self.get_current_cai(terminal_id).await?;
             let terminal_code = TerminalCode::new(&row.code)?;
-            
+
             terminals.push(Terminal::reconstitute(
                 terminal_id,
                 StoreId::from_uuid(row.store_id),
@@ -175,7 +175,7 @@ impl TerminalRepository for PgTerminalRepository {
                 let terminal_id = TerminalId::from_uuid(terminal_row.id);
                 let cai = self.get_current_cai(terminal_id).await?;
                 let terminal_code = TerminalCode::new(&terminal_row.code)?;
-                
+
                 Ok(Some(Terminal::reconstitute(
                     terminal_id,
                     StoreId::from_uuid(terminal_row.store_id),
@@ -320,12 +320,10 @@ impl TerminalRepository for PgTerminalRepository {
         // Check if range is exhausted
         if cai_row.current_number > cai_row.range_end {
             // Mark as exhausted
-            sqlx::query(
-                r#"UPDATE cai_ranges SET is_exhausted = TRUE WHERE id = $1"#,
-            )
-            .bind(cai_row.id)
-            .execute(&mut *tx)
-            .await?;
+            sqlx::query(r#"UPDATE cai_ranges SET is_exhausted = TRUE WHERE id = $1"#)
+                .bind(cai_row.id)
+                .execute(&mut *tx)
+                .await?;
 
             tx.commit().await?;
             return Err(CoreError::CaiRangeExhausted(terminal_id.into_uuid()));
@@ -388,7 +386,10 @@ impl TerminalRepository for PgTerminalRepository {
 
 impl PgTerminalRepository {
     /// Helper method to get the current active CAI range for a terminal
-    async fn get_current_cai(&self, terminal_id: TerminalId) -> Result<Option<CaiRange>, CoreError> {
+    async fn get_current_cai(
+        &self,
+        terminal_id: TerminalId,
+    ) -> Result<Option<CaiRange>, CoreError> {
         let row = sqlx::query_as::<_, CaiRangeRow>(
             r#"
             SELECT id, cai_number, range_start, range_end, current_number, expiration_date, is_exhausted, created_at

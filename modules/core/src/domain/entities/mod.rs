@@ -1,7 +1,7 @@
 // Domain entities for stores and terminals
 
-mod terminal;
 mod cai_range;
+mod terminal;
 
-pub use terminal::Terminal;
 pub use cai_range::CaiRange;
+pub use terminal::Terminal;

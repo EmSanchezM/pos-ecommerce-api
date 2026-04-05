@@ -39,7 +39,9 @@ impl ReservationStatus {
     pub fn is_finalized(&self) -> bool {
         matches!(
             self,
-            ReservationStatus::Confirmed | ReservationStatus::Cancelled | ReservationStatus::Expired
+            ReservationStatus::Confirmed
+                | ReservationStatus::Cancelled
+                | ReservationStatus::Expired
         )
     }
 }
@@ -75,23 +77,47 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        assert_eq!(ReservationStatus::from_str("pending").unwrap(), ReservationStatus::Pending);
-        assert_eq!(ReservationStatus::from_str("confirmed").unwrap(), ReservationStatus::Confirmed);
-        assert_eq!(ReservationStatus::from_str("cancelled").unwrap(), ReservationStatus::Cancelled);
-        assert_eq!(ReservationStatus::from_str("expired").unwrap(), ReservationStatus::Expired);
+        assert_eq!(
+            ReservationStatus::from_str("pending").unwrap(),
+            ReservationStatus::Pending
+        );
+        assert_eq!(
+            ReservationStatus::from_str("confirmed").unwrap(),
+            ReservationStatus::Confirmed
+        );
+        assert_eq!(
+            ReservationStatus::from_str("cancelled").unwrap(),
+            ReservationStatus::Cancelled
+        );
+        assert_eq!(
+            ReservationStatus::from_str("expired").unwrap(),
+            ReservationStatus::Expired
+        );
     }
 
     #[test]
     fn test_from_str_aliases() {
-        assert_eq!(ReservationStatus::from_str("active").unwrap(), ReservationStatus::Pending);
-        assert_eq!(ReservationStatus::from_str("completed").unwrap(), ReservationStatus::Confirmed);
-        assert_eq!(ReservationStatus::from_str("canceled").unwrap(), ReservationStatus::Cancelled);
+        assert_eq!(
+            ReservationStatus::from_str("active").unwrap(),
+            ReservationStatus::Pending
+        );
+        assert_eq!(
+            ReservationStatus::from_str("completed").unwrap(),
+            ReservationStatus::Confirmed
+        );
+        assert_eq!(
+            ReservationStatus::from_str("canceled").unwrap(),
+            ReservationStatus::Cancelled
+        );
     }
 
     #[test]
     fn test_invalid() {
         let result = ReservationStatus::from_str("invalid");
-        assert!(matches!(result, Err(InventoryError::InvalidReservationStatusValue)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidReservationStatusValue)
+        ));
     }
 
     #[test]

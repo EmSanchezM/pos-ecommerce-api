@@ -301,7 +301,7 @@ mod tests {
             UnitOfMeasure::Unit,
             Some("Electronics"),
         );
-        
+
         assert_eq!(product.name(), "Test Product");
         assert_eq!(product.unit_of_measure(), UnitOfMeasure::Unit);
         assert!(product.sku().as_str().starts_with("PRD-ELE-"));
@@ -315,12 +315,8 @@ mod tests {
 
     #[test]
     fn test_create_product_without_category() {
-        let product = Product::create(
-            "Generic Product".to_string(),
-            UnitOfMeasure::Kg,
-            None,
-        );
-        
+        let product = Product::create("Generic Product".to_string(), UnitOfMeasure::Kg, None);
+
         assert!(product.sku().as_str().starts_with("PRD-GEN-"));
     }
 
@@ -328,10 +324,10 @@ mod tests {
     fn test_deactivate_activate() {
         let mut product = Product::create("Test".to_string(), UnitOfMeasure::Unit, None);
         assert!(product.is_active());
-        
+
         product.deactivate();
         assert!(!product.is_active());
-        
+
         product.activate();
         assert!(product.is_active());
     }
@@ -339,34 +335,34 @@ mod tests {
     #[test]
     fn test_setters() {
         let mut product = Product::create("Test".to_string(), UnitOfMeasure::Unit, None);
-        
+
         product.set_name("Updated Name".to_string());
         assert_eq!(product.name(), "Updated Name");
-        
+
         product.set_description(Some("A description".to_string()));
         assert_eq!(product.description(), Some("A description"));
-        
+
         product.set_brand(Some("BrandX".to_string()));
         assert_eq!(product.brand(), Some("BrandX"));
-        
+
         product.set_base_price(dec!(99.99));
         assert_eq!(product.base_price(), dec!(99.99));
-        
+
         product.set_cost_price(dec!(50.00));
         assert_eq!(product.cost_price(), dec!(50.00));
-        
+
         product.set_tax_rate(dec!(0.15));
         assert_eq!(product.tax_rate(), dec!(0.15));
-        
+
         product.set_tax_included(true);
         assert!(product.tax_included());
-        
+
         product.set_perishable(true);
         assert!(product.is_perishable());
-        
+
         product.set_trackable(false);
         assert!(!product.is_trackable());
-        
+
         product.set_has_variants(true);
         assert!(product.has_variants());
     }
@@ -375,7 +371,7 @@ mod tests {
     fn test_set_category() {
         let mut product = Product::create("Test".to_string(), UnitOfMeasure::Unit, None);
         assert!(product.category_id().is_none());
-        
+
         let category_id = CategoryId::new();
         product.set_category_id(Some(category_id));
         assert_eq!(product.category_id(), Some(category_id));
@@ -385,7 +381,7 @@ mod tests {
     fn test_set_barcode() {
         let mut product = Product::create("Test".to_string(), UnitOfMeasure::Unit, None);
         assert!(product.barcode().is_none());
-        
+
         let barcode = Barcode::new("1234567890123").unwrap();
         product.set_barcode(Some(barcode.clone()));
         assert_eq!(product.barcode().map(|b| b.as_str()), Some("1234567890123"));
@@ -394,7 +390,7 @@ mod tests {
     #[test]
     fn test_set_attributes() {
         let mut product = Product::create("Test".to_string(), UnitOfMeasure::Unit, None);
-        
+
         let attrs = serde_json::json!({
             "color": "red",
             "size": "large"

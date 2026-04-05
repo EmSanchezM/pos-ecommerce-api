@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{CartResponse, CreateCartCommand};
 use crate::domain::entities::Cart;
 use crate::domain::repositories::CartRepository;
 use crate::domain::value_objects::CustomerId;
-use crate::SalesError;
 use identity::StoreId;
 use inventory::Currency;
 

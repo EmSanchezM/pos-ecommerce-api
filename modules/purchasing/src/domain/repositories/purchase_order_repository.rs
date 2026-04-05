@@ -2,9 +2,11 @@
 
 use async_trait::async_trait;
 
-use crate::domain::entities::{PurchaseOrder, PurchaseOrderItem};
-use crate::domain::value_objects::{PurchaseOrderId, PurchaseOrderItemId, PurchaseOrderStatus, VendorId};
 use crate::PurchasingError;
+use crate::domain::entities::{PurchaseOrder, PurchaseOrderItem};
+use crate::domain::value_objects::{
+    PurchaseOrderId, PurchaseOrderItemId, PurchaseOrderStatus, VendorId,
+};
 use identity::StoreId;
 
 /// Filter options for listing purchase orders

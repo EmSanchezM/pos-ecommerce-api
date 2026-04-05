@@ -2,12 +2,12 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::ApproveAdjustmentCommand;
 use crate::application::dtos::responses::{AdjustmentDetailResponse, AdjustmentItemResponse};
 use crate::domain::entities::StockAdjustment;
 use crate::domain::repositories::AdjustmentRepository;
 use crate::domain::value_objects::AdjustmentId;
-use crate::InventoryError;
 use identity::UserId;
 
 /// Use case for approving or rejecting a stock adjustment.
@@ -121,7 +121,9 @@ mod tests {
     use uuid::{NoContext, Timestamp, Uuid};
 
     use crate::domain::entities::AdjustmentItem;
-    use crate::domain::value_objects::{AdjustmentReason, AdjustmentStatus, AdjustmentType, StockId};
+    use crate::domain::value_objects::{
+        AdjustmentReason, AdjustmentStatus, AdjustmentType, StockId,
+    };
     use identity::StoreId;
 
     fn new_uuid() -> Uuid {
@@ -207,12 +209,8 @@ mod tests {
             AdjustmentReason::Damage,
             UserId::new(),
         );
-        let item = AdjustmentItem::create(
-            adjustment.id(),
-            StockId::new(),
-            dec!(-10),
-            Some(dec!(5.00)),
-        );
+        let item =
+            AdjustmentItem::create(adjustment.id(), StockId::new(), dec!(-10), Some(dec!(5.00)));
         adjustment.add_item(item).unwrap();
         adjustment.submit_for_approval().unwrap();
         adjustment
@@ -303,12 +301,7 @@ mod tests {
             AdjustmentReason::Damage,
             UserId::new(),
         );
-        let item = AdjustmentItem::create(
-            adjustment.id(),
-            StockId::new(),
-            dec!(-10),
-            None,
-        );
+        let item = AdjustmentItem::create(adjustment.id(), StockId::new(), dec!(-10), None);
         adjustment.add_item(item).unwrap();
         let adjustment_id = adjustment.id();
         repo.add_adjustment(adjustment);

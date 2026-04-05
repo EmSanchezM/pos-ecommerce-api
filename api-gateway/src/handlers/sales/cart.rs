@@ -1,15 +1,18 @@
 // Cart handlers for the Sales module (E-commerce)
 
-use axum::{extract::{Path, State}, http::StatusCode, Json, response::{IntoResponse, Response}};
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
-use sales::{
-    AddCartItemCommand, CartResponse, CreateCartCommand, UpdateCartItemCommand,
-};
+use sales::{AddCartItemCommand, CartResponse, CreateCartCommand, UpdateCartItemCommand};
 
 pub async fn create_cart_handler(
     State(state): State<AppState>,

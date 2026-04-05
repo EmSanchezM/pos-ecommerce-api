@@ -8,10 +8,10 @@
 // - DELETE /api/products/{id} - Soft delete product
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::Deserialize;
 use uuid::Uuid;

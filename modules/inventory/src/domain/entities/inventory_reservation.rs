@@ -5,8 +5,8 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::value_objects::{ReservationId, ReservationStatus, StockId};
 use crate::InventoryError;
+use crate::domain::value_objects::{ReservationId, ReservationStatus, StockId};
 
 /// InventoryReservation entity representing a temporary hold on stock.
 /// Used for shopping carts, orders, and quotes to prevent overselling.
@@ -35,7 +35,7 @@ impl InventoryReservation {
         if expires_at <= Utc::now() {
             return Err(InventoryError::ReservationExpired);
         }
-        
+
         let now = Utc::now();
         Ok(Self {
             id: ReservationId::new(),
@@ -116,15 +116,33 @@ impl InventoryReservation {
         self.status == ReservationStatus::Pending && !self.is_expired()
     }
 
-    pub fn id(&self) -> ReservationId { self.id }
-    pub fn stock_id(&self) -> StockId { self.stock_id }
-    pub fn reference_type(&self) -> &str { &self.reference_type }
-    pub fn reference_id(&self) -> Uuid { self.reference_id }
-    pub fn quantity(&self) -> Decimal { self.quantity }
-    pub fn status(&self) -> ReservationStatus { self.status }
-    pub fn expires_at(&self) -> DateTime<Utc> { self.expires_at }
-    pub fn created_at(&self) -> DateTime<Utc> { self.created_at }
-    pub fn updated_at(&self) -> DateTime<Utc> { self.updated_at }
+    pub fn id(&self) -> ReservationId {
+        self.id
+    }
+    pub fn stock_id(&self) -> StockId {
+        self.stock_id
+    }
+    pub fn reference_type(&self) -> &str {
+        &self.reference_type
+    }
+    pub fn reference_id(&self) -> Uuid {
+        self.reference_id
+    }
+    pub fn quantity(&self) -> Decimal {
+        self.quantity
+    }
+    pub fn status(&self) -> ReservationStatus {
+        self.status
+    }
+    pub fn expires_at(&self) -> DateTime<Utc> {
+        self.expires_at
+    }
+    pub fn created_at(&self) -> DateTime<Utc> {
+        self.created_at
+    }
+    pub fn updated_at(&self) -> DateTime<Utc> {
+        self.updated_at
+    }
 }
 
 #[cfg(test)]
@@ -147,15 +165,16 @@ mod tests {
         let stock_id = StockId::new();
         let reference_id = new_uuid();
         let expires_at = future_time();
-        
+
         let reservation = InventoryReservation::create(
             stock_id,
             "cart".to_string(),
             reference_id,
             dec!(5),
             expires_at,
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         assert_eq!(reservation.stock_id(), stock_id);
         assert_eq!(reservation.reference_type(), "cart");
         assert_eq!(reservation.quantity(), dec!(5));
@@ -171,8 +190,9 @@ mod tests {
             new_uuid(),
             dec!(5),
             future_time(),
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         reservation.confirm().unwrap();
         assert_eq!(reservation.status(), ReservationStatus::Confirmed);
     }
@@ -186,8 +206,9 @@ mod tests {
             new_uuid(),
             dec!(5),
             future_time(),
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         reservation.cancel().unwrap();
         assert_eq!(reservation.status(), ReservationStatus::Cancelled);
     }
@@ -201,8 +222,9 @@ mod tests {
             new_uuid(),
             dec!(5),
             future_time(),
-        ).unwrap();
-        
+        )
+        .unwrap();
+
         reservation.expire().unwrap();
         assert_eq!(reservation.status(), ReservationStatus::Expired);
     }

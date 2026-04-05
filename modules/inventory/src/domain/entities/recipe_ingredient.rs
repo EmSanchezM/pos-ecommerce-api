@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::value_objects::{IngredientId, ProductId, RecipeId, UnitOfMeasure, VariantId};
 use crate::InventoryError;
+use crate::domain::value_objects::{IngredientId, ProductId, RecipeId, UnitOfMeasure, VariantId};
 
 /// RecipeIngredient entity representing a component required by a recipe.
 /// Stores quantity, unit of measure, and optional substitution settings.
@@ -64,7 +64,6 @@ impl RecipeIngredient {
             updated_at: now,
         })
     }
-
 
     /// Creates a new RecipeIngredient for a variant
     pub fn create_for_variant(
@@ -152,11 +151,9 @@ impl RecipeIngredient {
     /// Calculates the effective cost for this ingredient including waste
     /// Formula: quantity * (1 + waste_percentage) * cost_per_unit
     pub fn calculate_effective_cost(&self) -> Option<Decimal> {
-        self.estimated_cost_per_unit.map(|cost| {
-            self.quantity * (Decimal::ONE + self.estimated_waste_percentage) * cost
-        })
+        self.estimated_cost_per_unit
+            .map(|cost| self.quantity * (Decimal::ONE + self.estimated_waste_percentage) * cost)
     }
-
 
     // =========================================================================
     // Getters
@@ -265,7 +262,10 @@ impl RecipeIngredient {
         self.updated_at = Utc::now();
     }
 
-    pub fn set_estimated_waste_percentage(&mut self, percentage: Decimal) -> Result<(), InventoryError> {
+    pub fn set_estimated_waste_percentage(
+        &mut self,
+        percentage: Decimal,
+    ) -> Result<(), InventoryError> {
         if percentage < Decimal::ZERO || percentage > Decimal::ONE {
             return Err(InventoryError::InvalidWastePercentage);
         }
@@ -279,7 +279,6 @@ impl RecipeIngredient {
         self.updated_at = Utc::now();
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -296,7 +295,8 @@ mod tests {
             product_id,
             dec!(2.5),
             UnitOfMeasure::Kg,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(ingredient.recipe_id(), recipe_id);
         assert_eq!(ingredient.ingredient_product_id(), Some(product_id));
@@ -319,7 +319,8 @@ mod tests {
             variant_id,
             dec!(1.0),
             UnitOfMeasure::Liter,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(ingredient.ingredient_product_id().is_none());
         assert_eq!(ingredient.ingredient_variant_id(), Some(variant_id));
@@ -338,7 +339,10 @@ mod tests {
             dec!(0),
             UnitOfMeasure::Unit,
         );
-        assert!(matches!(result, Err(InventoryError::InvalidIngredientQuantity)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidIngredientQuantity)
+        ));
 
         let result = RecipeIngredient::create_for_product(
             recipe_id,
@@ -346,7 +350,10 @@ mod tests {
             dec!(-1),
             UnitOfMeasure::Unit,
         );
-        assert!(matches!(result, Err(InventoryError::InvalidIngredientQuantity)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidIngredientQuantity)
+        ));
     }
 
     #[test]
@@ -354,12 +361,9 @@ mod tests {
         let recipe_id = RecipeId::new();
         let product_id = ProductId::new();
 
-        let mut ingredient = RecipeIngredient::create_for_product(
-            recipe_id,
-            product_id,
-            dec!(2),
-            UnitOfMeasure::Kg,
-        ).unwrap();
+        let mut ingredient =
+            RecipeIngredient::create_for_product(recipe_id, product_id, dec!(2), UnitOfMeasure::Kg)
+                .unwrap();
 
         // No cost set
         assert!(ingredient.calculate_effective_cost().is_none());
@@ -370,7 +374,9 @@ mod tests {
         assert_eq!(ingredient.calculate_effective_cost(), Some(dec!(20)));
 
         // Set 10% waste
-        ingredient.set_estimated_waste_percentage(dec!(0.1)).unwrap();
+        ingredient
+            .set_estimated_waste_percentage(dec!(0.1))
+            .unwrap();
         // 2 * (1 + 0.1) * 10 = 22
         assert_eq!(ingredient.calculate_effective_cost(), Some(dec!(22)));
     }
@@ -385,7 +391,8 @@ mod tests {
             product_id,
             dec!(1),
             UnitOfMeasure::Unit,
-        ).unwrap();
+        )
+        .unwrap();
 
         ingredient.set_quantity(dec!(5)).unwrap();
         assert_eq!(ingredient.quantity(), dec!(5));
@@ -408,7 +415,9 @@ mod tests {
         ingredient.set_estimated_cost_per_unit(Some(dec!(5.50)));
         assert_eq!(ingredient.estimated_cost_per_unit(), Some(dec!(5.50)));
 
-        ingredient.set_estimated_waste_percentage(dec!(0.05)).unwrap();
+        ingredient
+            .set_estimated_waste_percentage(dec!(0.05))
+            .unwrap();
         assert_eq!(ingredient.estimated_waste_percentage(), dec!(0.05));
 
         ingredient.set_notes(Some("Use fresh".to_string()));
@@ -425,13 +434,20 @@ mod tests {
             product_id,
             dec!(5),
             UnitOfMeasure::Unit,
-        ).unwrap();
+        )
+        .unwrap();
 
         let result = ingredient.set_quantity(dec!(0));
-        assert!(matches!(result, Err(InventoryError::InvalidIngredientQuantity)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidIngredientQuantity)
+        ));
 
         let result = ingredient.set_quantity(dec!(-1));
-        assert!(matches!(result, Err(InventoryError::InvalidIngredientQuantity)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidIngredientQuantity)
+        ));
 
         // Original value unchanged
         assert_eq!(ingredient.quantity(), dec!(5));
@@ -447,13 +463,20 @@ mod tests {
             product_id,
             dec!(1),
             UnitOfMeasure::Unit,
-        ).unwrap();
+        )
+        .unwrap();
 
         let result = ingredient.set_estimated_waste_percentage(dec!(-0.1));
-        assert!(matches!(result, Err(InventoryError::InvalidWastePercentage)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidWastePercentage)
+        ));
 
         let result = ingredient.set_estimated_waste_percentage(dec!(1.5));
-        assert!(matches!(result, Err(InventoryError::InvalidWastePercentage)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidWastePercentage)
+        ));
 
         // Original value unchanged
         assert_eq!(ingredient.estimated_waste_percentage(), Decimal::ZERO);
@@ -484,7 +507,10 @@ mod tests {
             now,
         );
 
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[test]
@@ -510,7 +536,10 @@ mod tests {
             now,
         );
 
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[test]
@@ -535,7 +564,8 @@ mod tests {
             Some("Organic preferred".to_string()),
             now,
             now,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(ingredient.recipe_id(), recipe_id);
         assert_eq!(ingredient.ingredient_product_id(), Some(product_id));

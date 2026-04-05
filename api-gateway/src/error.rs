@@ -4,9 +4,9 @@
 // domain errors to appropriate HTTP responses.
 
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use identity::{AuthError, ErrorResponse, IdentityError};
 use inventory::InventoryError;
@@ -84,23 +84,18 @@ impl From<AuthError> for AppError {
                 StatusCode::UNAUTHORIZED,
                 ErrorResponse::invalid_credentials(),
             ),
-            AuthError::AccountDisabled => (
-                StatusCode::UNAUTHORIZED,
-                ErrorResponse::account_disabled(),
-            ),
-            AuthError::TokenExpired => (
-                StatusCode::UNAUTHORIZED,
-                ErrorResponse::token_expired(),
-            ),
-            AuthError::InvalidToken => (
-                StatusCode::UNAUTHORIZED,
-                ErrorResponse::invalid_token(),
-            ),
+            AuthError::AccountDisabled => {
+                (StatusCode::UNAUTHORIZED, ErrorResponse::account_disabled())
+            }
+            AuthError::TokenExpired => (StatusCode::UNAUTHORIZED, ErrorResponse::token_expired()),
+            AuthError::InvalidToken => (StatusCode::UNAUTHORIZED, ErrorResponse::invalid_token()),
 
             // 400 Bad Request - Validation errors
             AuthError::PasswordTooShort => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::validation_error("Password too short: minimum 8 characters required"),
+                ErrorResponse::validation_error(
+                    "Password too short: minimum 8 characters required",
+                ),
             ),
             AuthError::InvalidEmailFormat => (
                 StatusCode::BAD_REQUEST,
@@ -116,20 +111,15 @@ impl From<AuthError> for AppError {
             ),
 
             // 409 Conflict - Duplicate resources
-            AuthError::DuplicateEmail(_) => (
-                StatusCode::CONFLICT,
-                ErrorResponse::duplicate_email(),
-            ),
-            AuthError::DuplicateUsername(_) => (
-                StatusCode::CONFLICT,
-                ErrorResponse::duplicate_username(),
-            ),
+            AuthError::DuplicateEmail(_) => {
+                (StatusCode::CONFLICT, ErrorResponse::duplicate_email())
+            }
+            AuthError::DuplicateUsername(_) => {
+                (StatusCode::CONFLICT, ErrorResponse::duplicate_username())
+            }
 
             // 404 Not Found
-            AuthError::StoreNotFound => (
-                StatusCode::NOT_FOUND,
-                ErrorResponse::store_not_found(),
-            ),
+            AuthError::StoreNotFound => (StatusCode::NOT_FOUND, ErrorResponse::store_not_found()),
 
             // 500 Internal Server Error - Don't expose internal details
             AuthError::Internal(_) => (
@@ -166,20 +156,21 @@ impl From<IdentityError> for AppError {
             // 409 Conflict - Duplicate resources
             IdentityError::DuplicatePermission(name) => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("DUPLICATE_PERMISSION", format!("Permission '{}' already exists", name)),
+                ErrorResponse::new(
+                    "DUPLICATE_PERMISSION",
+                    format!("Permission '{}' already exists", name),
+                ),
             ),
             IdentityError::DuplicateRole(name) => (
                 StatusCode::CONFLICT,
                 ErrorResponse::new("DUPLICATE_ROLE", format!("Role '{}' already exists", name)),
             ),
-            IdentityError::DuplicateEmail(_) => (
-                StatusCode::CONFLICT,
-                ErrorResponse::duplicate_email(),
-            ),
-            IdentityError::DuplicateUsername(_) => (
-                StatusCode::CONFLICT,
-                ErrorResponse::duplicate_username(),
-            ),
+            IdentityError::DuplicateEmail(_) => {
+                (StatusCode::CONFLICT, ErrorResponse::duplicate_email())
+            }
+            IdentityError::DuplicateUsername(_) => {
+                (StatusCode::CONFLICT, ErrorResponse::duplicate_username())
+            }
 
             // 404 Not Found
             IdentityError::PermissionNotFound(_) => (
@@ -194,14 +185,12 @@ impl From<IdentityError> for AppError {
                 StatusCode::NOT_FOUND,
                 ErrorResponse::new("USER_NOT_FOUND", "User not found"),
             ),
-            IdentityError::StoreNotFound(_) => (
-                StatusCode::NOT_FOUND,
-                ErrorResponse::store_not_found(),
-            ),
-            IdentityError::StoreInactive(_) => (
-                StatusCode::NOT_FOUND,
-                ErrorResponse::store_not_found(),
-            ),
+            IdentityError::StoreNotFound(_) => {
+                (StatusCode::NOT_FOUND, ErrorResponse::store_not_found())
+            }
+            IdentityError::StoreInactive(_) => {
+                (StatusCode::NOT_FOUND, ErrorResponse::store_not_found())
+            }
             IdentityError::UserNotInStore(_) => (
                 StatusCode::NOT_FOUND,
                 ErrorResponse::new("USER_NOT_IN_STORE", "User is not a member of this store"),
@@ -214,10 +203,9 @@ impl From<IdentityError> for AppError {
             ),
 
             // 401 Unauthorized - Account status
-            IdentityError::UserInactive => (
-                StatusCode::UNAUTHORIZED,
-                ErrorResponse::account_disabled(),
-            ),
+            IdentityError::UserInactive => {
+                (StatusCode::UNAUTHORIZED, ErrorResponse::account_disabled())
+            }
 
             // 500 Internal Server Error - Database and other errors
             IdentityError::Database(_) => (
@@ -262,7 +250,9 @@ impl From<CoreError> for AppError {
             ),
             CoreError::InvalidTerminalCode => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::validation_error("Invalid terminal code format: must be alphanumeric with hyphens, 3-20 characters"),
+                ErrorResponse::validation_error(
+                    "Invalid terminal code format: must be alphanumeric with hyphens, 3-20 characters",
+                ),
             ),
             CoreError::InvalidCaiNumber => (
                 StatusCode::BAD_REQUEST,
@@ -274,25 +264,40 @@ impl From<CoreError> for AppError {
             ),
             CoreError::NoCaiAssigned(id) => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("NO_CAI_ASSIGNED", format!("No CAI assigned to terminal: {}", id)),
+                ErrorResponse::new(
+                    "NO_CAI_ASSIGNED",
+                    format!("No CAI assigned to terminal: {}", id),
+                ),
             ),
             CoreError::CaiExpired(id) => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("CAI_EXPIRED", format!("CAI has expired for terminal: {}", id)),
+                ErrorResponse::new(
+                    "CAI_EXPIRED",
+                    format!("CAI has expired for terminal: {}", id),
+                ),
             ),
             CoreError::CaiRangeExhausted(id) => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("CAI_RANGE_EXHAUSTED", format!("CAI range exhausted for terminal: {}", id)),
+                ErrorResponse::new(
+                    "CAI_RANGE_EXHAUSTED",
+                    format!("CAI range exhausted for terminal: {}", id),
+                ),
             ),
 
             // 409 Conflict - Duplicate resources
             CoreError::TerminalCodeExists(code) => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("TERMINAL_CODE_EXISTS", format!("Terminal code already exists: {}", code)),
+                ErrorResponse::new(
+                    "TERMINAL_CODE_EXISTS",
+                    format!("Terminal code already exists: {}", code),
+                ),
             ),
             CoreError::CaiRangeOverlap => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("CAI_RANGE_OVERLAP", "CAI range overlaps with existing active range"),
+                ErrorResponse::new(
+                    "CAI_RANGE_OVERLAP",
+                    "CAI range overlaps with existing active range",
+                ),
             ),
 
             // 403 Forbidden
@@ -422,7 +427,11 @@ impl From<InventoryError> for AppError {
                 product_id,
                 variant_id,
             } => {
-                let item_type = if product_id.is_some() { "product" } else { "variant" };
+                let item_type = if product_id.is_some() {
+                    "product"
+                } else {
+                    "variant"
+                };
                 let item_id = product_id.or(*variant_id).unwrap_or(*store_id);
                 (
                     StatusCode::CONFLICT,
@@ -517,10 +526,7 @@ impl From<InventoryError> for AppError {
             ),
             InventoryError::SameStoreTransfer => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new(
-                    "SAME_STORE_TRANSFER",
-                    "Cannot transfer to the same store",
-                ),
+                ErrorResponse::new("SAME_STORE_TRANSFER", "Cannot transfer to the same store"),
             ),
             InventoryError::EmptyTransfer => (
                 StatusCode::BAD_REQUEST,
@@ -836,7 +842,10 @@ impl From<SalesError> for AppError {
             ),
             SalesError::SaleItemNotFound(id) => (
                 StatusCode::NOT_FOUND,
-                ErrorResponse::new("SALE_ITEM_NOT_FOUND", format!("Sale item not found: {}", id)),
+                ErrorResponse::new(
+                    "SALE_ITEM_NOT_FOUND",
+                    format!("Sale item not found: {}", id),
+                ),
             ),
             SalesError::PaymentNotFound(id) => (
                 StatusCode::NOT_FOUND,
@@ -848,11 +857,17 @@ impl From<SalesError> for AppError {
             ),
             SalesError::CartItemNotFound(id) => (
                 StatusCode::NOT_FOUND,
-                ErrorResponse::new("CART_ITEM_NOT_FOUND", format!("Cart item not found: {}", id)),
+                ErrorResponse::new(
+                    "CART_ITEM_NOT_FOUND",
+                    format!("Cart item not found: {}", id),
+                ),
             ),
             SalesError::CreditNoteNotFound(id) => (
                 StatusCode::NOT_FOUND,
-                ErrorResponse::new("CREDIT_NOTE_NOT_FOUND", format!("Credit note not found: {}", id)),
+                ErrorResponse::new(
+                    "CREDIT_NOTE_NOT_FOUND",
+                    format!("Credit note not found: {}", id),
+                ),
             ),
             SalesError::ProductNotFound(id) => (
                 StatusCode::NOT_FOUND,
@@ -871,27 +886,45 @@ impl From<SalesError> for AppError {
             // -----------------------------------------------------------------
             SalesError::DuplicateCustomerCode(code) => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("DUPLICATE_CUSTOMER_CODE", format!("Customer code '{}' already exists", code)),
+                ErrorResponse::new(
+                    "DUPLICATE_CUSTOMER_CODE",
+                    format!("Customer code '{}' already exists", code),
+                ),
             ),
             SalesError::DuplicateCustomerEmail(email) => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("DUPLICATE_CUSTOMER_EMAIL", format!("Customer email '{}' already exists", email)),
+                ErrorResponse::new(
+                    "DUPLICATE_CUSTOMER_EMAIL",
+                    format!("Customer email '{}' already exists", email),
+                ),
             ),
             SalesError::DuplicateSaleNumber(number) => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("DUPLICATE_SALE_NUMBER", format!("Sale number '{}' already exists", number)),
+                ErrorResponse::new(
+                    "DUPLICATE_SALE_NUMBER",
+                    format!("Sale number '{}' already exists", number),
+                ),
             ),
             SalesError::DuplicateCreditNoteNumber(number) => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("DUPLICATE_CREDIT_NOTE_NUMBER", format!("Credit note number '{}' already exists", number)),
+                ErrorResponse::new(
+                    "DUPLICATE_CREDIT_NOTE_NUMBER",
+                    format!("Credit note number '{}' already exists", number),
+                ),
             ),
             SalesError::TerminalHasOpenShift => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("TERMINAL_HAS_OPEN_SHIFT", "Terminal already has an open shift"),
+                ErrorResponse::new(
+                    "TERMINAL_HAS_OPEN_SHIFT",
+                    "Terminal already has an open shift",
+                ),
             ),
             SalesError::CashierHasOpenShift => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("CASHIER_HAS_OPEN_SHIFT", "Cashier already has an open shift"),
+                ErrorResponse::new(
+                    "CASHIER_HAS_OPEN_SHIFT",
+                    "Cashier already has an open shift",
+                ),
             ),
             SalesError::SaleAlreadyCompleted => (
                 StatusCode::CONFLICT,
@@ -903,19 +936,31 @@ impl From<SalesError> for AppError {
             ),
             SalesError::PaymentAlreadyRefunded => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("PAYMENT_ALREADY_REFUNDED", "Payment has already been refunded"),
+                ErrorResponse::new(
+                    "PAYMENT_ALREADY_REFUNDED",
+                    "Payment has already been refunded",
+                ),
             ),
             SalesError::CreditNoteAlreadyApproved => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("CREDIT_NOTE_ALREADY_APPROVED", "Credit note has already been approved"),
+                ErrorResponse::new(
+                    "CREDIT_NOTE_ALREADY_APPROVED",
+                    "Credit note has already been approved",
+                ),
             ),
             SalesError::CreditNoteAlreadyCancelled => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("CREDIT_NOTE_ALREADY_CANCELLED", "Credit note has already been cancelled"),
+                ErrorResponse::new(
+                    "CREDIT_NOTE_ALREADY_CANCELLED",
+                    "Credit note has already been cancelled",
+                ),
             ),
             SalesError::CreditNoteAlreadyApplied => (
                 StatusCode::CONFLICT,
-                ErrorResponse::new("CREDIT_NOTE_ALREADY_APPLIED", "Credit note has already been applied"),
+                ErrorResponse::new(
+                    "CREDIT_NOTE_ALREADY_APPLIED",
+                    "Credit note has already been applied",
+                ),
             ),
             SalesError::ShiftAlreadyClosed => (
                 StatusCode::CONFLICT,
@@ -926,11 +971,17 @@ impl From<SalesError> for AppError {
             // -----------------------------------------------------------------
             SalesError::CustomerNotActive(id) => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("CUSTOMER_NOT_ACTIVE", format!("Customer is not active: {}", id)),
+                ErrorResponse::new(
+                    "CUSTOMER_NOT_ACTIVE",
+                    format!("Customer is not active: {}", id),
+                ),
             ),
             SalesError::TerminalNotActive(id) => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("TERMINAL_NOT_ACTIVE", format!("Terminal is not active: {}", id)),
+                ErrorResponse::new(
+                    "TERMINAL_NOT_ACTIVE",
+                    format!("Terminal is not active: {}", id),
+                ),
             ),
             SalesError::NoOpenShift => (
                 StatusCode::BAD_REQUEST,
@@ -938,11 +989,17 @@ impl From<SalesError> for AppError {
             ),
             SalesError::InvalidOpeningBalance => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("INVALID_OPENING_BALANCE", "Opening balance must be non-negative"),
+                ErrorResponse::new(
+                    "INVALID_OPENING_BALANCE",
+                    "Opening balance must be non-negative",
+                ),
             ),
             SalesError::SaleNotEditable => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("SALE_NOT_EDITABLE", "Cannot modify sale: not in draft status"),
+                ErrorResponse::new(
+                    "SALE_NOT_EDITABLE",
+                    "Cannot modify sale: not in draft status",
+                ),
             ),
             SalesError::EmptySale => (
                 StatusCode::BAD_REQUEST,
@@ -974,7 +1031,10 @@ impl From<SalesError> for AppError {
             ),
             SalesError::InsufficientStock(id) => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("INSUFFICIENT_STOCK", format!("Insufficient stock for product: {}", id)),
+                ErrorResponse::new(
+                    "INSUFFICIENT_STOCK",
+                    format!("Insufficient stock for product: {}", id),
+                ),
             ),
             SalesError::InvalidPaymentAmount => (
                 StatusCode::BAD_REQUEST,
@@ -982,15 +1042,24 @@ impl From<SalesError> for AppError {
             ),
             SalesError::PaymentExceedsBalance => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("PAYMENT_EXCEEDS_BALANCE", "Payment exceeds remaining balance"),
+                ErrorResponse::new(
+                    "PAYMENT_EXCEEDS_BALANCE",
+                    "Payment exceeds remaining balance",
+                ),
             ),
             SalesError::CashRequiresAmountTendered => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("CASH_REQUIRES_AMOUNT_TENDERED", "Cash payment requires amount tendered"),
+                ErrorResponse::new(
+                    "CASH_REQUIRES_AMOUNT_TENDERED",
+                    "Cash payment requires amount tendered",
+                ),
             ),
             SalesError::InsufficientAmountTendered => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("INSUFFICIENT_AMOUNT_TENDERED", "Amount tendered is less than payment amount"),
+                ErrorResponse::new(
+                    "INSUFFICIENT_AMOUNT_TENDERED",
+                    "Amount tendered is less than payment amount",
+                ),
             ),
             SalesError::CartExpired => (
                 StatusCode::BAD_REQUEST,
@@ -1002,7 +1071,10 @@ impl From<SalesError> for AppError {
             ),
             SalesError::CreditNoteNotEditable => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("CREDIT_NOTE_NOT_EDITABLE", "Cannot modify credit note: not in draft status"),
+                ErrorResponse::new(
+                    "CREDIT_NOTE_NOT_EDITABLE",
+                    "Cannot modify credit note: not in draft status",
+                ),
             ),
             SalesError::EmptyCreditNote => (
                 StatusCode::BAD_REQUEST,
@@ -1010,19 +1082,31 @@ impl From<SalesError> for AppError {
             ),
             SalesError::CannotApproveSelfCreatedCreditNote => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("CANNOT_APPROVE_SELF_CREATED", "User cannot approve their own credit note"),
+                ErrorResponse::new(
+                    "CANNOT_APPROVE_SELF_CREATED",
+                    "User cannot approve their own credit note",
+                ),
             ),
             SalesError::ReturnQuantityExceedsSaleQuantity => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("RETURN_QUANTITY_EXCEEDS", "Return quantity exceeds original sale quantity"),
+                ErrorResponse::new(
+                    "RETURN_QUANTITY_EXCEEDS",
+                    "Return quantity exceeds original sale quantity",
+                ),
             ),
             SalesError::SaleNotCompleted => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("SALE_NOT_COMPLETED", "Cannot create return for incomplete sale"),
+                ErrorResponse::new(
+                    "SALE_NOT_COMPLETED",
+                    "Cannot create return for incomplete sale",
+                ),
             ),
             SalesError::CannotCancelShippedOrder => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("CANNOT_CANCEL_SHIPPED_ORDER", "Cannot cancel order that has been shipped"),
+                ErrorResponse::new(
+                    "CANNOT_CANCEL_SHIPPED_ORDER",
+                    "Cannot cancel order that has been shipped",
+                ),
             ),
             SalesError::OrderNotPaid => (
                 StatusCode::BAD_REQUEST,
@@ -1038,19 +1122,31 @@ impl From<SalesError> for AppError {
             ),
             SalesError::NoValidCai(id) => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("NO_VALID_CAI", format!("No valid CAI available for terminal: {}", id)),
+                ErrorResponse::new(
+                    "NO_VALID_CAI",
+                    format!("No valid CAI available for terminal: {}", id),
+                ),
             ),
             SalesError::ReservationFailed => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("RESERVATION_FAILED", "Failed to create inventory reservation"),
+                ErrorResponse::new(
+                    "RESERVATION_FAILED",
+                    "Failed to create inventory reservation",
+                ),
             ),
             SalesError::ReservationConfirmFailed => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("RESERVATION_CONFIRM_FAILED", "Failed to confirm inventory reservation"),
+                ErrorResponse::new(
+                    "RESERVATION_CONFIRM_FAILED",
+                    "Failed to confirm inventory reservation",
+                ),
             ),
             SalesError::ReservationCancelFailed => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("RESERVATION_CANCEL_FAILED", "Failed to cancel inventory reservation"),
+                ErrorResponse::new(
+                    "RESERVATION_CANCEL_FAILED",
+                    "Failed to cancel inventory reservation",
+                ),
             ),
             // -----------------------------------------------------------------
             // 400 Bad Request - Validation (enum parsing)
@@ -1101,7 +1197,10 @@ impl From<SalesError> for AppError {
             ),
             SalesError::InvalidDiscountPercentage => (
                 StatusCode::BAD_REQUEST,
-                ErrorResponse::new("INVALID_DISCOUNT_PERCENTAGE", "Discount percentage must be between 0 and 100"),
+                ErrorResponse::new(
+                    "INVALID_DISCOUNT_PERCENTAGE",
+                    "Discount percentage must be between 0 and 100",
+                ),
             ),
             SalesError::InvalidTaxRate => (
                 StatusCode::BAD_REQUEST,

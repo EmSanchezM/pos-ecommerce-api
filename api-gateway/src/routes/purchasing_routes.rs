@@ -8,9 +8,8 @@
 // Goods Receipts: /api/v1/goods-receipts
 
 use axum::{
-    middleware,
+    Router, middleware,
     routing::{get, post, put},
-    Router,
 };
 
 use crate::handlers::{
@@ -51,10 +50,7 @@ pub fn vendors_router(state: AppState) -> Router<AppState> {
         // Collection routes
         .route("/", post(create_vendor_handler).get(list_vendors_handler))
         // Individual vendor routes
-        .route(
-            "/{id}",
-            get(get_vendor_handler).put(update_vendor_handler),
-        )
+        .route("/{id}", get(get_vendor_handler).put(update_vendor_handler))
         // Vendor status routes
         .route("/{id}/activate", put(activate_vendor_handler))
         .route("/{id}/deactivate", put(deactivate_vendor_handler))

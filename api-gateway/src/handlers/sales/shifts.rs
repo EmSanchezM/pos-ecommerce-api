@@ -1,6 +1,11 @@
 // Cashier shift handlers for the Sales module
 
-use axum::{extract::{Path, Query, State}, http::StatusCode, Json, response::{IntoResponse, Response}};
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use uuid::Uuid;
 
 use crate::error::AppError;
@@ -8,8 +13,8 @@ use crate::extractors::CurrentUser;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use sales::{
-    CashMovementCommand, CloseShiftCommand, ListShiftsQuery, OpenShiftCommand,
-    ShiftListResponse, ShiftReportResponse, ShiftResponse,
+    CashMovementCommand, CloseShiftCommand, ListShiftsQuery, OpenShiftCommand, ShiftListResponse,
+    ShiftReportResponse, ShiftResponse,
 };
 
 pub async fn open_shift_handler(
@@ -19,8 +24,7 @@ pub async fn open_shift_handler(
 ) -> Result<(StatusCode, Json<ShiftResponse>), Response> {
     require_permission(&ctx, "sales:manage_shift")?;
 
-    let use_case =
-        sales::OpenShiftUseCase::new(state.shift_repo());
+    let use_case = sales::OpenShiftUseCase::new(state.shift_repo());
 
     let response = use_case
         .execute(command, *ctx.user_id())
@@ -38,8 +42,7 @@ pub async fn close_shift_handler(
 ) -> Result<Json<ShiftResponse>, Response> {
     require_permission(&ctx, "sales:manage_shift")?;
 
-    let use_case =
-        sales::CloseShiftUseCase::new(state.shift_repo());
+    let use_case = sales::CloseShiftUseCase::new(state.shift_repo());
 
     let mut cmd = command;
     cmd.shift_id = id;
@@ -59,8 +62,7 @@ pub async fn get_current_shift_handler(
 ) -> Result<Json<ShiftResponse>, Response> {
     require_permission(&ctx, "sales:read_shift")?;
 
-    let use_case =
-        sales::GetCurrentShiftUseCase::new(state.shift_repo());
+    let use_case = sales::GetCurrentShiftUseCase::new(state.shift_repo());
 
     let response = use_case
         .execute(terminal_id)
@@ -77,8 +79,7 @@ pub async fn get_shift_report_handler(
 ) -> Result<Json<ShiftReportResponse>, Response> {
     require_permission(&ctx, "sales:read_shift")?;
 
-    let use_case =
-        sales::GetShiftReportUseCase::new(state.shift_repo());
+    let use_case = sales::GetShiftReportUseCase::new(state.shift_repo());
 
     let response = use_case
         .execute(id)
@@ -95,8 +96,7 @@ pub async fn list_shifts_handler(
 ) -> Result<Json<ShiftListResponse>, Response> {
     require_permission(&ctx, "sales:read_shift")?;
 
-    let use_case =
-        sales::ListShiftsUseCase::new(state.shift_repo());
+    let use_case = sales::ListShiftsUseCase::new(state.shift_repo());
 
     let response = use_case
         .execute(query)
@@ -114,8 +114,7 @@ pub async fn cash_in_handler(
 ) -> Result<Json<ShiftResponse>, Response> {
     require_permission(&ctx, "sales:manage_shift")?;
 
-    let use_case =
-        sales::RecordCashMovementUseCase::new(state.shift_repo());
+    let use_case = sales::RecordCashMovementUseCase::new(state.shift_repo());
 
     let mut cmd = command;
     cmd.shift_id = id;
@@ -136,8 +135,7 @@ pub async fn cash_out_handler(
 ) -> Result<Json<ShiftResponse>, Response> {
     require_permission(&ctx, "sales:manage_shift")?;
 
-    let use_case =
-        sales::RecordCashMovementUseCase::new(state.shift_repo());
+    let use_case = sales::RecordCashMovementUseCase::new(state.shift_repo());
 
     let mut cmd = command;
     cmd.shift_id = id;

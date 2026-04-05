@@ -4,13 +4,13 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::value_objects::{ProductId, StockId, VariantId};
 use crate::InventoryError;
+use crate::domain::value_objects::{ProductId, StockId, VariantId};
 use identity::StoreId;
 
 /// InventoryStock entity representing stock levels for a product or variant at a specific store.
 /// Uses optimistic locking via version field to prevent concurrent update conflicts.
-/// 
+///
 /// Invariants:
 /// - Either product_id OR variant_id must be set, but not both (XOR constraint)
 /// - reserved_quantity cannot exceed quantity
@@ -90,7 +90,7 @@ impl InventoryStock {
     ) -> Result<Self, InventoryError> {
         // Validate XOR constraint
         Self::validate_product_variant_constraint(product_id, variant_id)?;
-        
+
         Ok(Self {
             id,
             store_id,
@@ -245,9 +245,9 @@ mod tests {
     fn test_create_for_product() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
-        
+
         assert_eq!(stock.store_id(), store_id);
         assert_eq!(stock.product_id(), Some(product_id));
         assert!(stock.variant_id().is_none());
@@ -260,9 +260,9 @@ mod tests {
     fn test_create_for_variant() {
         let store_id = StoreId::new();
         let variant_id = VariantId::new();
-        
+
         let stock = InventoryStock::create_for_variant(store_id, variant_id).unwrap();
-        
+
         assert_eq!(stock.store_id(), store_id);
         assert!(stock.product_id().is_none());
         assert_eq!(stock.variant_id(), Some(variant_id));
@@ -272,11 +272,11 @@ mod tests {
     fn test_available_quantity() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.adjust_quantity(dec!(100)).unwrap();
         stock.reserve(dec!(30)).unwrap();
-        
+
         assert_eq!(stock.quantity(), dec!(100));
         assert_eq!(stock.reserved_quantity(), dec!(30));
         assert_eq!(stock.available_quantity(), dec!(70));
@@ -286,13 +286,13 @@ mod tests {
     fn test_is_low_stock() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.set_min_stock_level(dec!(10));
         stock.adjust_quantity(dec!(15)).unwrap();
-        
+
         assert!(!stock.is_low_stock()); // 15 > 10
-        
+
         stock.reserve(dec!(6)).unwrap();
         assert!(stock.is_low_stock()); // available = 9 <= 10
     }
@@ -301,10 +301,10 @@ mod tests {
     fn test_reserve_success() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.adjust_quantity(dec!(100)).unwrap();
-        
+
         stock.reserve(dec!(50)).unwrap();
         assert_eq!(stock.reserved_quantity(), dec!(50));
         assert_eq!(stock.available_quantity(), dec!(50));
@@ -314,10 +314,10 @@ mod tests {
     fn test_reserve_insufficient_stock() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.adjust_quantity(dec!(50)).unwrap();
-        
+
         let result = stock.reserve(dec!(60));
         assert!(matches!(result, Err(InventoryError::InsufficientStock)));
     }
@@ -326,11 +326,11 @@ mod tests {
     fn test_release_success() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.adjust_quantity(dec!(100)).unwrap();
         stock.reserve(dec!(50)).unwrap();
-        
+
         stock.release(dec!(30)).unwrap();
         assert_eq!(stock.reserved_quantity(), dec!(20));
         assert_eq!(stock.available_quantity(), dec!(80));
@@ -340,23 +340,26 @@ mod tests {
     fn test_release_too_much() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.adjust_quantity(dec!(100)).unwrap();
         stock.reserve(dec!(30)).unwrap();
-        
+
         let result = stock.release(dec!(50));
-        assert!(matches!(result, Err(InventoryError::InvalidReleaseQuantity)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidReleaseQuantity)
+        ));
     }
 
     #[test]
     fn test_adjust_quantity_increase() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.adjust_quantity(dec!(100)).unwrap();
-        
+
         assert_eq!(stock.quantity(), dec!(100));
     }
 
@@ -364,11 +367,11 @@ mod tests {
     fn test_adjust_quantity_decrease() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.adjust_quantity(dec!(100)).unwrap();
         stock.adjust_quantity(dec!(-30)).unwrap();
-        
+
         assert_eq!(stock.quantity(), dec!(70));
     }
 
@@ -376,10 +379,10 @@ mod tests {
     fn test_adjust_quantity_negative_result() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.adjust_quantity(dec!(50)).unwrap();
-        
+
         let result = stock.adjust_quantity(dec!(-60));
         assert!(matches!(result, Err(InventoryError::NegativeStock)));
     }
@@ -388,27 +391,30 @@ mod tests {
     fn test_adjust_quantity_below_reserved() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         stock.adjust_quantity(dec!(100)).unwrap();
         stock.reserve(dec!(50)).unwrap();
-        
+
         // Try to reduce quantity below reserved amount
         let result = stock.adjust_quantity(dec!(-60));
-        assert!(matches!(result, Err(InventoryError::ReservedExceedsQuantity)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::ReservedExceedsQuantity)
+        ));
     }
 
     #[test]
     fn test_version_increment() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
         assert_eq!(stock.version(), 1);
-        
+
         stock.increment_version();
         assert_eq!(stock.version(), 2);
-        
+
         stock.increment_version();
         assert_eq!(stock.version(), 3);
     }
@@ -419,7 +425,7 @@ mod tests {
         let product_id = ProductId::new();
         let variant_id = VariantId::new();
         let now = Utc::now();
-        
+
         let result = InventoryStock::reconstitute(
             StockId::new(),
             store_id,
@@ -433,15 +439,18 @@ mod tests {
             now,
             now,
         );
-        
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[test]
     fn test_xor_constraint_neither_set() {
         let store_id = StoreId::new();
         let now = Utc::now();
-        
+
         let result = InventoryStock::reconstitute(
             StockId::new(),
             store_id,
@@ -455,20 +464,23 @@ mod tests {
             now,
             now,
         );
-        
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[test]
     fn test_set_stock_levels() {
         let store_id = StoreId::new();
         let product_id = ProductId::new();
-        
+
         let mut stock = InventoryStock::create_for_product(store_id, product_id).unwrap();
-        
+
         stock.set_min_stock_level(dec!(10));
         assert_eq!(stock.min_stock_level(), dec!(10));
-        
+
         stock.set_max_stock_level(Some(dec!(100)));
         assert_eq!(stock.max_stock_level(), Some(dec!(100)));
     }

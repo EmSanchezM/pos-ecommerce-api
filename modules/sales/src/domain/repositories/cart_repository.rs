@@ -3,9 +3,9 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 
+use crate::SalesError;
 use crate::domain::entities::{Cart, CartItem};
 use crate::domain::value_objects::{CartId, CartItemId, CustomerId};
-use crate::SalesError;
 use identity::StoreId;
 
 /// Filter for querying carts

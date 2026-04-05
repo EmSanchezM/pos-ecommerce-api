@@ -59,7 +59,6 @@ impl UserRepository for PgUserRepository {
         Ok(())
     }
 
-
     async fn find_by_id(&self, id: UserId) -> Result<Option<User>, IdentityError> {
         let row = sqlx::query_as::<_, UserRow>(
             r#"
@@ -138,7 +137,6 @@ impl UserRepository for PgUserRepository {
         Ok(())
     }
 
-
     async fn assign_role(
         &self,
         user_id: UserId,
@@ -146,36 +144,33 @@ impl UserRepository for PgUserRepository {
         store_id: StoreId,
     ) -> Result<(), IdentityError> {
         // Verify user exists
-        let user_exists = sqlx::query_scalar::<_, bool>(
-            r#"SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)"#,
-        )
-        .bind(user_id.as_uuid())
-        .fetch_one(&self.pool)
-        .await?;
+        let user_exists =
+            sqlx::query_scalar::<_, bool>(r#"SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)"#)
+                .bind(user_id.as_uuid())
+                .fetch_one(&self.pool)
+                .await?;
 
         if !user_exists {
             return Err(IdentityError::UserNotFound(user_id.into_uuid()));
         }
 
         // Verify role exists
-        let role_exists = sqlx::query_scalar::<_, bool>(
-            r#"SELECT EXISTS(SELECT 1 FROM roles WHERE id = $1)"#,
-        )
-        .bind(role_id.as_uuid())
-        .fetch_one(&self.pool)
-        .await?;
+        let role_exists =
+            sqlx::query_scalar::<_, bool>(r#"SELECT EXISTS(SELECT 1 FROM roles WHERE id = $1)"#)
+                .bind(role_id.as_uuid())
+                .fetch_one(&self.pool)
+                .await?;
 
         if !role_exists {
             return Err(IdentityError::RoleNotFound(role_id.into_uuid()));
         }
 
         // Verify store exists
-        let store_exists = sqlx::query_scalar::<_, bool>(
-            r#"SELECT EXISTS(SELECT 1 FROM stores WHERE id = $1)"#,
-        )
-        .bind(store_id.as_uuid())
-        .fetch_one(&self.pool)
-        .await?;
+        let store_exists =
+            sqlx::query_scalar::<_, bool>(r#"SELECT EXISTS(SELECT 1 FROM stores WHERE id = $1)"#)
+                .bind(store_id.as_uuid())
+                .fetch_one(&self.pool)
+                .await?;
 
         if !store_exists {
             return Err(IdentityError::StoreNotFound(store_id.into_uuid()));
@@ -218,12 +213,11 @@ impl UserRepository for PgUserRepository {
         store_id: StoreId,
     ) -> Result<(), IdentityError> {
         // Verify user exists
-        let user_exists = sqlx::query_scalar::<_, bool>(
-            r#"SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)"#,
-        )
-        .bind(user_id.as_uuid())
-        .fetch_one(&self.pool)
-        .await?;
+        let user_exists =
+            sqlx::query_scalar::<_, bool>(r#"SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)"#)
+                .bind(user_id.as_uuid())
+                .fetch_one(&self.pool)
+                .await?;
 
         if !user_exists {
             return Err(IdentityError::UserNotFound(user_id.into_uuid()));
@@ -243,7 +237,6 @@ impl UserRepository for PgUserRepository {
 
         Ok(())
     }
-
 
     async fn get_roles_for_store(
         &self,
@@ -317,24 +310,22 @@ impl UserRepository for PgUserRepository {
 
     async fn add_to_store(&self, user_id: UserId, store_id: StoreId) -> Result<(), IdentityError> {
         // Verify user exists
-        let user_exists = sqlx::query_scalar::<_, bool>(
-            r#"SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)"#,
-        )
-        .bind(user_id.as_uuid())
-        .fetch_one(&self.pool)
-        .await?;
+        let user_exists =
+            sqlx::query_scalar::<_, bool>(r#"SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)"#)
+                .bind(user_id.as_uuid())
+                .fetch_one(&self.pool)
+                .await?;
 
         if !user_exists {
             return Err(IdentityError::UserNotFound(user_id.into_uuid()));
         }
 
         // Verify store exists
-        let store_exists = sqlx::query_scalar::<_, bool>(
-            r#"SELECT EXISTS(SELECT 1 FROM stores WHERE id = $1)"#,
-        )
-        .bind(store_id.as_uuid())
-        .fetch_one(&self.pool)
-        .await?;
+        let store_exists =
+            sqlx::query_scalar::<_, bool>(r#"SELECT EXISTS(SELECT 1 FROM stores WHERE id = $1)"#)
+                .bind(store_id.as_uuid())
+                .fetch_one(&self.pool)
+                .await?;
 
         if !store_exists {
             return Err(IdentityError::StoreNotFound(store_id.into_uuid()));
@@ -356,19 +347,17 @@ impl UserRepository for PgUserRepository {
         Ok(())
     }
 
-
     async fn remove_from_store(
         &self,
         user_id: UserId,
         store_id: StoreId,
     ) -> Result<(), IdentityError> {
         // Verify user exists
-        let user_exists = sqlx::query_scalar::<_, bool>(
-            r#"SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)"#,
-        )
-        .bind(user_id.as_uuid())
-        .fetch_one(&self.pool)
-        .await?;
+        let user_exists =
+            sqlx::query_scalar::<_, bool>(r#"SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)"#)
+                .bind(user_id.as_uuid())
+                .fetch_one(&self.pool)
+                .await?;
 
         if !user_exists {
             return Err(IdentityError::UserNotFound(user_id.into_uuid()));

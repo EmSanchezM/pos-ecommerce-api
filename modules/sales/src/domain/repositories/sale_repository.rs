@@ -2,13 +2,13 @@
 
 use async_trait::async_trait;
 
+use crate::SalesError;
 use crate::domain::entities::{Payment, Sale, SaleItem};
 use crate::domain::value_objects::{
     CustomerId, PaymentId, SaleId, SaleItemId, SaleStatus, SaleType, ShiftId,
 };
-use crate::SalesError;
-use pos_core::TerminalId;
 use identity::StoreId;
+use pos_core::TerminalId;
 
 /// Filter for querying sales
 #[derive(Debug, Clone, Default)]
@@ -95,5 +95,8 @@ pub trait SaleRepository: Send + Sync {
     async fn find_payments_by_sale(&self, sale_id: SaleId) -> Result<Vec<Payment>, SalesError>;
 
     /// Finds a payment by ID
-    async fn find_payment_by_id(&self, payment_id: PaymentId) -> Result<Option<Payment>, SalesError>;
+    async fn find_payment_by_id(
+        &self,
+        payment_id: PaymentId,
+    ) -> Result<Option<Payment>, SalesError>;
 }

@@ -2,12 +2,12 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::CreateVariantCommand;
 use crate::application::dtos::responses::VariantResponse;
 use crate::domain::entities::ProductVariant;
 use crate::domain::repositories::ProductRepository;
 use crate::domain::value_objects::{Barcode, ProductId};
-use crate::InventoryError;
 
 /// Use case for creating a new product variant
 ///
@@ -63,17 +63,12 @@ where
         // Validate barcode uniqueness if provided (Requirement 2.6)
         let barcode = if let Some(barcode_str) = &command.barcode {
             let barcode = Barcode::new(barcode_str)?;
-            
+
             // Check against products
-            if self
-                .product_repo
-                .find_by_barcode(&barcode)
-                .await?
-                .is_some()
-            {
+            if self.product_repo.find_by_barcode(&barcode).await?.is_some() {
                 return Err(InventoryError::DuplicateBarcode(barcode_str.clone()));
             }
-            
+
             // Check against variants
             if self
                 .product_repo
@@ -83,7 +78,7 @@ where
             {
                 return Err(InventoryError::DuplicateBarcode(barcode_str.clone()));
             }
-            
+
             Some(barcode)
         } else {
             None
@@ -94,12 +89,8 @@ where
         let variant_index = variant_count + 1;
 
         // Create variant entity with auto-generated SKU (Requirement 2.1)
-        let mut variant = ProductVariant::create(
-            product_id,
-            product.sku(),
-            variant_index,
-            command.name,
-        );
+        let mut variant =
+            ProductVariant::create(product_id, product.sku(), variant_index, command.name);
 
         // Apply optional fields
         if let Some(barcode) = barcode {
@@ -225,18 +216,18 @@ mod tests {
         async fn save_variant(&self, variant: &ProductVariant) -> Result<(), InventoryError> {
             let mut variants = self.variants.lock().unwrap();
             let mut product_variants = self.product_variants.lock().unwrap();
-            
+
             variants.insert(variant.id(), variant.clone());
             product_variants
                 .entry(variant.product_id())
                 .or_insert_with(Vec::new)
                 .push(variant.id());
-            
+
             if let Some(barcode) = variant.barcode() {
                 let mut variant_barcodes = self.variant_barcodes.lock().unwrap();
                 variant_barcodes.insert(barcode.as_str().to_string(), variant.id());
             }
-            
+
             Ok(())
         }
 
@@ -272,7 +263,7 @@ mod tests {
         ) -> Result<Vec<ProductVariant>, InventoryError> {
             let product_variants = self.product_variants.lock().unwrap();
             let variants = self.variants.lock().unwrap();
-            
+
             Ok(product_variants
                 .get(&product_id)
                 .map(|variant_ids| {

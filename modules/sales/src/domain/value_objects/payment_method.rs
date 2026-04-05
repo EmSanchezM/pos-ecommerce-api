@@ -108,7 +108,10 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        assert_eq!(PaymentMethod::from_str("cash").unwrap(), PaymentMethod::Cash);
+        assert_eq!(
+            PaymentMethod::from_str("cash").unwrap(),
+            PaymentMethod::Cash
+        );
         assert_eq!(
             PaymentMethod::from_str("credit_card").unwrap(),
             PaymentMethod::CreditCard

@@ -8,7 +8,7 @@ use crate::domain::value_objects::CaiNumber;
 use crate::error::CaiError;
 
 /// CAI range for invoice numbering
-/// 
+///
 /// Represents a range of invoice numbers authorized by the fiscal authority.
 /// Each terminal can have one active CAI range at a time.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,7 +69,7 @@ impl CaiRange {
     }
 
     /// Validates if the CAI can emit an invoice
-    /// 
+    ///
     /// # Returns
     /// * `Ok(())` - If the CAI is valid for emission
     /// * `Err(CaiError::Expired)` - If the CAI has expired

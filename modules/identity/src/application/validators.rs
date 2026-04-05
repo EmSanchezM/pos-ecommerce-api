@@ -60,21 +60,21 @@ pub fn validate_password(password: &str) -> Result<(), AuthError> {
 /// ```
 pub fn validate_name(name: &str, field_name: &str) -> Result<(), AuthError> {
     let trimmed = name.trim();
-    
+
     if trimmed.is_empty() {
         return Err(AuthError::InvalidName(format!(
             "{} cannot be empty",
             field_name
         )));
     }
-    
+
     if trimmed.len() > MAX_NAME_LENGTH {
         return Err(AuthError::InvalidName(format!(
             "{} cannot exceed {} characters",
             field_name, MAX_NAME_LENGTH
         )));
     }
-    
+
     Ok(())
 }
 

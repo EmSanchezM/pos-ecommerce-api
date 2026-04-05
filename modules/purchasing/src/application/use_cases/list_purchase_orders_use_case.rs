@@ -3,12 +3,12 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::PurchasingError;
 use crate::application::dtos::responses::PurchaseOrderResponse;
 use crate::domain::repositories::{PurchaseOrderFilter, PurchaseOrderRepository};
 use crate::domain::value_objects::{PurchaseOrderStatus, VendorId};
-use crate::PurchasingError;
-use inventory::PaginatedResponse;
 use identity::StoreId;
+use inventory::PaginatedResponse;
 
 /// Query parameters for listing purchase orders
 #[derive(Debug, Clone, Default)]

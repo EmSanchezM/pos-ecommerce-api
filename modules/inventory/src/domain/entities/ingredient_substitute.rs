@@ -4,8 +4,8 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::value_objects::{IngredientId, ProductId, SubstituteId, VariantId};
 use crate::InventoryError;
+use crate::domain::value_objects::{IngredientId, ProductId, SubstituteId, VariantId};
 
 /// IngredientSubstitute entity representing an alternative ingredient.
 /// Allows defining substitute products/variants with conversion ratios.
@@ -52,7 +52,6 @@ impl IngredientSubstitute {
             created_at: Utc::now(),
         })
     }
-
 
     /// Creates a new IngredientSubstitute for a variant
     pub fn create_for_variant(
@@ -185,7 +184,6 @@ impl IngredientSubstitute {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -196,12 +194,9 @@ mod tests {
         let ingredient_id = IngredientId::new();
         let product_id = ProductId::new();
 
-        let substitute = IngredientSubstitute::create_for_product(
-            ingredient_id,
-            product_id,
-            dec!(1.5),
-            1,
-        ).unwrap();
+        let substitute =
+            IngredientSubstitute::create_for_product(ingredient_id, product_id, dec!(1.5), 1)
+                .unwrap();
 
         assert_eq!(substitute.recipe_ingredient_id(), ingredient_id);
         assert_eq!(substitute.substitute_product_id(), Some(product_id));
@@ -216,12 +211,9 @@ mod tests {
         let ingredient_id = IngredientId::new();
         let variant_id = VariantId::new();
 
-        let substitute = IngredientSubstitute::create_for_variant(
-            ingredient_id,
-            variant_id,
-            dec!(0.8),
-            2,
-        ).unwrap();
+        let substitute =
+            IngredientSubstitute::create_for_variant(ingredient_id, variant_id, dec!(0.8), 2)
+                .unwrap();
 
         assert!(substitute.substitute_product_id().is_none());
         assert_eq!(substitute.substitute_variant_id(), Some(variant_id));
@@ -234,21 +226,19 @@ mod tests {
         let ingredient_id = IngredientId::new();
         let product_id = ProductId::new();
 
-        let result = IngredientSubstitute::create_for_product(
-            ingredient_id,
-            product_id,
-            dec!(0),
-            1,
-        );
-        assert!(matches!(result, Err(InventoryError::InvalidConversionRatio)));
+        let result =
+            IngredientSubstitute::create_for_product(ingredient_id, product_id, dec!(0), 1);
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidConversionRatio)
+        ));
 
-        let result = IngredientSubstitute::create_for_product(
-            ingredient_id,
-            product_id,
-            dec!(-1),
-            1,
-        );
-        assert!(matches!(result, Err(InventoryError::InvalidConversionRatio)));
+        let result =
+            IngredientSubstitute::create_for_product(ingredient_id, product_id, dec!(-1), 1);
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidConversionRatio)
+        ));
     }
 
     #[test]
@@ -256,13 +246,12 @@ mod tests {
         let ingredient_id = IngredientId::new();
         let product_id = ProductId::new();
 
-        let result = IngredientSubstitute::create_for_product(
-            ingredient_id,
-            product_id,
-            dec!(1),
-            -1,
-        );
-        assert!(matches!(result, Err(InventoryError::InvalidSubstitutePriority)));
+        let result =
+            IngredientSubstitute::create_for_product(ingredient_id, product_id, dec!(1), -1);
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidSubstitutePriority)
+        ));
     }
 
     #[test]
@@ -270,12 +259,9 @@ mod tests {
         let ingredient_id = IngredientId::new();
         let product_id = ProductId::new();
 
-        let substitute = IngredientSubstitute::create_for_product(
-            ingredient_id,
-            product_id,
-            dec!(1.5),
-            1,
-        ).unwrap();
+        let substitute =
+            IngredientSubstitute::create_for_product(ingredient_id, product_id, dec!(1.5), 1)
+                .unwrap();
 
         // 10 units * 1.5 ratio = 15 units
         assert_eq!(substitute.calculate_substitute_quantity(dec!(10)), dec!(15));
@@ -289,12 +275,9 @@ mod tests {
         let ingredient_id = IngredientId::new();
         let product_id = ProductId::new();
 
-        let mut substitute = IngredientSubstitute::create_for_product(
-            ingredient_id,
-            product_id,
-            dec!(1),
-            1,
-        ).unwrap();
+        let mut substitute =
+            IngredientSubstitute::create_for_product(ingredient_id, product_id, dec!(1), 1)
+                .unwrap();
 
         substitute.set_conversion_ratio(dec!(2.0)).unwrap();
         assert_eq!(substitute.conversion_ratio(), dec!(2.0));
@@ -311,18 +294,21 @@ mod tests {
         let ingredient_id = IngredientId::new();
         let product_id = ProductId::new();
 
-        let mut substitute = IngredientSubstitute::create_for_product(
-            ingredient_id,
-            product_id,
-            dec!(1),
-            1,
-        ).unwrap();
+        let mut substitute =
+            IngredientSubstitute::create_for_product(ingredient_id, product_id, dec!(1), 1)
+                .unwrap();
 
         let result = substitute.set_conversion_ratio(dec!(0));
-        assert!(matches!(result, Err(InventoryError::InvalidConversionRatio)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidConversionRatio)
+        ));
 
         let result = substitute.set_conversion_ratio(dec!(-0.5));
-        assert!(matches!(result, Err(InventoryError::InvalidConversionRatio)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidConversionRatio)
+        ));
 
         // Original value unchanged
         assert_eq!(substitute.conversion_ratio(), dec!(1));
@@ -333,15 +319,15 @@ mod tests {
         let ingredient_id = IngredientId::new();
         let product_id = ProductId::new();
 
-        let mut substitute = IngredientSubstitute::create_for_product(
-            ingredient_id,
-            product_id,
-            dec!(1),
-            1,
-        ).unwrap();
+        let mut substitute =
+            IngredientSubstitute::create_for_product(ingredient_id, product_id, dec!(1), 1)
+                .unwrap();
 
         let result = substitute.set_priority(-1);
-        assert!(matches!(result, Err(InventoryError::InvalidSubstitutePriority)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidSubstitutePriority)
+        ));
 
         // Original value unchanged
         assert_eq!(substitute.priority(), 1);
@@ -365,7 +351,10 @@ mod tests {
             now,
         );
 
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[test]
@@ -384,7 +373,10 @@ mod tests {
             now,
         );
 
-        assert!(matches!(result, Err(InventoryError::InvalidProductVariantConstraint)));
+        assert!(matches!(
+            result,
+            Err(InventoryError::InvalidProductVariantConstraint)
+        ));
     }
 
     #[test]
@@ -402,7 +394,8 @@ mod tests {
             3,
             Some("Premium alternative".to_string()),
             now,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(substitute.recipe_ingredient_id(), ingredient_id);
         assert_eq!(substitute.substitute_product_id(), Some(product_id));
@@ -418,12 +411,9 @@ mod tests {
         let product_id = ProductId::new();
 
         // Priority 0 should be valid (highest priority)
-        let substitute = IngredientSubstitute::create_for_product(
-            ingredient_id,
-            product_id,
-            dec!(1),
-            0,
-        ).unwrap();
+        let substitute =
+            IngredientSubstitute::create_for_product(ingredient_id, product_id, dec!(1), 0)
+                .unwrap();
 
         assert_eq!(substitute.priority(), 0);
     }

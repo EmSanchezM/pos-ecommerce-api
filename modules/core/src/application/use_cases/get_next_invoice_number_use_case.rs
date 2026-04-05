@@ -6,10 +6,10 @@
 
 use std::sync::Arc;
 
+use crate::NextInvoiceNumberResponse;
 use crate::domain::repositories::TerminalRepository;
 use crate::domain::value_objects::TerminalId;
 use crate::error::{CaiError, CoreError};
-use crate::NextInvoiceNumberResponse;
 
 /// Use case for getting the next invoice number from a terminal
 ///

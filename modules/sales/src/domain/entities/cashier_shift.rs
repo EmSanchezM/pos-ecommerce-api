@@ -4,10 +4,10 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::value_objects::{ShiftId, ShiftStatus};
 use crate::SalesError;
-use pos_core::TerminalId;
+use crate::domain::value_objects::{ShiftId, ShiftStatus};
 use identity::{StoreId, UserId};
+use pos_core::TerminalId;
 
 /// CashierShift entity representing a cashier's work shift at a terminal.
 ///
@@ -134,7 +134,11 @@ impl CashierShift {
     // =========================================================================
 
     /// Closes the shift
-    pub fn close(&mut self, closing_balance: Decimal, notes: Option<String>) -> Result<(), SalesError> {
+    pub fn close(
+        &mut self,
+        closing_balance: Decimal,
+        notes: Option<String>,
+    ) -> Result<(), SalesError> {
         if !self.status.can_close() {
             return Err(SalesError::ShiftAlreadyClosed);
         }
@@ -230,7 +234,8 @@ impl CashierShift {
 
     /// Returns the cash difference (closing - expected)
     pub fn cash_difference(&self) -> Option<Decimal> {
-        self.closing_balance.map(|closing| closing - self.expected_balance)
+        self.closing_balance
+            .map(|closing| closing - self.expected_balance)
     }
 
     /// Returns true if the shift is open
@@ -400,7 +405,9 @@ mod tests {
         let mut shift = create_test_shift();
         shift.record_cash_sale(dec!(50.00)).unwrap();
 
-        shift.close(dec!(148.00), Some("Slight shortage".to_string())).unwrap();
+        shift
+            .close(dec!(148.00), Some("Slight shortage".to_string()))
+            .unwrap();
 
         assert!(!shift.is_open());
         assert_eq!(shift.closing_balance(), Some(dec!(148.00)));

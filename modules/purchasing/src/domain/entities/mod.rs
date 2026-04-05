@@ -11,14 +11,14 @@
 //! - [`GoodsReceipt`]: Represents a goods receipt document
 //! - [`GoodsReceiptItem`]: Line item in a goods receipt
 
-mod vendor;
-mod purchase_order;
-mod purchase_order_item;
 mod goods_receipt;
 mod goods_receipt_item;
+mod purchase_order;
+mod purchase_order_item;
+mod vendor;
 
-pub use vendor::Vendor;
-pub use purchase_order::PurchaseOrder;
-pub use purchase_order_item::PurchaseOrderItem;
 pub use goods_receipt::GoodsReceipt;
 pub use goods_receipt_item::GoodsReceiptItem;
+pub use purchase_order::PurchaseOrder;
+pub use purchase_order_item::PurchaseOrderItem;
+pub use vendor::Vendor;

@@ -5,10 +5,10 @@ use rust_decimal::Decimal;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::InventoryError;
 use crate::domain::entities::InventoryReservation;
 use crate::domain::repositories::ReservationRepository;
 use crate::domain::value_objects::{ReservationId, ReservationStatus, StockId};
-use crate::InventoryError;
 
 /// PostgreSQL implementation of ReservationRepository
 pub struct PgReservationRepository {
@@ -48,7 +48,10 @@ impl ReservationRepository for PgReservationRepository {
         Ok(())
     }
 
-    async fn find_by_id(&self, id: ReservationId) -> Result<Option<InventoryReservation>, InventoryError> {
+    async fn find_by_id(
+        &self,
+        id: ReservationId,
+    ) -> Result<Option<InventoryReservation>, InventoryError> {
         let row = sqlx::query_as::<_, ReservationRow>(
             r#"
             SELECT id, stock_id, reference_type, reference_id, quantity, status, expires_at, created_at, updated_at
@@ -63,8 +66,10 @@ impl ReservationRepository for PgReservationRepository {
         row.map(|r| r.try_into()).transpose()
     }
 
-
-    async fn find_by_stock_id(&self, stock_id: StockId) -> Result<Vec<InventoryReservation>, InventoryError> {
+    async fn find_by_stock_id(
+        &self,
+        stock_id: StockId,
+    ) -> Result<Vec<InventoryReservation>, InventoryError> {
         let rows = sqlx::query_as::<_, ReservationRow>(
             r#"
             SELECT id, stock_id, reference_type, reference_id, quantity, status, expires_at, created_at, updated_at
@@ -131,7 +136,9 @@ impl ReservationRepository for PgReservationRepository {
         .await?;
 
         if result.rows_affected() == 0 {
-            return Err(InventoryError::ReservationNotFound(reservation.id().into_uuid()));
+            return Err(InventoryError::ReservationNotFound(
+                reservation.id().into_uuid(),
+            ));
         }
 
         Ok(())
@@ -260,7 +267,7 @@ impl TryFrom<ReservationRow> for InventoryReservation {
 
     fn try_from(row: ReservationRow) -> Result<Self, Self::Error> {
         let status: ReservationStatus = row.status.parse()?;
-        
+
         Ok(InventoryReservation::reconstitute(
             ReservationId::from_uuid(row.id),
             StockId::from_uuid(row.stock_id),

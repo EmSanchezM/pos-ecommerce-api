@@ -7,9 +7,9 @@ use std::sync::Arc;
 
 use rust_decimal::Decimal;
 
+use crate::InventoryError;
 use crate::domain::repositories::RecipeRepository;
 use crate::domain::value_objects::RecipeId;
-use crate::InventoryError;
 
 /// Response containing the calculated recipe cost
 #[derive(Debug, Clone)]
@@ -114,7 +114,9 @@ mod tests {
     use std::sync::Mutex;
 
     use crate::domain::entities::{IngredientSubstitute, Recipe, RecipeIngredient};
-    use crate::domain::value_objects::{IngredientId, ProductId, SubstituteId, UnitOfMeasure, VariantId};
+    use crate::domain::value_objects::{
+        IngredientId, ProductId, SubstituteId, UnitOfMeasure, VariantId,
+    };
 
     // Mock repository for testing
     struct MockRecipeRepository {
@@ -157,19 +159,31 @@ mod tests {
             Ok(recipes.get(&id).cloned())
         }
 
-        async fn find_by_product(&self, _product_id: ProductId) -> Result<Vec<Recipe>, InventoryError> {
+        async fn find_by_product(
+            &self,
+            _product_id: ProductId,
+        ) -> Result<Vec<Recipe>, InventoryError> {
             unimplemented!()
         }
 
-        async fn find_by_variant(&self, _variant_id: VariantId) -> Result<Vec<Recipe>, InventoryError> {
+        async fn find_by_variant(
+            &self,
+            _variant_id: VariantId,
+        ) -> Result<Vec<Recipe>, InventoryError> {
             unimplemented!()
         }
 
-        async fn find_active_by_product(&self, _product_id: ProductId) -> Result<Option<Recipe>, InventoryError> {
+        async fn find_active_by_product(
+            &self,
+            _product_id: ProductId,
+        ) -> Result<Option<Recipe>, InventoryError> {
             unimplemented!()
         }
 
-        async fn find_active_by_variant(&self, _variant_id: VariantId) -> Result<Option<Recipe>, InventoryError> {
+        async fn find_active_by_variant(
+            &self,
+            _variant_id: VariantId,
+        ) -> Result<Option<Recipe>, InventoryError> {
             unimplemented!()
         }
 
@@ -199,7 +213,10 @@ mod tests {
             unimplemented!()
         }
 
-        async fn save_ingredient(&self, ingredient: &RecipeIngredient) -> Result<(), InventoryError> {
+        async fn save_ingredient(
+            &self,
+            ingredient: &RecipeIngredient,
+        ) -> Result<(), InventoryError> {
             let mut ingredients = self.ingredients.lock().unwrap();
             ingredients
                 .entry(ingredient.recipe_id())
@@ -208,16 +225,25 @@ mod tests {
             Ok(())
         }
 
-        async fn find_ingredient_by_id(&self, _id: IngredientId) -> Result<Option<RecipeIngredient>, InventoryError> {
+        async fn find_ingredient_by_id(
+            &self,
+            _id: IngredientId,
+        ) -> Result<Option<RecipeIngredient>, InventoryError> {
             unimplemented!()
         }
 
-        async fn find_ingredients_by_recipe(&self, recipe_id: RecipeId) -> Result<Vec<RecipeIngredient>, InventoryError> {
+        async fn find_ingredients_by_recipe(
+            &self,
+            recipe_id: RecipeId,
+        ) -> Result<Vec<RecipeIngredient>, InventoryError> {
             let ingredients = self.ingredients.lock().unwrap();
             Ok(ingredients.get(&recipe_id).cloned().unwrap_or_default())
         }
 
-        async fn update_ingredient(&self, _ingredient: &RecipeIngredient) -> Result<(), InventoryError> {
+        async fn update_ingredient(
+            &self,
+            _ingredient: &RecipeIngredient,
+        ) -> Result<(), InventoryError> {
             unimplemented!()
         }
 
@@ -225,11 +251,17 @@ mod tests {
             unimplemented!()
         }
 
-        async fn save_substitute(&self, _substitute: &IngredientSubstitute) -> Result<(), InventoryError> {
+        async fn save_substitute(
+            &self,
+            _substitute: &IngredientSubstitute,
+        ) -> Result<(), InventoryError> {
             unimplemented!()
         }
 
-        async fn find_substitutes_by_ingredient(&self, _ingredient_id: IngredientId) -> Result<Vec<IngredientSubstitute>, InventoryError> {
+        async fn find_substitutes_by_ingredient(
+            &self,
+            _ingredient_id: IngredientId,
+        ) -> Result<Vec<IngredientSubstitute>, InventoryError> {
             unimplemented!()
         }
 
@@ -244,7 +276,8 @@ mod tests {
 
         // Create a recipe with yield of 10 units
         let product_id = ProductId::new();
-        let recipe = Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(10)).unwrap();
+        let recipe =
+            Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(10)).unwrap();
         let recipe_id = recipe.id();
         repo.add_recipe(recipe);
 
@@ -254,7 +287,8 @@ mod tests {
             ProductId::new(),
             dec!(2),
             UnitOfMeasure::Kg,
-        ).unwrap();
+        )
+        .unwrap();
         ing1.set_estimated_cost_per_unit(Some(dec!(10)));
         repo.add_ingredient(recipe_id, ing1);
 
@@ -264,7 +298,8 @@ mod tests {
             ProductId::new(),
             dec!(1),
             UnitOfMeasure::Liter,
-        ).unwrap();
+        )
+        .unwrap();
         ing2.set_estimated_cost_per_unit(Some(dec!(5)));
         repo.add_ingredient(recipe_id, ing2);
 
@@ -286,7 +321,8 @@ mod tests {
 
         // Create a recipe with yield of 10 units
         let product_id = ProductId::new();
-        let recipe = Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(10)).unwrap();
+        let recipe =
+            Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(10)).unwrap();
         let recipe_id = recipe.id();
         repo.add_recipe(recipe);
 
@@ -297,7 +333,8 @@ mod tests {
             ProductId::new(),
             dec!(2),
             UnitOfMeasure::Kg,
-        ).unwrap();
+        )
+        .unwrap();
         ing.set_estimated_cost_per_unit(Some(dec!(10)));
         ing.set_estimated_waste_percentage(dec!(0.1)).unwrap();
         repo.add_ingredient(recipe_id, ing);
@@ -317,7 +354,8 @@ mod tests {
 
         // Create a recipe
         let product_id = ProductId::new();
-        let recipe = Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(10)).unwrap();
+        let recipe =
+            Recipe::create_for_product(product_id, "Test Recipe".to_string(), dec!(10)).unwrap();
         let recipe_id = recipe.id();
         repo.add_recipe(recipe);
 
@@ -327,7 +365,8 @@ mod tests {
             ProductId::new(),
             dec!(2),
             UnitOfMeasure::Kg,
-        ).unwrap();
+        )
+        .unwrap();
         ing1.set_estimated_cost_per_unit(Some(dec!(10)));
         repo.add_ingredient(recipe_id, ing1);
 
@@ -337,7 +376,8 @@ mod tests {
             ProductId::new(),
             dec!(1),
             UnitOfMeasure::Liter,
-        ).unwrap();
+        )
+        .unwrap();
         repo.add_ingredient(recipe_id, ing2);
 
         let use_case = CalculateRecipeCostUseCase::new(repo);
@@ -357,7 +397,8 @@ mod tests {
 
         // Create a recipe with no ingredients
         let product_id = ProductId::new();
-        let recipe = Recipe::create_for_product(product_id, "Empty Recipe".to_string(), dec!(10)).unwrap();
+        let recipe =
+            Recipe::create_for_product(product_id, "Empty Recipe".to_string(), dec!(10)).unwrap();
         let recipe_id = recipe.id();
         repo.add_recipe(recipe);
 

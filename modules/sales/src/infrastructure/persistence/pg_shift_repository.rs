@@ -3,10 +3,10 @@
 use async_trait::async_trait;
 use sqlx::PgPool;
 
+use crate::SalesError;
 use crate::domain::entities::CashierShift;
 use crate::domain::repositories::{ShiftFilter, ShiftRepository};
 use crate::domain::value_objects::{ShiftId, ShiftStatus};
-use crate::SalesError;
 use identity::{StoreId, UserId};
 use pos_core::TerminalId;
 

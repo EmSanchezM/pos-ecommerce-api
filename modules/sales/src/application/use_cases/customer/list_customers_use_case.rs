@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
+use crate::SalesError;
 use crate::application::dtos::{CustomerListResponse, CustomerResponse, ListCustomersQuery};
 use crate::domain::repositories::{CustomerFilter, CustomerRepository};
-use crate::SalesError;
 use identity::StoreId;
 
 /// Use case for listing customers with filters and pagination
@@ -17,9 +17,12 @@ impl ListCustomersUseCase {
         Self { customer_repo }
     }
 
-    pub async fn execute(&self, query: ListCustomersQuery) -> Result<CustomerListResponse, SalesError> {
+    pub async fn execute(
+        &self,
+        query: ListCustomersQuery,
+    ) -> Result<CustomerListResponse, SalesError> {
         let page = query.page.unwrap_or(1).max(1);
-        let page_size = query.page_size.unwrap_or(20).min(100).max(1);
+        let page_size = query.page_size.unwrap_or(20).clamp(1, 100);
 
         let filter = CustomerFilter {
             store_id: query.store_id.map(StoreId::from_uuid),

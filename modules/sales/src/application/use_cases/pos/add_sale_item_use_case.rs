@@ -4,11 +4,11 @@ use std::sync::Arc;
 
 use rust_decimal::Decimal;
 
+use crate::SalesError;
 use crate::application::dtos::{AddSaleItemCommand, SaleDetailResponse};
 use crate::domain::entities::SaleItem;
 use crate::domain::repositories::SaleRepository;
 use crate::domain::value_objects::SaleId;
-use crate::SalesError;
 use inventory::{ProductId, UnitOfMeasure, VariantId};
 
 /// Use case for adding an item to a sale
@@ -21,6 +21,7 @@ impl AddSaleItemUseCase {
         Self { sale_repo }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn execute(
         &self,
         cmd: AddSaleItemCommand,

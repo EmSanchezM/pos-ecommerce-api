@@ -2,12 +2,12 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::commands::{CreateTransferCommand, TransferItemCommand};
 use crate::application::dtos::responses::{TransferDetailResponse, TransferItemResponse};
 use crate::domain::entities::{StockTransfer, TransferItem};
 use crate::domain::repositories::TransferRepository;
 use crate::domain::value_objects::{ProductId, TransferId, VariantId};
-use crate::InventoryError;
 use identity::{StoreId, UserId};
 
 /// Use case for creating a new stock transfer.
@@ -59,13 +59,9 @@ where
         // 3. Create transfer entity (validates from_store_id != to_store_id) (Requirement 11.2)
         let from_store_id = StoreId::from_uuid(command.from_store_id);
         let to_store_id = StoreId::from_uuid(command.to_store_id);
-        
-        let mut transfer = StockTransfer::create(
-            transfer_number,
-            from_store_id,
-            to_store_id,
-            actor_id,
-        )?;
+
+        let mut transfer =
+            StockTransfer::create(transfer_number, from_store_id, to_store_id, actor_id)?;
 
         // 4. Set optional fields
         if let Some(notes) = command.notes {
@@ -166,7 +162,6 @@ where
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

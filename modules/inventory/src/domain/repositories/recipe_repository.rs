@@ -2,9 +2,9 @@
 
 use async_trait::async_trait;
 
+use crate::InventoryError;
 use crate::domain::entities::{IngredientSubstitute, Recipe, RecipeIngredient};
 use crate::domain::value_objects::{IngredientId, ProductId, RecipeId, VariantId};
-use crate::InventoryError;
 
 /// Repository trait for Recipe (BOM) persistence operations.
 /// Handles recipes, ingredients, and substitutes.
@@ -27,10 +27,16 @@ pub trait RecipeRepository: Send + Sync {
     async fn find_by_variant(&self, variant_id: VariantId) -> Result<Vec<Recipe>, InventoryError>;
 
     /// Finds the active recipe for a product (only one active recipe per product)
-    async fn find_active_by_product(&self, product_id: ProductId) -> Result<Option<Recipe>, InventoryError>;
+    async fn find_active_by_product(
+        &self,
+        product_id: ProductId,
+    ) -> Result<Option<Recipe>, InventoryError>;
 
     /// Finds the active recipe for a variant (only one active recipe per variant)
-    async fn find_active_by_variant(&self, variant_id: VariantId) -> Result<Option<Recipe>, InventoryError>;
+    async fn find_active_by_variant(
+        &self,
+        variant_id: VariantId,
+    ) -> Result<Option<Recipe>, InventoryError>;
 
     /// Finds recipes with pagination and filters
     /// Returns (recipes, total_count)
@@ -63,10 +69,16 @@ pub trait RecipeRepository: Send + Sync {
     async fn save_ingredient(&self, ingredient: &RecipeIngredient) -> Result<(), InventoryError>;
 
     /// Finds an ingredient by its unique ID
-    async fn find_ingredient_by_id(&self, id: IngredientId) -> Result<Option<RecipeIngredient>, InventoryError>;
+    async fn find_ingredient_by_id(
+        &self,
+        id: IngredientId,
+    ) -> Result<Option<RecipeIngredient>, InventoryError>;
 
     /// Finds all ingredients for a recipe, ordered by sort_order
-    async fn find_ingredients_by_recipe(&self, recipe_id: RecipeId) -> Result<Vec<RecipeIngredient>, InventoryError>;
+    async fn find_ingredients_by_recipe(
+        &self,
+        recipe_id: RecipeId,
+    ) -> Result<Vec<RecipeIngredient>, InventoryError>;
 
     /// Updates an existing ingredient
     async fn update_ingredient(&self, ingredient: &RecipeIngredient) -> Result<(), InventoryError>;
@@ -80,11 +92,20 @@ pub trait RecipeRepository: Send + Sync {
     // =========================================================================
 
     /// Saves a new ingredient substitute
-    async fn save_substitute(&self, substitute: &IngredientSubstitute) -> Result<(), InventoryError>;
+    async fn save_substitute(
+        &self,
+        substitute: &IngredientSubstitute,
+    ) -> Result<(), InventoryError>;
 
     /// Finds all substitutes for an ingredient, ordered by priority
-    async fn find_substitutes_by_ingredient(&self, ingredient_id: IngredientId) -> Result<Vec<IngredientSubstitute>, InventoryError>;
+    async fn find_substitutes_by_ingredient(
+        &self,
+        ingredient_id: IngredientId,
+    ) -> Result<Vec<IngredientSubstitute>, InventoryError>;
 
     /// Deletes a substitute by ID
-    async fn delete_substitute(&self, id: crate::domain::value_objects::SubstituteId) -> Result<(), InventoryError>;
+    async fn delete_substitute(
+        &self,
+        id: crate::domain::value_objects::SubstituteId,
+    ) -> Result<(), InventoryError>;
 }

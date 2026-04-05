@@ -4,15 +4,15 @@ use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
+use crate::SalesError;
 use crate::domain::entities::{Payment, SaleItem};
 use crate::domain::value_objects::{
     CustomerId, DiscountType, OrderStatus, PaymentMethod, SaleId, SaleItemId, SaleStatus, SaleType,
     ShiftId,
 };
-use crate::SalesError;
-use pos_core::TerminalId;
 use identity::{StoreId, UserId};
 use inventory::Currency;
+use pos_core::TerminalId;
 
 /// Sale entity representing a POS or online sale transaction.
 ///
@@ -661,9 +661,9 @@ impl Sale {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use inventory::UnitOfMeasure;
     use rust_decimal_macros::dec;
     use std::str::FromStr;
-    use inventory::UnitOfMeasure;
 
     fn create_test_pos_sale() -> Sale {
         Sale::create_pos(

@@ -97,20 +97,50 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        assert_eq!(TransferStatus::from_str("draft").unwrap(), TransferStatus::Draft);
-        assert_eq!(TransferStatus::from_str("pending").unwrap(), TransferStatus::Pending);
-        assert_eq!(TransferStatus::from_str("in_transit").unwrap(), TransferStatus::InTransit);
-        assert_eq!(TransferStatus::from_str("completed").unwrap(), TransferStatus::Completed);
-        assert_eq!(TransferStatus::from_str("cancelled").unwrap(), TransferStatus::Cancelled);
+        assert_eq!(
+            TransferStatus::from_str("draft").unwrap(),
+            TransferStatus::Draft
+        );
+        assert_eq!(
+            TransferStatus::from_str("pending").unwrap(),
+            TransferStatus::Pending
+        );
+        assert_eq!(
+            TransferStatus::from_str("in_transit").unwrap(),
+            TransferStatus::InTransit
+        );
+        assert_eq!(
+            TransferStatus::from_str("completed").unwrap(),
+            TransferStatus::Completed
+        );
+        assert_eq!(
+            TransferStatus::from_str("cancelled").unwrap(),
+            TransferStatus::Cancelled
+        );
     }
 
     #[test]
     fn test_from_str_aliases() {
-        assert_eq!(TransferStatus::from_str("submitted").unwrap(), TransferStatus::Pending);
-        assert_eq!(TransferStatus::from_str("shipped").unwrap(), TransferStatus::InTransit);
-        assert_eq!(TransferStatus::from_str("intransit").unwrap(), TransferStatus::InTransit);
-        assert_eq!(TransferStatus::from_str("received").unwrap(), TransferStatus::Completed);
-        assert_eq!(TransferStatus::from_str("canceled").unwrap(), TransferStatus::Cancelled);
+        assert_eq!(
+            TransferStatus::from_str("submitted").unwrap(),
+            TransferStatus::Pending
+        );
+        assert_eq!(
+            TransferStatus::from_str("shipped").unwrap(),
+            TransferStatus::InTransit
+        );
+        assert_eq!(
+            TransferStatus::from_str("intransit").unwrap(),
+            TransferStatus::InTransit
+        );
+        assert_eq!(
+            TransferStatus::from_str("received").unwrap(),
+            TransferStatus::Completed
+        );
+        assert_eq!(
+            TransferStatus::from_str("canceled").unwrap(),
+            TransferStatus::Cancelled
+        );
     }
 
     #[test]

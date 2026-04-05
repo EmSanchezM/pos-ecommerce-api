@@ -5,11 +5,11 @@
 // - POST /api/v1/auth/login - Unified login (email or username)
 // - POST /api/v1/auth/refresh - Token refresh
 
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 
 use identity::{
-    LoginCommand, LoginResponse, LoginUseCase, RefreshCommand,
-    RefreshTokenUseCase, RegisterEcommerceCommand, RegisterResponse, RegisterUserUseCase,
+    LoginCommand, LoginResponse, LoginUseCase, RefreshCommand, RefreshTokenUseCase,
+    RegisterEcommerceCommand, RegisterResponse, RegisterUserUseCase,
 };
 
 use crate::error::AppError;

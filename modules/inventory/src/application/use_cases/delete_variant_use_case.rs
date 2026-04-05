@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::domain::repositories::ProductRepository;
 use crate::domain::value_objects::{ProductId, VariantId};
-use crate::InventoryError;
 
 /// Use case for soft deleting a product variant (sets is_active to false)
 pub struct DeleteVariantUseCase<P>

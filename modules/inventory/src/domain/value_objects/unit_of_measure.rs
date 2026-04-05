@@ -68,15 +68,24 @@ mod tests {
 
     #[test]
     fn test_unit_from_str() {
-        assert_eq!(UnitOfMeasure::from_str("unit").unwrap(), UnitOfMeasure::Unit);
+        assert_eq!(
+            UnitOfMeasure::from_str("unit").unwrap(),
+            UnitOfMeasure::Unit
+        );
         assert_eq!(UnitOfMeasure::from_str("pcs").unwrap(), UnitOfMeasure::Unit);
-        assert_eq!(UnitOfMeasure::from_str("piece").unwrap(), UnitOfMeasure::Unit);
+        assert_eq!(
+            UnitOfMeasure::from_str("piece").unwrap(),
+            UnitOfMeasure::Unit
+        );
     }
 
     #[test]
     fn test_kg_from_str() {
         assert_eq!(UnitOfMeasure::from_str("kg").unwrap(), UnitOfMeasure::Kg);
-        assert_eq!(UnitOfMeasure::from_str("kilogram").unwrap(), UnitOfMeasure::Kg);
+        assert_eq!(
+            UnitOfMeasure::from_str("kilogram").unwrap(),
+            UnitOfMeasure::Kg
+        );
         assert_eq!(UnitOfMeasure::from_str("KG").unwrap(), UnitOfMeasure::Kg);
     }
 
@@ -89,9 +98,15 @@ mod tests {
 
     #[test]
     fn test_liter_from_str() {
-        assert_eq!(UnitOfMeasure::from_str("liter").unwrap(), UnitOfMeasure::Liter);
+        assert_eq!(
+            UnitOfMeasure::from_str("liter").unwrap(),
+            UnitOfMeasure::Liter
+        );
         assert_eq!(UnitOfMeasure::from_str("l").unwrap(), UnitOfMeasure::Liter);
-        assert_eq!(UnitOfMeasure::from_str("litre").unwrap(), UnitOfMeasure::Liter);
+        assert_eq!(
+            UnitOfMeasure::from_str("litre").unwrap(),
+            UnitOfMeasure::Liter
+        );
     }
 
     #[test]

@@ -2,10 +2,10 @@
 
 use std::sync::Arc;
 
+use crate::InventoryError;
 use crate::application::dtos::responses::{PaginatedResponse, ProductResponse};
 use crate::domain::repositories::ProductRepository;
 use crate::domain::value_objects::CategoryId;
-use crate::InventoryError;
 
 /// Query parameters for listing products
 #[derive(Debug, Clone)]

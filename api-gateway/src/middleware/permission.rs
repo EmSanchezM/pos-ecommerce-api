@@ -4,7 +4,11 @@
 // in handlers. These are used after the auth middleware has injected
 // the UserContext into the request.
 
-use axum::{http::StatusCode, Json, response::{IntoResponse, Response}};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use identity::{ErrorResponse, UserContext};
 
 /// Checks if the user has a specific permission.
@@ -223,7 +227,8 @@ mod tests {
 
     #[test]
     fn test_require_all_permissions_success() {
-        let ctx = create_context_with_permissions(&["stores:create", "stores:read", "stores:update"]);
+        let ctx =
+            create_context_with_permissions(&["stores:create", "stores:read", "stores:update"]);
         let result = require_all_permissions(&ctx, &["stores:create", "stores:read"]);
         assert!(result.is_ok());
     }

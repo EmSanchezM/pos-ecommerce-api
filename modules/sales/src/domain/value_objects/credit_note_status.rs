@@ -40,7 +40,10 @@ impl CreditNoteStatus {
 
     /// Returns true if the credit note is in a final state
     pub fn is_final(&self) -> bool {
-        matches!(self, CreditNoteStatus::Applied | CreditNoteStatus::Cancelled)
+        matches!(
+            self,
+            CreditNoteStatus::Applied | CreditNoteStatus::Cancelled
+        )
     }
 
     /// Returns true if the credit note can be submitted

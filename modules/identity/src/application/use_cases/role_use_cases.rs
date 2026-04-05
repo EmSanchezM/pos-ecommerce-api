@@ -5,7 +5,9 @@
 use std::sync::Arc;
 
 use crate::domain::entities::{AuditAction, AuditEntry, Role};
-use crate::domain::repositories::{AuditRepository, PermissionRepository, RoleRepository, UserRepository};
+use crate::domain::repositories::{
+    AuditRepository, PermissionRepository, RoleRepository, UserRepository,
+};
 use crate::domain::value_objects::{PermissionId, RoleId, UserId};
 use crate::error::IdentityError;
 
@@ -69,18 +71,12 @@ where
         self.role_repo.save(&role).await?;
 
         // Create audit entry
-        let audit_entry = AuditEntry::for_create(
-            "role",
-            role.id().into_uuid(),
-            &role,
-            actor_id,
-        );
+        let audit_entry = AuditEntry::for_create("role", role.id().into_uuid(), &role, actor_id);
         self.audit_repo.save(&audit_entry).await?;
 
         Ok(role)
     }
 }
-
 
 // =============================================================================
 // DeleteRoleUseCase
@@ -127,11 +123,7 @@ where
     /// # Errors
     /// * `IdentityError::RoleNotFound` - If role doesn't exist
     /// * `IdentityError::ProtectedRoleCannotBeDeleted` - If role is system-protected
-    pub async fn execute(
-        &self,
-        role_id: RoleId,
-        actor_id: UserId,
-    ) -> Result<(), IdentityError> {
+    pub async fn execute(&self, role_id: RoleId, actor_id: UserId) -> Result<(), IdentityError> {
         // Find the role first
         let role = self
             .role_repo
@@ -151,18 +143,12 @@ where
         self.role_repo.delete(role_id).await?;
 
         // Create audit entry
-        let audit_entry = AuditEntry::for_delete(
-            "role",
-            role_id.into_uuid(),
-            &role,
-            actor_id,
-        );
+        let audit_entry = AuditEntry::for_delete("role", role_id.into_uuid(), &role, actor_id);
         self.audit_repo.save(&audit_entry).await?;
 
         Ok(())
     }
 }
-
 
 // =============================================================================
 // AddPermissionToRoleUseCase
@@ -231,7 +217,9 @@ where
             .ok_or(IdentityError::PermissionNotFound(permission_id.into_uuid()))?;
 
         // Add permission to role (Requirement 2.3)
-        self.role_repo.add_permission(role_id, permission_id).await?;
+        self.role_repo
+            .add_permission(role_id, permission_id)
+            .await?;
 
         // Create audit entry for permission addition
         let audit_entry = AuditEntry::create(
@@ -252,7 +240,6 @@ where
         Ok(())
     }
 }
-
 
 // =============================================================================
 // RemovePermissionFromRoleUseCase
@@ -320,7 +307,9 @@ where
             .map(|p| p.code().as_str().to_string());
 
         // Remove permission from role (Requirement 2.4)
-        self.role_repo.remove_permission(role_id, permission_id).await?;
+        self.role_repo
+            .remove_permission(role_id, permission_id)
+            .await?;
 
         // Create audit entry for permission removal
         let audit_entry = AuditEntry::create(
@@ -341,7 +330,6 @@ where
         Ok(())
     }
 }
-
 
 // =============================================================================
 // Tests
@@ -438,7 +426,10 @@ mod tests {
             Ok(())
         }
 
-        async fn get_permissions(&self, _role_id: RoleId) -> Result<Vec<Permission>, IdentityError> {
+        async fn get_permissions(
+            &self,
+            _role_id: RoleId,
+        ) -> Result<Vec<Permission>, IdentityError> {
             Ok(vec![])
         }
 
@@ -533,11 +524,17 @@ mod tests {
             Ok(None)
         }
 
-        async fn find_by_email(&self, _email: &crate::domain::value_objects::Email) -> Result<Option<User>, IdentityError> {
+        async fn find_by_email(
+            &self,
+            _email: &crate::domain::value_objects::Email,
+        ) -> Result<Option<User>, IdentityError> {
             Ok(None)
         }
 
-        async fn find_by_username(&self, _username: &crate::domain::value_objects::Username) -> Result<Option<User>, IdentityError> {
+        async fn find_by_username(
+            &self,
+            _username: &crate::domain::value_objects::Username,
+        ) -> Result<Option<User>, IdentityError> {
             Ok(None)
         }
 
@@ -585,11 +582,19 @@ mod tests {
             Ok(())
         }
 
-        async fn add_to_store(&self, _user_id: UserId, _store_id: StoreId) -> Result<(), IdentityError> {
+        async fn add_to_store(
+            &self,
+            _user_id: UserId,
+            _store_id: StoreId,
+        ) -> Result<(), IdentityError> {
             Ok(())
         }
 
-        async fn remove_from_store(&self, _user_id: UserId, _store_id: StoreId) -> Result<(), IdentityError> {
+        async fn remove_from_store(
+            &self,
+            _user_id: UserId,
+            _store_id: StoreId,
+        ) -> Result<(), IdentityError> {
             Ok(())
         }
 
@@ -597,7 +602,11 @@ mod tests {
             Ok(vec![])
         }
 
-        async fn is_member_of_store(&self, _user_id: UserId, _store_id: StoreId) -> Result<bool, IdentityError> {
+        async fn is_member_of_store(
+            &self,
+            _user_id: UserId,
+            _store_id: StoreId,
+        ) -> Result<bool, IdentityError> {
             Ok(false)
         }
     }
@@ -615,7 +624,10 @@ mod tests {
         }
 
         fn with_permission(self, permission: Permission) -> Self {
-            self.permissions.lock().unwrap().insert(*permission.id(), permission);
+            self.permissions
+                .lock()
+                .unwrap()
+                .insert(*permission.id(), permission);
             self
         }
     }
@@ -633,7 +645,10 @@ mod tests {
             Ok(perms.get(&id).cloned())
         }
 
-        async fn find_by_code(&self, code: &PermissionCode) -> Result<Option<Permission>, IdentityError> {
+        async fn find_by_code(
+            &self,
+            code: &PermissionCode,
+        ) -> Result<Option<Permission>, IdentityError> {
             let perms = self.permissions.lock().unwrap();
             Ok(perms.values().find(|p| p.code() == code).cloned())
         }
@@ -645,7 +660,11 @@ mod tests {
 
         async fn find_by_module(&self, module: &str) -> Result<Vec<Permission>, IdentityError> {
             let perms = self.permissions.lock().unwrap();
-            Ok(perms.values().filter(|p| p.module() == module).cloned().collect())
+            Ok(perms
+                .values()
+                .filter(|p| p.module() == module)
+                .cloned()
+                .collect())
         }
 
         async fn delete(&self, id: PermissionId) -> Result<(), IdentityError> {
@@ -727,7 +746,8 @@ mod tests {
         let role_repo = Arc::new(MockRoleRepository::new().with_role(role));
         let user_repo = Arc::new(MockUserRepository::new());
         let audit_repo = Arc::new(MockAuditRepository::new());
-        let use_case = DeleteRoleUseCase::new(role_repo.clone(), user_repo.clone(), audit_repo.clone());
+        let use_case =
+            DeleteRoleUseCase::new(role_repo.clone(), user_repo.clone(), audit_repo.clone());
 
         let actor_id = UserId::new();
         let result = use_case.execute(role_id, actor_id).await;
@@ -775,7 +795,10 @@ mod tests {
         let actor_id = UserId::new();
         let result = use_case.execute(role_id, actor_id).await;
 
-        assert!(matches!(result, Err(IdentityError::ProtectedRoleCannotBeDeleted)));
+        assert!(matches!(
+            result,
+            Err(IdentityError::ProtectedRoleCannotBeDeleted)
+        ));
     }
 
     // =============================================================================
@@ -793,7 +816,8 @@ mod tests {
         let role_repo = Arc::new(MockRoleRepository::new().with_role(role));
         let permission_repo = Arc::new(MockPermissionRepository::new().with_permission(permission));
         let audit_repo = Arc::new(MockAuditRepository::new());
-        let use_case = AddPermissionToRoleUseCase::new(role_repo, permission_repo, audit_repo.clone());
+        let use_case =
+            AddPermissionToRoleUseCase::new(role_repo, permission_repo, audit_repo.clone());
 
         let actor_id = UserId::new();
         let result = use_case.execute(role_id, permission_id, actor_id).await;
@@ -820,7 +844,9 @@ mod tests {
 
         let actor_id = UserId::new();
         let non_existent_role_id = RoleId::new();
-        let result = use_case.execute(non_existent_role_id, permission_id, actor_id).await;
+        let result = use_case
+            .execute(non_existent_role_id, permission_id, actor_id)
+            .await;
 
         assert!(matches!(result, Err(IdentityError::RoleNotFound(_))));
     }
@@ -837,7 +863,9 @@ mod tests {
 
         let actor_id = UserId::new();
         let non_existent_permission_id = PermissionId::new();
-        let result = use_case.execute(role_id, non_existent_permission_id, actor_id).await;
+        let result = use_case
+            .execute(role_id, non_existent_permission_id, actor_id)
+            .await;
 
         assert!(matches!(result, Err(IdentityError::PermissionNotFound(_))));
     }
@@ -857,7 +885,8 @@ mod tests {
         let role_repo = Arc::new(MockRoleRepository::new().with_role(role));
         let permission_repo = Arc::new(MockPermissionRepository::new().with_permission(permission));
         let audit_repo = Arc::new(MockAuditRepository::new());
-        let use_case = RemovePermissionFromRoleUseCase::new(role_repo, permission_repo, audit_repo.clone());
+        let use_case =
+            RemovePermissionFromRoleUseCase::new(role_repo, permission_repo, audit_repo.clone());
 
         let actor_id = UserId::new();
         let result = use_case.execute(role_id, permission_id, actor_id).await;
@@ -881,7 +910,9 @@ mod tests {
         let actor_id = UserId::new();
         let non_existent_role_id = RoleId::new();
         let permission_id = PermissionId::new();
-        let result = use_case.execute(non_existent_role_id, permission_id, actor_id).await;
+        let result = use_case
+            .execute(non_existent_role_id, permission_id, actor_id)
+            .await;
 
         assert!(matches!(result, Err(IdentityError::RoleNotFound(_))));
     }
@@ -896,7 +927,8 @@ mod tests {
         let role_repo = Arc::new(MockRoleRepository::new().with_role(role));
         let permission_repo = Arc::new(MockPermissionRepository::new());
         let audit_repo = Arc::new(MockAuditRepository::new());
-        let use_case = RemovePermissionFromRoleUseCase::new(role_repo, permission_repo, audit_repo.clone());
+        let use_case =
+            RemovePermissionFromRoleUseCase::new(role_repo, permission_repo, audit_repo.clone());
 
         let actor_id = UserId::new();
         let permission_id = PermissionId::new();

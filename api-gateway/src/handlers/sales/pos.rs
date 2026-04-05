@@ -1,6 +1,11 @@
 // POS (Point of Sale) handlers for the Sales module
 
-use axum::{extract::{Path, Query, State}, http::StatusCode, Json, response::{IntoResponse, Response}};
+use axum::{
+    Json,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use rust_decimal::Decimal;
 use serde::Deserialize;
 use uuid::Uuid;
@@ -45,10 +50,7 @@ pub async fn create_pos_sale_handler(
 ) -> Result<(StatusCode, Json<SaleDetailResponse>), Response> {
     require_permission(&ctx, "sales:create")?;
 
-    let use_case = sales::CreatePosSaleUseCase::new(
-        state.sale_repo(),
-        state.shift_repo(),
-    );
+    let use_case = sales::CreatePosSaleUseCase::new(state.sale_repo(), state.shift_repo());
 
     let response = use_case
         .execute(command, *ctx.user_id())
@@ -77,7 +79,9 @@ pub async fn add_sale_item_handler(
         notes: req.notes,
     };
 
-    let uom: inventory::UnitOfMeasure = req.unit_of_measure.parse()
+    let uom: inventory::UnitOfMeasure = req
+        .unit_of_measure
+        .parse()
         .map_err(|_| AppError::from(sales::SalesError::InvalidUnitOfMeasure).into_response())?;
 
     let response = use_case
@@ -168,10 +172,7 @@ pub async fn process_payment_handler(
 
     command.sale_id = sale_id;
 
-    let use_case = sales::ProcessPaymentUseCase::new(
-        state.sale_repo(),
-        state.shift_repo(),
-    );
+    let use_case = sales::ProcessPaymentUseCase::new(state.sale_repo(), state.shift_repo());
 
     let response = use_case
         .execute(command)

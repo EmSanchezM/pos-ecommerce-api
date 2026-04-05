@@ -10,10 +10,10 @@
 // - POST /api/inventory/reservations/expire - Expire all expired reservations
 
 use axum::{
+    Json,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

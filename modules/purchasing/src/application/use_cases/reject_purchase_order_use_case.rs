@@ -3,14 +3,12 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::PurchasingError;
 use crate::application::dtos::commands::RejectOrderCommand;
-use crate::application::dtos::responses::{
-    PurchaseOrderDetailResponse, PurchaseOrderItemResponse,
-};
+use crate::application::dtos::responses::{PurchaseOrderDetailResponse, PurchaseOrderItemResponse};
 use crate::domain::entities::PurchaseOrder;
 use crate::domain::repositories::PurchaseOrderRepository;
 use crate::domain::value_objects::PurchaseOrderId;
-use crate::PurchasingError;
 
 /// Use case for rejecting a submitted purchase order
 pub struct RejectPurchaseOrderUseCase<P>

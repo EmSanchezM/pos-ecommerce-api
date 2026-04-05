@@ -3,13 +3,11 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::application::dtos::responses::{
-    PurchaseOrderDetailResponse, PurchaseOrderItemResponse,
-};
+use crate::PurchasingError;
+use crate::application::dtos::responses::{PurchaseOrderDetailResponse, PurchaseOrderItemResponse};
 use crate::domain::entities::PurchaseOrder;
 use crate::domain::repositories::PurchaseOrderRepository;
 use crate::domain::value_objects::PurchaseOrderId;
-use crate::PurchasingError;
 use identity::UserId;
 
 /// Use case for approving a submitted purchase order
