@@ -489,9 +489,72 @@ impl PurchaseOrderRepository for PgPurchaseOrderRepository {
     }
 }
 
+// Transactional methods
 impl PgPurchaseOrderRepository {
-    async fn save_item_internal(
-        &self,
+    /// Updates a purchase order within an existing transaction.
+    pub async fn update_in_tx(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        order: &PurchaseOrder,
+    ) -> Result<(), PurchasingError> {
+        let result = sqlx::query(
+            r#"
+            UPDATE purchase_orders
+            SET vendor_id = $2, status = $3, order_date = $4, expected_delivery_date = $5,
+                received_date = $6, subtotal = $7, tax_amount = $8, discount_amount = $9,
+                total = $10, currency = $11, payment_terms_days = $12, notes = $13,
+                internal_notes = $14, submitted_by_id = $15, submitted_at = $16,
+                approved_by_id = $17, approved_at = $18, received_by_id = $19,
+                cancelled_by_id = $20, cancelled_at = $21, cancellation_reason = $22,
+                updated_at = $23
+            WHERE id = $1
+            "#,
+        )
+        .bind(order.id().into_uuid())
+        .bind(order.vendor_id().into_uuid())
+        .bind(order.status().to_string())
+        .bind(order.order_date())
+        .bind(order.expected_delivery_date())
+        .bind(order.received_date())
+        .bind(order.subtotal())
+        .bind(order.tax_amount())
+        .bind(order.discount_amount())
+        .bind(order.total())
+        .bind(order.currency().as_str())
+        .bind(order.payment_terms_days())
+        .bind(order.notes())
+        .bind(order.internal_notes())
+        .bind(order.submitted_by_id().map(|id| id.into_uuid()))
+        .bind(order.submitted_at())
+        .bind(order.approved_by_id().map(|id| id.into_uuid()))
+        .bind(order.approved_at())
+        .bind(order.received_by_id().map(|id| id.into_uuid()))
+        .bind(order.cancelled_by_id().map(|id| id.into_uuid()))
+        .bind(order.cancelled_at())
+        .bind(order.cancellation_reason())
+        .bind(order.updated_at())
+        .execute(&mut **tx)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(PurchasingError::PurchaseOrderNotFound(
+                order.id().into_uuid(),
+            ));
+        }
+
+        // Update items (delete and re-insert)
+        sqlx::query("DELETE FROM purchase_order_items WHERE purchase_order_id = $1")
+            .bind(order.id().into_uuid())
+            .execute(&mut **tx)
+            .await?;
+
+        for item in order.items() {
+            Self::save_item_to_tx(tx, item).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn save_item_to_tx(
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         item: &PurchaseOrderItem,
     ) -> Result<(), PurchasingError> {
@@ -523,6 +586,16 @@ impl PgPurchaseOrderRepository {
         .await?;
 
         Ok(())
+    }
+}
+
+impl PgPurchaseOrderRepository {
+    async fn save_item_internal(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        item: &PurchaseOrderItem,
+    ) -> Result<(), PurchasingError> {
+        Self::save_item_to_tx(tx, item).await
     }
 }
 

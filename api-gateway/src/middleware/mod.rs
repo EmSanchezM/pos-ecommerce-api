@@ -5,6 +5,7 @@
 
 pub mod auth;
 pub mod permission;
+pub mod rate_limit;
 
 pub use auth::auth_middleware;
 pub use permission::{

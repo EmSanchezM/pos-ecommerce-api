@@ -132,9 +132,14 @@ pub async fn create_store_handler(
 /// - Filter by user access (TODO: implement access filtering)
 pub async fn list_stores_handler(
     State(state): State<AppState>,
-    CurrentUser(_ctx): CurrentUser,
-    Query(query): Query<ListStoresQuery>,
+    CurrentUser(ctx): CurrentUser,
+    Query(mut query): Query<ListStoresQuery>,
 ) -> Result<Json<PaginatedStoresResponse>, Response> {
+    // Non-super-admin users only see their assigned stores
+    if !ctx.is_super_admin() {
+        query.user_store_ids = Some(ctx.accessible_store_ids().to_vec());
+    }
+
     let use_case = ListStoresUseCase::new(state.store_repo());
 
     let response = use_case

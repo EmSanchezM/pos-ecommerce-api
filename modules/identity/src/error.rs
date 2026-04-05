@@ -50,6 +50,12 @@ pub enum IdentityError {
     #[error("User is not a member of store: {0}")]
     UserNotInStore(Uuid),
 
+    #[error("Audit error: {0}")]
+    AuditError(String),
+
+    #[error("Password hash error: {0}")]
+    PasswordHashError(String),
+
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
 
