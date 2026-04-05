@@ -301,6 +301,73 @@ impl TransferRepository for PgTransferRepository {
     }
 }
 
+// Transactional methods
+impl PgTransferRepository {
+    /// Updates a transfer within an existing transaction.
+    pub async fn update_in_tx(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        transfer: &StockTransfer,
+    ) -> Result<(), InventoryError> {
+        let result = sqlx::query(
+            r#"
+            UPDATE stock_transfers
+            SET status = $2, shipped_date = $3, received_date = $4,
+                shipped_by_id = $5, received_by_id = $6, notes = $7,
+                shipping_method = $8, tracking_number = $9, updated_at = $10
+            WHERE id = $1
+            "#,
+        )
+        .bind(transfer.id().into_uuid())
+        .bind(transfer.status().to_string())
+        .bind(transfer.shipped_date())
+        .bind(transfer.received_date())
+        .bind(transfer.shipped_by_id().map(|id| id.into_uuid()))
+        .bind(transfer.received_by_id().map(|id| id.into_uuid()))
+        .bind(transfer.notes())
+        .bind(transfer.shipping_method())
+        .bind(transfer.tracking_number())
+        .bind(transfer.updated_at())
+        .execute(&mut **tx)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(InventoryError::TransferNotFound(transfer.id().into_uuid()));
+        }
+
+        // Update items (delete and re-insert)
+        sqlx::query("DELETE FROM stock_transfer_items WHERE transfer_id = $1")
+            .bind(transfer.id().into_uuid())
+            .execute(&mut **tx)
+            .await?;
+
+        for item in transfer.items() {
+            sqlx::query(
+                r#"
+                INSERT INTO stock_transfer_items (
+                    id, transfer_id, product_id, variant_id, quantity_requested,
+                    quantity_shipped, quantity_received, unit_cost, notes, created_at
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                "#,
+            )
+            .bind(item.id())
+            .bind(transfer.id().into_uuid())
+            .bind(item.product_id().map(|id| id.into_uuid()))
+            .bind(item.variant_id().map(|id| id.into_uuid()))
+            .bind(item.quantity_requested())
+            .bind(item.quantity_shipped())
+            .bind(item.quantity_received())
+            .bind(item.unit_cost())
+            .bind(item.notes())
+            .bind(item.created_at())
+            .execute(&mut **tx)
+            .await?;
+        }
+
+        Ok(())
+    }
+}
+
 // =============================================================================
 // Row types for database mapping
 // =============================================================================

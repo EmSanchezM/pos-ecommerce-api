@@ -208,6 +208,14 @@ impl From<IdentityError> for AppError {
             }
 
             // 500 Internal Server Error - Database and other errors
+            IdentityError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
+            IdentityError::PasswordHashError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
             IdentityError::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
@@ -584,6 +592,10 @@ impl From<InventoryError> for AppError {
             // -----------------------------------------------------------------
             // 500 Internal Server Error - Database and system errors
             // -----------------------------------------------------------------
+            InventoryError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
             InventoryError::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
@@ -804,6 +816,10 @@ impl From<PurchasingError> for AppError {
             // -----------------------------------------------------------------
             // 500 Internal Server Error - Database and system errors
             // -----------------------------------------------------------------
+            PurchasingError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
             PurchasingError::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
@@ -1209,6 +1225,10 @@ impl From<SalesError> for AppError {
             // -----------------------------------------------------------------
             // 500 Internal Server Error
             // -----------------------------------------------------------------
+            SalesError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
             SalesError::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
