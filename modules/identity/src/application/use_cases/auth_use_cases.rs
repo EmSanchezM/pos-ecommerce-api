@@ -241,8 +241,17 @@ where
             return Err(AuthError::AccountDisabled);
         }
 
+        // Load all store permissions for embedding in token
+        let store_permissions = self
+            .user_repo
+            .get_all_store_permissions(*user.id())
+            .await
+            .map_err(|e| AuthError::Internal(e.to_string()))?;
+
         // Generate JWT tokens (Requirement 3.8)
-        let access_token = self.token_service.generate_access_token(&user)?;
+        let access_token = self
+            .token_service
+            .generate_access_token(&user, &store_permissions)?;
         let refresh_token = self.token_service.generate_refresh_token(*user.id())?;
 
         // Return login response with tokens
@@ -321,8 +330,17 @@ where
             return Err(AuthError::AccountDisabled);
         }
 
+        // Re-load store permissions for the new token
+        let store_permissions = self
+            .user_repo
+            .get_all_store_permissions(*user.id())
+            .await
+            .map_err(|e| AuthError::Internal(e.to_string()))?;
+
         // Generate new access token (Requirement 4.5)
-        let access_token = self.token_service.generate_access_token(&user)?;
+        let access_token = self
+            .token_service
+            .generate_access_token(&user, &store_permissions)?;
 
         // Return response with new access token but same refresh token
         // expires_in is 900 seconds (15 minutes) as per Requirement 4.2
@@ -567,6 +585,14 @@ mod tests {
         ) -> Result<bool, crate::error::IdentityError> {
             Ok(false)
         }
+
+        async fn get_all_store_permissions(
+            &self,
+            _user_id: UserId,
+        ) -> Result<std::collections::HashMap<String, Vec<String>>, crate::error::IdentityError>
+        {
+            Ok(std::collections::HashMap::new())
+        }
     }
 
     struct MockAuditRepository {
@@ -627,7 +653,11 @@ mod tests {
     struct MockTokenService;
 
     impl TokenService for MockTokenService {
-        fn generate_access_token(&self, user: &User) -> Result<String, AuthError> {
+        fn generate_access_token(
+            &self,
+            user: &User,
+            _store_permissions: &std::collections::HashMap<String, Vec<String>>,
+        ) -> Result<String, AuthError> {
             Ok(format!("access_token_for_{}", user.id().as_uuid()))
         }
 
@@ -678,7 +708,11 @@ mod tests {
     }
 
     impl TokenService for MockTokenServiceWithRefresh {
-        fn generate_access_token(&self, user: &User) -> Result<String, AuthError> {
+        fn generate_access_token(
+            &self,
+            user: &User,
+            _store_permissions: &std::collections::HashMap<String, Vec<String>>,
+        ) -> Result<String, AuthError> {
             Ok(format!("new_access_token_for_{}", user.id().as_uuid()))
         }
 

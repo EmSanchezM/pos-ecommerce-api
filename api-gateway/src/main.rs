@@ -1,10 +1,14 @@
+use std::env;
+use std::str::FromStr;
+use std::time::Duration;
+
 use axum::{Router, routing::get};
 use common::health::infrastructure::health_check_simple;
-use std::env;
 
 pub mod error;
 pub mod extractors;
 mod handlers;
+mod jobs;
 pub mod middleware;
 mod routes;
 mod state;
@@ -29,9 +33,19 @@ async fn main() {
     let jwt_secret = env::var("JWT_SECRET")
         .unwrap_or_else(|_| "development-secret-key-change-in-production".to_string());
 
-    // Create PostgreSQL connection pool
+    // Create PostgreSQL connection pool with configurable settings
+    let max_connections = env_or::<u32>("DB_MAX_CONNECTIONS", 50);
+    let min_connections = env_or::<u32>("DB_MIN_CONNECTIONS", 5);
+    let acquire_timeout_secs = env_or::<u64>("DB_ACQUIRE_TIMEOUT_SECS", 5);
+    let idle_timeout_secs = env_or::<u64>("DB_IDLE_TIMEOUT_SECS", 300);
+    let max_lifetime_secs = env_or::<u64>("DB_MAX_LIFETIME_SECS", 1800);
+
     let pool = sqlx::postgres::PgPoolOptions::new()
-        .max_connections(10)
+        .min_connections(min_connections)
+        .max_connections(max_connections)
+        .acquire_timeout(Duration::from_secs(acquire_timeout_secs))
+        .idle_timeout(Duration::from_secs(idle_timeout_secs))
+        .max_lifetime(Duration::from_secs(max_lifetime_secs))
         .connect(&database_url)
         .await
         .expect("Failed to connect to PostgreSQL");
@@ -70,9 +84,29 @@ async fn main() {
             "/api/v1/credit-notes",
             credit_notes_router(app_state.clone()),
         )
-        .with_state(app_state);
+        .with_state(app_state.clone());
+
+    // Start background jobs
+    let reservation_expiry_interval = env_or::<u64>("RESERVATION_EXPIRY_INTERVAL_SECS", 300);
+    let cart_cleanup_interval = env_or::<u64>("CART_CLEANUP_INTERVAL_SECS", 900);
+
+    jobs::reservation_expiry::spawn(
+        app_state.reservation_repo(),
+        app_state.stock_repo(),
+        reservation_expiry_interval,
+    );
+    jobs::cart_cleanup::spawn(app_state.cart_repo(), cart_cleanup_interval);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
     println!("API Gateway running on http://0.0.0.0:8000");
     axum::serve(listener, app).await.unwrap();
+}
+
+/// Reads an environment variable, parsing it to `T`. Returns `default` if the
+/// variable is missing or cannot be parsed.
+fn env_or<T: FromStr>(name: &str, default: T) -> T {
+    env::var(name)
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(default)
 }

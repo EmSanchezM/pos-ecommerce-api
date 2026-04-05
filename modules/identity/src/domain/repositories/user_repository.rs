@@ -2,6 +2,8 @@
 
 use async_trait::async_trait;
 
+use std::collections::HashMap;
+
 use crate::domain::entities::{Permission, Role, Store, User};
 use crate::domain::value_objects::{Email, RoleId, StoreId, UserId, Username};
 use crate::error::IdentityError;
@@ -122,4 +124,14 @@ pub trait UserRepository: Send + Sync {
         user_id: UserId,
         store_id: StoreId,
     ) -> Result<bool, IdentityError>;
+
+    /// Gets all permissions for a user across all stores they belong to.
+    ///
+    /// Returns a map of store_id (as UUID string) to a list of permission codes.
+    /// Used to embed permissions in JWT tokens so the auth middleware
+    /// doesn't need to query the database on every request.
+    async fn get_all_store_permissions(
+        &self,
+        user_id: UserId,
+    ) -> Result<HashMap<String, Vec<String>>, IdentityError>;
 }

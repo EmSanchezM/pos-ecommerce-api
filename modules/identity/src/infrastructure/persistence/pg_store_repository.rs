@@ -110,6 +110,49 @@ impl StoreRepository for PgStoreRepository {
         Ok(())
     }
 
+    async fn find_paginated(
+        &self,
+        is_active: Option<bool>,
+        is_ecommerce: Option<bool>,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<Store>, i64), IdentityError> {
+        let offset = (page - 1) * page_size;
+
+        let (count,): (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)
+            FROM stores
+            WHERE ($1::bool IS NULL OR is_active = $1)
+              AND ($2::bool IS NULL OR is_ecommerce = $2)
+            "#,
+        )
+        .bind(is_active)
+        .bind(is_ecommerce)
+        .fetch_one(&self.pool)
+        .await?;
+
+        let rows = sqlx::query_as::<_, StoreRow>(
+            r#"
+            SELECT id, name, address, is_ecommerce, is_active, created_at, updated_at
+            FROM stores
+            WHERE ($1::bool IS NULL OR is_active = $1)
+              AND ($2::bool IS NULL OR is_ecommerce = $2)
+            ORDER BY name
+            LIMIT $3 OFFSET $4
+            "#,
+        )
+        .bind(is_active)
+        .bind(is_ecommerce)
+        .bind(page_size)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let stores: Vec<Store> = rows.into_iter().map(|r| r.into()).collect();
+        Ok((stores, count))
+    }
+
     async fn get_users(&self, store_id: StoreId) -> Result<Vec<User>, IdentityError> {
         let rows = sqlx::query_as::<_, UserRow>(
             r#"

@@ -38,4 +38,14 @@ pub trait StoreRepository: Send + Sync {
 
     /// Gets all users assigned to a store
     async fn get_users(&self, store_id: StoreId) -> Result<Vec<User>, IdentityError>;
+
+    /// Finds stores with pagination and optional filters
+    /// Returns (stores, total_count)
+    async fn find_paginated(
+        &self,
+        is_active: Option<bool>,
+        is_ecommerce: Option<bool>,
+        page: i64,
+        page_size: i64,
+    ) -> Result<(Vec<Store>, i64), IdentityError>;
 }

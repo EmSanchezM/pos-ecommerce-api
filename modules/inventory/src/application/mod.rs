@@ -18,4 +18,5 @@
 //! See [`dtos`] for all available DTOs.
 
 pub mod dtos;
+pub mod helpers;
 pub mod use_cases;
