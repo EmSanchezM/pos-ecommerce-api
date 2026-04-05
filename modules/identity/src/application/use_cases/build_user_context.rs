@@ -228,6 +228,14 @@ mod tests {
         ) -> Result<bool, IdentityError> {
             Ok(true)
         }
+
+        async fn get_all_store_permissions(
+            &self,
+            _user_id: UserId,
+        ) -> Result<std::collections::HashMap<String, Vec<String>>, crate::error::IdentityError>
+        {
+            Ok(std::collections::HashMap::new())
+        }
     }
 
     fn create_active_user() -> User {

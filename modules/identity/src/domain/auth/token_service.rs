@@ -4,6 +4,8 @@
 // following hexagonal architecture principles. Implementations (adapters)
 // will provide the actual JWT logic.
 
+use std::collections::HashMap;
+
 use crate::domain::auth::{AuthError, TokenClaims};
 use crate::domain::entities::User;
 use crate::domain::value_objects::UserId;
@@ -35,7 +37,11 @@ pub trait TokenService: Send + Sync {
     /// * `Ok(String)` - The encoded JWT access token
     /// * `Err(AuthError)` - If token generation fails
     ///
-    fn generate_access_token(&self, user: &User) -> Result<String, AuthError>;
+    fn generate_access_token(
+        &self,
+        user: &User,
+        store_permissions: &HashMap<String, Vec<String>>,
+    ) -> Result<String, AuthError>;
 
     /// Generates a refresh token for the given user.
     ///

@@ -5,6 +5,7 @@ use std::sync::Arc;
 use crate::InventoryError;
 use crate::application::dtos::commands::ShipTransferCommand;
 use crate::application::dtos::responses::{TransferDetailResponse, TransferItemResponse};
+use crate::application::helpers::{DEFAULT_BASE_DELAY_MS, DEFAULT_MAX_ATTEMPTS, retry_on_conflict};
 use crate::domain::entities::{InventoryMovement, StockTransfer};
 use crate::domain::repositories::{
     InventoryMovementRepository, InventoryStockRepository, TransferRepository,
@@ -101,37 +102,47 @@ where
             // Record shipped quantity on item
             item.record_shipped(quantity_shipped);
 
-            // Find stock record for this item at source store
-            let stock = if let Some(product_id) = item.product_id() {
+            // Find and update stock with retry on optimistic lock conflict
+            let item_product_id = item.product_id();
+            let item_variant_id = item.variant_id();
+            let item_unit_cost = item.unit_cost();
+
+            let stock = retry_on_conflict(DEFAULT_MAX_ATTEMPTS, DEFAULT_BASE_DELAY_MS, || async {
+                // Re-fetch stock record for this item at source store
+                let found = if let Some(product_id) = item_product_id {
+                    self.stock_repo
+                        .find_by_store_and_product(from_store_id, product_id)
+                        .await?
+                } else if let Some(variant_id) = item_variant_id {
+                    self.stock_repo
+                        .find_by_store_and_variant(from_store_id, variant_id)
+                        .await?
+                } else {
+                    return Err(InventoryError::InvalidProductVariantConstraint);
+                };
+
+                let mut stock = found.ok_or_else(|| {
+                    InventoryError::StockNotFound(
+                        item_product_id
+                            .map(|id| id.into_uuid())
+                            .or_else(|| item_variant_id.map(|id| id.into_uuid()))
+                            .unwrap_or_default(),
+                    )
+                })?;
+
+                // Reduce stock (negative delta)
+                let expected_version = stock.version();
+                stock.adjust_quantity(-quantity_shipped)?;
+                stock.increment_version();
+
+                // Update stock with optimistic locking
                 self.stock_repo
-                    .find_by_store_and_product(from_store_id, product_id)
-                    .await?
-            } else if let Some(variant_id) = item.variant_id() {
-                self.stock_repo
-                    .find_by_store_and_variant(from_store_id, variant_id)
-                    .await?
-            } else {
-                return Err(InventoryError::InvalidProductVariantConstraint);
-            };
+                    .update_with_version(&stock, expected_version)
+                    .await?;
 
-            let mut stock = stock.ok_or_else(|| {
-                InventoryError::StockNotFound(
-                    item.product_id()
-                        .map(|id| id.into_uuid())
-                        .or_else(|| item.variant_id().map(|id| id.into_uuid()))
-                        .unwrap_or_default(),
-                )
-            })?;
-
-            // Reduce stock (negative delta)
-            let expected_version = stock.version();
-            stock.adjust_quantity(-quantity_shipped)?;
-            stock.increment_version();
-
-            // Update stock with optimistic locking
-            self.stock_repo
-                .update_with_version(&stock, expected_version)
-                .await?;
+                Ok(stock)
+            })
+            .await?;
 
             // Create transfer_out movement
             let movement = InventoryMovement::create(
@@ -139,7 +150,7 @@ where
                 MovementType::TransferOut,
                 Some("Transfer to store".to_string()),
                 -quantity_shipped,
-                item.unit_cost(),
+                item_unit_cost,
                 Currency::hnl(),
                 stock.quantity(),
                 Some("transfer".to_string()),
@@ -420,6 +431,22 @@ mod tests {
             unimplemented!()
         }
 
+        async fn find_by_store_and_products(
+            &self,
+            _store_id: StoreId,
+            _product_ids: &[ProductId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_by_store_and_variants(
+            &self,
+            _store_id: StoreId,
+            _variant_ids: &[VariantId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
         async fn find_low_stock_by_store(
             &self,
             _store_id: StoreId,
@@ -511,6 +538,10 @@ mod tests {
             &self,
             _query: &crate::domain::repositories::MovementQuery,
         ) -> Result<i64, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn save_batch(&self, _movements: &[InventoryMovement]) -> Result<(), InventoryError> {
             unimplemented!()
         }
     }

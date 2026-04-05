@@ -64,35 +64,52 @@ where
         command: UpdateStockCommand,
         actor_id: UserId,
     ) -> Result<StockResponse, InventoryError> {
+        use crate::application::helpers::{
+            DEFAULT_BASE_DELAY_MS, DEFAULT_MAX_ATTEMPTS, retry_on_conflict,
+        };
+
         // 1. Parse and validate movement type (Requirement 5.1)
         let movement_type = MovementType::from_str(&command.movement_type)?;
-
-        // 2. Find stock record
         let stock_id = StockId::from_uuid(command.stock_id);
-        let mut stock = self
+
+        // 2. Validate client-side expected version before attempting update
+        let initial_stock = self
             .stock_repo
             .find_by_id(stock_id)
             .await?
             .ok_or(InventoryError::StockNotFound(command.stock_id))?;
 
-        // 3. Validate version matches (Requirement 3.3)
-        if stock.version() != command.expected_version {
+        if initial_stock.version() != command.expected_version {
             return Err(InventoryError::OptimisticLockError);
         }
 
-        // Store old state for audit
-        let old_stock = stock.clone();
+        // 3. Retry stock update on DB-level optimistic lock conflict
+        let (stock, old_stock) =
+            retry_on_conflict(DEFAULT_MAX_ATTEMPTS, DEFAULT_BASE_DELAY_MS, || async {
+                // Re-fetch stock to get latest version
+                let mut stock = self
+                    .stock_repo
+                    .find_by_id(stock_id)
+                    .await?
+                    .ok_or(InventoryError::StockNotFound(command.stock_id))?;
 
-        // 4. Apply quantity change (Requirement 3.4)
-        stock.adjust_quantity(command.quantity_delta)?;
-        stock.increment_version();
+                let old_stock = stock.clone();
+                let expected_version = stock.version();
 
-        // 5. Update with optimistic lock (Requirement 3.3)
-        self.stock_repo
-            .update_with_version(&stock, command.expected_version)
+                // Apply quantity change (Requirement 3.4)
+                stock.adjust_quantity(command.quantity_delta)?;
+                stock.increment_version();
+
+                // Update with optimistic lock (Requirement 3.3)
+                self.stock_repo
+                    .update_with_version(&stock, expected_version)
+                    .await?;
+
+                Ok((stock, old_stock))
+            })
             .await?;
 
-        // 6. Record movement (Requirement 5.1, 5.3)
+        // 3. Record movement (Requirement 5.1, 5.3)
         let movement = InventoryMovement::create(
             stock_id,
             movement_type,
@@ -108,7 +125,7 @@ where
         );
         self.movement_repo.save(&movement).await?;
 
-        // 7. Create audit entry
+        // 4. Create audit entry
         let audit_entry = AuditEntry::for_update(
             "inventory_stock",
             stock_id.into_uuid(),
@@ -121,7 +138,7 @@ where
             .await
             .map_err(|_| InventoryError::NotImplemented)?;
 
-        // 8. Convert to response
+        // 5. Convert to response
         Ok(StockResponse {
             id: stock.id().into_uuid(),
             store_id: stock.store_id().into_uuid(),
@@ -264,6 +281,22 @@ mod tests {
             unimplemented!()
         }
 
+        async fn find_by_store_and_products(
+            &self,
+            _store_id: StoreId,
+            _product_ids: &[ProductId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_by_store_and_variants(
+            &self,
+            _store_id: StoreId,
+            _variant_ids: &[crate::domain::value_objects::VariantId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
         async fn find_low_stock_by_store(
             &self,
             _store_id: StoreId,
@@ -351,6 +384,10 @@ mod tests {
             &self,
             _query: &crate::domain::repositories::MovementQuery,
         ) -> Result<i64, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn save_batch(&self, _movements: &[InventoryMovement]) -> Result<(), InventoryError> {
             unimplemented!()
         }
     }

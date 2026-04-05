@@ -12,7 +12,9 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-use identity::{BuildUserContextUseCase, ErrorResponse, StoreId, TokenService, UserId};
+use std::collections::HashSet;
+
+use identity::{ErrorResponse, PermissionCode, StoreId, TokenService, UserContext, UserId};
 
 use crate::state::AppState;
 
@@ -22,7 +24,7 @@ use crate::state::AppState;
 /// 1. Extracts the Bearer token from the Authorization header
 /// 2. Validates the token using TokenService
 /// 3. Extracts user_id from token claims
-/// 4. Builds UserContext with permissions using BuildUserContextUseCase
+/// 4. Builds UserContext with permissions from token claims (no DB query)
 /// 5. Injects UserContext into request extensions for use by handlers
 ///
 /// # Errors
@@ -59,21 +61,22 @@ pub async fn auth_middleware(
     // 3. Extract user_id from claims
     let user_id = UserId::from_uuid(claims.user_id());
 
-    // 4. Get store_id from query params or use a default store context
-    // For now, we'll use a default store context. In a real application,
-    // this would come from the request (e.g., X-Store-Id header or query param)
+    // 4. Get store_id from request header
     let store_id = extract_store_id(&request);
 
-    // 5. Build UserContext with permissions
-    let build_context_use_case = BuildUserContextUseCase::new(state.user_repo());
-    let user_context = match build_context_use_case.execute(user_id, store_id).await {
-        Ok(ctx) => ctx,
-        Err(e) => {
-            // Log the error for debugging (in production, use proper logging)
-            eprintln!("Failed to build user context: {:?}", e);
-            return unauthorized_response("User not found or inactive");
-        }
-    };
+    // 5. Build UserContext from token claims (no DB query needed)
+    let permissions: HashSet<PermissionCode> = claims
+        .store_permissions
+        .get(&store_id.as_uuid().to_string())
+        .map(|perms| {
+            perms
+                .iter()
+                .filter_map(|p| PermissionCode::new(p).ok())
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let user_context = UserContext::new(user_id, store_id, permissions);
 
     // 6. Insert UserContext into request extensions
     request.extensions_mut().insert(user_context);
