@@ -31,6 +31,7 @@ pub struct Payment {
     refunded_amount: Decimal,
     refunded_at: Option<DateTime<Utc>>,
     notes: Option<String>,
+    idempotency_key: Option<String>,
     processed_at: DateTime<Utc>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
@@ -65,6 +66,7 @@ impl Payment {
             refunded_amount: Decimal::ZERO,
             refunded_at: None,
             notes: None,
+            idempotency_key: None,
             processed_at: now,
             created_at: now,
             updated_at: now,
@@ -104,6 +106,7 @@ impl Payment {
             refunded_amount: Decimal::ZERO,
             refunded_at: None,
             notes: None,
+            idempotency_key: None,
             processed_at: now,
             created_at: now,
             updated_at: now,
@@ -128,6 +131,7 @@ impl Payment {
         refunded_amount: Decimal,
         refunded_at: Option<DateTime<Utc>>,
         notes: Option<String>,
+        idempotency_key: Option<String>,
         processed_at: DateTime<Utc>,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
@@ -148,6 +152,7 @@ impl Payment {
             refunded_amount,
             refunded_at,
             notes,
+            idempotency_key,
             processed_at,
             created_at,
             updated_at,
@@ -328,6 +333,15 @@ impl Payment {
 
     pub fn set_notes(&mut self, notes: Option<String>) {
         self.notes = notes;
+        self.updated_at = Utc::now();
+    }
+
+    pub fn idempotency_key(&self) -> Option<&str> {
+        self.idempotency_key.as_deref()
+    }
+
+    pub fn set_idempotency_key(&mut self, key: Option<String>) {
+        self.idempotency_key = key;
         self.updated_at = Utc::now();
     }
 }

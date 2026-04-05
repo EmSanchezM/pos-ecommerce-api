@@ -177,6 +177,7 @@ impl InventoryStockRepository for PgInventoryStockRepository {
             FROM inventory_stock
             WHERE store_id = $1
             ORDER BY created_at DESC
+            LIMIT 1000
             "#,
         )
         .bind(store_id.as_uuid())
@@ -316,6 +317,7 @@ impl InventoryStockRepository for PgInventoryStockRepository {
                    version, min_stock_level, max_stock_level, created_at, updated_at
             FROM inventory_stock
             ORDER BY store_id, created_at DESC
+            LIMIT 1000
             "#,
         )
         .fetch_all(&self.pool)
@@ -332,6 +334,7 @@ impl InventoryStockRepository for PgInventoryStockRepository {
             FROM inventory_stock
             WHERE (quantity - reserved_quantity) <= min_stock_level
             ORDER BY (quantity - reserved_quantity) ASC
+            LIMIT 1000
             "#,
         )
         .fetch_all(&self.pool)
@@ -354,6 +357,50 @@ impl InventoryStockRepository for PgInventoryStockRepository {
             "#,
         )
         .bind(store_id.as_uuid())
+        .fetch_all(&self.pool)
+        .await?;
+
+        rows.into_iter().map(|r| r.try_into()).collect()
+    }
+
+    async fn find_by_store_and_products(
+        &self,
+        store_id: StoreId,
+        product_ids: &[ProductId],
+    ) -> Result<Vec<InventoryStock>, InventoryError> {
+        let uuids: Vec<uuid::Uuid> = product_ids.iter().map(|id| id.into_uuid()).collect();
+        let rows = sqlx::query_as::<_, StockRow>(
+            r#"
+            SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
+                   version, min_stock_level, max_stock_level, created_at, updated_at
+            FROM inventory_stock
+            WHERE store_id = $1 AND product_id = ANY($2) AND variant_id IS NULL
+            "#,
+        )
+        .bind(store_id.as_uuid())
+        .bind(&uuids)
+        .fetch_all(&self.pool)
+        .await?;
+
+        rows.into_iter().map(|r| r.try_into()).collect()
+    }
+
+    async fn find_by_store_and_variants(
+        &self,
+        store_id: StoreId,
+        variant_ids: &[VariantId],
+    ) -> Result<Vec<InventoryStock>, InventoryError> {
+        let uuids: Vec<uuid::Uuid> = variant_ids.iter().map(|id| id.into_uuid()).collect();
+        let rows = sqlx::query_as::<_, StockRow>(
+            r#"
+            SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
+                   version, min_stock_level, max_stock_level, created_at, updated_at
+            FROM inventory_stock
+            WHERE store_id = $1 AND variant_id = ANY($2) AND product_id IS NULL
+            "#,
+        )
+        .bind(store_id.as_uuid())
+        .bind(&uuids)
         .fetch_all(&self.pool)
         .await?;
 

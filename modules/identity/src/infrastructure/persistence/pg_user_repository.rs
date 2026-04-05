@@ -1,5 +1,7 @@
 // PostgreSQL UserRepository implementation
 
+use std::collections::HashMap;
+
 use async_trait::async_trait;
 use sqlx::PgPool;
 
@@ -412,6 +414,59 @@ impl UserRepository for PgUserRepository {
 
         Ok(result)
     }
+
+    async fn get_all_store_permissions(
+        &self,
+        user_id: UserId,
+    ) -> Result<HashMap<String, Vec<String>>, IdentityError> {
+        // Fetch per-store permissions including super_admin global permissions.
+        // A super_admin role in ANY store grants its permissions across ALL stores
+        // the user belongs to — consistent with get_permissions_for_store behavior.
+        let rows = sqlx::query_as::<_, StorePermissionRow>(
+            r#"
+            SELECT DISTINCT us.store_id, p.code
+            FROM user_stores us
+            INNER JOIN user_store_roles usr ON usr.user_id = $1
+            INNER JOIN role_permissions rp ON rp.role_id = usr.role_id
+            INNER JOIN permissions p ON p.id = rp.permission_id
+            WHERE us.user_id = $1
+              AND (
+                  usr.store_id = us.store_id
+                  OR EXISTS (
+                      SELECT 1 FROM roles r
+                      WHERE r.id = usr.role_id
+                        AND r.name = 'super_admin'
+                  )
+              )
+            ORDER BY us.store_id, p.code
+            "#,
+        )
+        .bind(user_id.as_uuid())
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut map: HashMap<String, Vec<String>> = HashMap::new();
+        for row in rows {
+            map.entry(row.store_id.to_string())
+                .or_default()
+                .push(row.code);
+        }
+
+        // Deduplicate permission codes per store
+        for codes in map.values_mut() {
+            codes.sort();
+            codes.dedup();
+        }
+
+        Ok(map)
+    }
+}
+
+/// Internal row type for store-permission pairs
+#[derive(sqlx::FromRow)]
+struct StorePermissionRow {
+    store_id: uuid::Uuid,
+    code: String,
 }
 
 /// Internal row type for mapping user database results

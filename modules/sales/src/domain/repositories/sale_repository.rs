@@ -99,4 +99,10 @@ pub trait SaleRepository: Send + Sync {
         &self,
         payment_id: PaymentId,
     ) -> Result<Option<Payment>, SalesError>;
+
+    /// Finds a payment by idempotency key
+    async fn find_payment_by_idempotency_key(
+        &self,
+        key: &str,
+    ) -> Result<Option<Payment>, SalesError>;
 }

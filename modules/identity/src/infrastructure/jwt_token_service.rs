@@ -7,6 +7,8 @@ use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 
+use std::collections::HashMap;
+
 use crate::domain::auth::{AuthError, TokenClaims, TokenService};
 use crate::domain::entities::User;
 use crate::domain::value_objects::UserId;
@@ -104,7 +106,11 @@ impl TokenService for JwtTokenService {
     /// The token contains user claims (user_id, username, email) and expires
     /// after the configured access_token_duration (default: 15 minutes).
     ///
-    fn generate_access_token(&self, user: &User) -> Result<String, AuthError> {
+    fn generate_access_token(
+        &self,
+        user: &User,
+        store_permissions: &HashMap<String, Vec<String>>,
+    ) -> Result<String, AuthError> {
         let now = Utc::now();
         let exp = now + self.access_token_duration;
 
@@ -114,6 +120,7 @@ impl TokenService for JwtTokenService {
             user.email().as_str().to_string(),
             exp.timestamp(),
             now.timestamp(),
+            store_permissions.clone(),
         );
 
         encode(
@@ -240,7 +247,7 @@ mod tests {
         let service = create_service();
         let user = create_test_user();
 
-        let token = service.generate_access_token(&user);
+        let token = service.generate_access_token(&user, &HashMap::new());
 
         assert!(token.is_ok());
         let token = token.unwrap();
@@ -267,7 +274,9 @@ mod tests {
         let service = create_service();
         let user = create_test_user();
 
-        let token = service.generate_access_token(&user).unwrap();
+        let token = service
+            .generate_access_token(&user, &HashMap::new())
+            .unwrap();
         let claims = service.validate_access_token(&token);
 
         assert!(claims.is_ok());
@@ -284,7 +293,9 @@ mod tests {
         let user = create_test_user();
 
         // Generate token with different secret
-        let token = other_service.generate_access_token(&user).unwrap();
+        let token = other_service
+            .generate_access_token(&user, &HashMap::new())
+            .unwrap();
 
         // Validate with original service should fail
         let result = service.validate_access_token(&token);
@@ -340,7 +351,9 @@ mod tests {
         let user = create_test_user();
 
         // Generate an access token
-        let access_token = service.generate_access_token(&user).unwrap();
+        let access_token = service
+            .generate_access_token(&user, &HashMap::new())
+            .unwrap();
 
         // Try to validate it as a refresh token - should fail
         // because access tokens don't have the "token_type": "refresh" claim
@@ -354,7 +367,9 @@ mod tests {
         let service = create_service();
         let user = create_test_user();
 
-        let token = service.generate_access_token(&user).unwrap();
+        let token = service
+            .generate_access_token(&user, &HashMap::new())
+            .unwrap();
         let claims = service.validate_access_token(&token).unwrap();
 
         // Verify all required claims are present
@@ -385,6 +400,7 @@ mod tests {
             "test@example.com".to_string(),
             past.timestamp(), // Already expired
             (past - Duration::minutes(15)).timestamp(),
+            HashMap::new(),
         );
 
         // Manually encode the expired token
@@ -447,8 +463,12 @@ mod tests {
             "hash2".to_string(),
         );
 
-        let token1 = service.generate_access_token(&user1).unwrap();
-        let token2 = service.generate_access_token(&user2).unwrap();
+        let token1 = service
+            .generate_access_token(&user1, &HashMap::new())
+            .unwrap();
+        let token2 = service
+            .generate_access_token(&user2, &HashMap::new())
+            .unwrap();
 
         assert_ne!(token1, token2);
 
