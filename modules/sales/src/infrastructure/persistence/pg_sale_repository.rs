@@ -49,8 +49,8 @@ impl PgSaleRepository {
             r#"
             SELECT id, sale_id, payment_method, status, amount, currency, amount_tendered,
                    change_given, reference_number, authorization_code, card_last_four,
-                   card_brand, refunded_amount, refunded_at, notes, processed_at,
-                   created_at, updated_at
+                   card_brand, refunded_amount, refunded_at, notes, idempotency_key,
+                   processed_at, created_at, updated_at
             FROM payments
             WHERE sale_id = $1
             ORDER BY created_at
@@ -485,10 +485,10 @@ impl SaleRepository for PgSaleRepository {
             INSERT INTO payments (
                 id, sale_id, payment_method, status, amount, currency, amount_tendered,
                 change_given, reference_number, authorization_code, card_last_four,
-                card_brand, refunded_amount, refunded_at, notes, processed_at,
-                created_at, updated_at
+                card_brand, refunded_amount, refunded_at, notes, idempotency_key,
+                processed_at, created_at, updated_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
             "#,
         )
         .bind(payment.id().into_uuid())
@@ -506,6 +506,7 @@ impl SaleRepository for PgSaleRepository {
         .bind(payment.refunded_amount())
         .bind(payment.refunded_at())
         .bind(payment.notes())
+        .bind(payment.idempotency_key())
         .bind(payment.processed_at())
         .bind(payment.created_at())
         .bind(payment.updated_at())
@@ -547,13 +548,34 @@ impl SaleRepository for PgSaleRepository {
             r#"
             SELECT id, sale_id, payment_method, status, amount, currency, amount_tendered,
                    change_given, reference_number, authorization_code, card_last_four,
-                   card_brand, refunded_amount, refunded_at, notes, processed_at,
-                   created_at, updated_at
+                   card_brand, refunded_amount, refunded_at, notes, idempotency_key,
+                   processed_at, created_at, updated_at
             FROM payments
             WHERE id = $1
             "#,
         )
         .bind(payment_id.into_uuid())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        row.map(|r| r.try_into()).transpose()
+    }
+
+    async fn find_payment_by_idempotency_key(
+        &self,
+        key: &str,
+    ) -> Result<Option<Payment>, SalesError> {
+        let row = sqlx::query_as::<_, PaymentRow>(
+            r#"
+            SELECT id, sale_id, payment_method, status, amount, currency, amount_tendered,
+                   change_given, reference_number, authorization_code, card_last_four,
+                   card_brand, refunded_amount, refunded_at, notes, idempotency_key,
+                   processed_at, created_at, updated_at
+            FROM payments
+            WHERE idempotency_key = $1
+            "#,
+        )
+        .bind(key)
         .fetch_optional(&self.pool)
         .await?;
 
@@ -721,6 +743,7 @@ struct PaymentRow {
     refunded_amount: rust_decimal::Decimal,
     refunded_at: Option<chrono::DateTime<chrono::Utc>>,
     notes: Option<String>,
+    idempotency_key: Option<String>,
     processed_at: chrono::DateTime<chrono::Utc>,
     created_at: chrono::DateTime<chrono::Utc>,
     updated_at: chrono::DateTime<chrono::Utc>,
@@ -749,6 +772,7 @@ impl TryFrom<PaymentRow> for Payment {
             row.refunded_amount,
             row.refunded_at,
             row.notes,
+            row.idempotency_key,
             row.processed_at,
             row.created_at,
             row.updated_at,

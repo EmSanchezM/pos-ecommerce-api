@@ -231,6 +231,22 @@ mod tests {
             unimplemented!()
         }
 
+        async fn find_by_store_and_products(
+            &self,
+            _store_id: StoreId,
+            _product_ids: &[ProductId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_by_store_and_variants(
+            &self,
+            _store_id: StoreId,
+            _variant_ids: &[crate::domain::value_objects::VariantId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
         async fn find_low_stock_by_store(
             &self,
             _store_id: StoreId,

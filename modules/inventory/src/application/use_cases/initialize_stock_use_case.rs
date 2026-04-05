@@ -305,6 +305,22 @@ mod tests {
             unimplemented!()
         }
 
+        async fn find_by_store_and_products(
+            &self,
+            _store_id: StoreId,
+            _product_ids: &[ProductId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_by_store_and_variants(
+            &self,
+            _store_id: StoreId,
+            _variant_ids: &[VariantId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
         async fn find_low_stock_by_store(
             &self,
             _store_id: StoreId,
@@ -523,6 +539,10 @@ mod tests {
             &self,
             _stock_id: StockId,
         ) -> Result<Option<rust_decimal::Decimal>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn save_batch(&self, _movements: &[InventoryMovement]) -> Result<(), InventoryError> {
             unimplemented!()
         }
     }

@@ -27,6 +27,22 @@ impl ProcessPaymentUseCase {
         &self,
         cmd: ProcessPaymentCommand,
     ) -> Result<SaleDetailResponse, SalesError> {
+        // Idempotency check: if key provided, look for existing payment
+        if let Some(ref key) = cmd.idempotency_key
+            && let Some(existing_payment) =
+                self.sale_repo.find_payment_by_idempotency_key(key).await?
+        {
+            // Idempotent replay: return the sale associated with the existing payment
+            let sale = self
+                .sale_repo
+                .find_by_id_with_details(existing_payment.sale_id())
+                .await?
+                .ok_or(SalesError::SaleNotFound(
+                    existing_payment.sale_id().into_uuid(),
+                ))?;
+            return Ok(SaleDetailResponse::from(sale));
+        }
+
         let sale_id = SaleId::from_uuid(cmd.sale_id);
         let payment_method = PaymentMethod::from_str(&cmd.payment_method)
             .map_err(|_| SalesError::InvalidPaymentMethod)?;
@@ -53,6 +69,7 @@ impl ProcessPaymentUseCase {
         // Set optional fields
         payment.set_reference_number(cmd.reference.clone());
         payment.set_notes(cmd.notes.clone());
+        payment.set_idempotency_key(cmd.idempotency_key.clone());
 
         // Add payment to sale
         sale.add_payment(payment.clone())?;

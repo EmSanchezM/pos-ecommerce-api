@@ -54,6 +54,7 @@ pub struct ProcessPaymentCommand {
     pub card_brand: Option<String>,
     pub amount_tendered: Option<Decimal>,
     pub notes: Option<String>,
+    pub idempotency_key: Option<String>,
 }
 
 /// Command to void a sale
