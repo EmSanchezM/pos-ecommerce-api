@@ -5,6 +5,7 @@ use std::sync::Arc;
 use crate::InventoryError;
 use crate::application::dtos::commands::ReceiveTransferCommand;
 use crate::application::dtos::responses::{TransferDetailResponse, TransferItemResponse};
+use crate::application::helpers::{DEFAULT_BASE_DELAY_MS, DEFAULT_MAX_ATTEMPTS, retry_on_conflict};
 use crate::domain::entities::{InventoryMovement, InventoryStock, StockTransfer};
 use crate::domain::repositories::{
     InventoryMovementRepository, InventoryStockRepository, TransferRepository,
@@ -94,54 +95,58 @@ where
             // Record received quantity on item
             item.record_received(quantity_received);
 
-            // Find or create stock record for this item at destination store
-            let stock = if let Some(product_id) = item.product_id() {
-                let existing = self
-                    .stock_repo
-                    .find_by_store_and_product(to_store_id, product_id)
+            // Find or create stock record, then update with retry on optimistic lock conflict
+            let item_product_id = item.product_id();
+            let item_variant_id = item.variant_id();
+            let item_unit_cost = item.unit_cost();
+
+            let stock = retry_on_conflict(DEFAULT_MAX_ATTEMPTS, DEFAULT_BASE_DELAY_MS, || async {
+                let found = if let Some(product_id) = item_product_id {
+                    let existing = self
+                        .stock_repo
+                        .find_by_store_and_product(to_store_id, product_id)
+                        .await?;
+
+                    match existing {
+                        Some(s) => s,
+                        None => {
+                            let new_stock =
+                                InventoryStock::create_for_product(to_store_id, product_id)?;
+                            self.stock_repo.save(&new_stock).await?;
+                            new_stock
+                        }
+                    }
+                } else if let Some(variant_id) = item_variant_id {
+                    let existing = self
+                        .stock_repo
+                        .find_by_store_and_variant(to_store_id, variant_id)
+                        .await?;
+
+                    match existing {
+                        Some(s) => s,
+                        None => {
+                            let new_stock =
+                                InventoryStock::create_for_variant(to_store_id, variant_id)?;
+                            self.stock_repo.save(&new_stock).await?;
+                            new_stock
+                        }
+                    }
+                } else {
+                    return Err(InventoryError::InvalidProductVariantConstraint);
+                };
+
+                let mut stock = found;
+                let expected_version = stock.version();
+                stock.adjust_quantity(quantity_received)?;
+                stock.increment_version();
+
+                self.stock_repo
+                    .update_with_version(&stock, expected_version)
                     .await?;
 
-                match existing {
-                    Some(s) => s,
-                    None => {
-                        // Create new stock record
-                        let new_stock =
-                            InventoryStock::create_for_product(to_store_id, product_id)?;
-                        self.stock_repo.save(&new_stock).await?;
-                        new_stock
-                    }
-                }
-            } else if let Some(variant_id) = item.variant_id() {
-                let existing = self
-                    .stock_repo
-                    .find_by_store_and_variant(to_store_id, variant_id)
-                    .await?;
-
-                match existing {
-                    Some(s) => s,
-                    None => {
-                        // Create new stock record
-                        let new_stock =
-                            InventoryStock::create_for_variant(to_store_id, variant_id)?;
-                        self.stock_repo.save(&new_stock).await?;
-                        new_stock
-                    }
-                }
-            } else {
-                return Err(InventoryError::InvalidProductVariantConstraint);
-            };
-
-            let mut stock = stock;
-
-            // Increase stock (positive delta)
-            let expected_version = stock.version();
-            stock.adjust_quantity(quantity_received)?;
-            stock.increment_version();
-
-            // Update stock with optimistic locking
-            self.stock_repo
-                .update_with_version(&stock, expected_version)
-                .await?;
+                Ok(stock)
+            })
+            .await?;
 
             // Create transfer_in movement
             let movement = InventoryMovement::create(
@@ -149,7 +154,7 @@ where
                 MovementType::TransferIn,
                 Some("Transfer from store".to_string()),
                 quantity_received,
-                item.unit_cost(),
+                item_unit_cost,
                 Currency::hnl(),
                 stock.quantity(),
                 Some("transfer".to_string()),
@@ -455,6 +460,22 @@ mod tests {
             unimplemented!()
         }
 
+        async fn find_by_store_and_products(
+            &self,
+            _store_id: StoreId,
+            _product_ids: &[ProductId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_by_store_and_variants(
+            &self,
+            _store_id: StoreId,
+            _variant_ids: &[VariantId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
         async fn find_low_stock_by_store(
             &self,
             _store_id: StoreId,
@@ -546,6 +567,10 @@ mod tests {
             &self,
             _query: &crate::domain::repositories::MovementQuery,
         ) -> Result<i64, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn save_batch(&self, _movements: &[InventoryMovement]) -> Result<(), InventoryError> {
             unimplemented!()
         }
     }

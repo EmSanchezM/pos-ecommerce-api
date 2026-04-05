@@ -656,6 +656,14 @@ mod tests {
             let stores = self.user_stores.lock().unwrap();
             Ok(stores.get(&(user_id, store_id)).copied().unwrap_or(false))
         }
+
+        async fn get_all_store_permissions(
+            &self,
+            _user_id: UserId,
+        ) -> Result<std::collections::HashMap<String, Vec<String>>, crate::error::IdentityError>
+        {
+            Ok(std::collections::HashMap::new())
+        }
     }
 
     // Mock AuditRepository for testing
@@ -843,6 +851,16 @@ mod tests {
 
         async fn get_users(&self, _store_id: StoreId) -> Result<Vec<User>, IdentityError> {
             Ok(vec![])
+        }
+
+        async fn find_paginated(
+            &self,
+            _is_active: Option<bool>,
+            _is_ecommerce: Option<bool>,
+            _page: i64,
+            _page_size: i64,
+        ) -> Result<(Vec<Store>, i64), IdentityError> {
+            unimplemented!()
         }
     }
 

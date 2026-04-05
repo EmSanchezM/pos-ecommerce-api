@@ -2,6 +2,8 @@
 //
 // Contains the claims embedded in JWT access tokens for user authentication.
 
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -29,6 +31,10 @@ pub struct TokenClaims {
     pub exp: i64,
     /// Issued at time (Unix timestamp in seconds)
     pub iat: i64,
+    /// Store permissions: keys are store_id UUIDs, values are permission codes.
+    /// Defaults to empty for backward compatibility with tokens issued before this field existed.
+    #[serde(default)]
+    pub store_permissions: HashMap<String, Vec<String>>,
 }
 
 impl TokenClaims {
@@ -41,13 +47,21 @@ impl TokenClaims {
     /// * `email` - The user's email address
     /// * `exp` - Expiration timestamp (Unix epoch seconds)
     /// * `iat` - Issued at timestamp (Unix epoch seconds)
-    pub fn new(user_id: Uuid, username: String, email: String, exp: i64, iat: i64) -> Self {
+    pub fn new(
+        user_id: Uuid,
+        username: String,
+        email: String,
+        exp: i64,
+        iat: i64,
+        store_permissions: HashMap<String, Vec<String>>,
+    ) -> Self {
         Self {
             sub: user_id,
             username,
             email,
             exp,
             iat,
+            store_permissions,
         }
     }
 
@@ -83,6 +97,7 @@ mod tests {
             "john@example.com".to_string(),
             1705150000, // exp
             1705140000, // iat
+            HashMap::new(),
         )
     }
 
@@ -170,6 +185,7 @@ mod tests {
         assert_eq!(json["email"], "john@example.com");
         assert_eq!(json["exp"], 1705150000);
         assert_eq!(json["iat"], 1705140000);
+        assert!(json["store_permissions"].is_object());
     }
 
     #[test]
@@ -182,6 +198,7 @@ mod tests {
             "other@example.com".to_string(),
             1705150000,
             1705140000,
+            HashMap::new(),
         );
 
         assert_eq!(claims1, claims2);

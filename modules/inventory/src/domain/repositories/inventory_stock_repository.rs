@@ -84,4 +84,18 @@ pub trait InventoryStockRepository: Send + Sync {
         &self,
         store_id: StoreId,
     ) -> Result<Vec<InventoryStock>, InventoryError>;
+
+    /// Finds stock records for a store and multiple products in a single query
+    async fn find_by_store_and_products(
+        &self,
+        store_id: StoreId,
+        product_ids: &[ProductId],
+    ) -> Result<Vec<InventoryStock>, InventoryError>;
+
+    /// Finds stock records for a store and multiple variants in a single query
+    async fn find_by_store_and_variants(
+        &self,
+        store_id: StoreId,
+        variant_ids: &[VariantId],
+    ) -> Result<Vec<InventoryStock>, InventoryError>;
 }

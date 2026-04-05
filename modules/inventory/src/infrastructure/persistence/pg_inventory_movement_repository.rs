@@ -232,6 +232,45 @@ impl InventoryMovementRepository for PgInventoryMovementRepository {
         Ok(count)
     }
 
+    async fn save_batch(&self, movements: &[InventoryMovement]) -> Result<(), InventoryError> {
+        if movements.is_empty() {
+            return Ok(());
+        }
+
+        // 14 bind params per row; PG limit is 65,535. Chunk at 4,000 rows for safety.
+        const CHUNK_SIZE: usize = 4000;
+
+        for chunk in movements.chunks(CHUNK_SIZE) {
+            let mut query_builder = sqlx::QueryBuilder::new(
+                r#"INSERT INTO inventory_movements (
+                    id, stock_id, movement_type, movement_reason, quantity, unit_cost, currency,
+                    balance_after, reference_type, reference_id, actor_id, notes, metadata, created_at
+                ) "#,
+            );
+
+            query_builder.push_values(chunk, |mut b, movement| {
+                b.push_bind(movement.id().into_uuid())
+                    .push_bind(movement.stock_id().into_uuid())
+                    .push_bind(movement.movement_type().to_string())
+                    .push_bind(movement.movement_reason().map(|s| s.to_string()))
+                    .push_bind(movement.quantity())
+                    .push_bind(movement.unit_cost())
+                    .push_bind(movement.currency().as_str().to_string())
+                    .push_bind(movement.balance_after())
+                    .push_bind(movement.reference_type().map(|s| s.to_string()))
+                    .push_bind(movement.reference_id())
+                    .push_bind(movement.actor_id().into_uuid())
+                    .push_bind(movement.notes().map(|s| s.to_string()))
+                    .push_bind(movement.metadata().clone())
+                    .push_bind(movement.created_at());
+            });
+
+            query_builder.build().execute(&self.pool).await?;
+        }
+
+        Ok(())
+    }
+
     async fn calculate_weighted_average_cost(
         &self,
         stock_id: StockId,

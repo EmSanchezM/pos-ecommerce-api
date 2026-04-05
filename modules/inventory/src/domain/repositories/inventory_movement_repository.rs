@@ -93,4 +93,7 @@ pub trait InventoryMovementRepository: Send + Sync {
         &self,
         stock_id: StockId,
     ) -> Result<Option<Decimal>, InventoryError>;
+
+    /// Saves multiple movements in a single batch insert
+    async fn save_batch(&self, movements: &[InventoryMovement]) -> Result<(), InventoryError>;
 }

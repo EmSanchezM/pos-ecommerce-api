@@ -93,32 +93,43 @@ where
         &self,
         reservation: &mut crate::domain::entities::InventoryReservation,
     ) -> Result<ReservationResponse, InventoryError> {
+        use crate::application::helpers::{
+            DEFAULT_BASE_DELAY_MS, DEFAULT_MAX_ATTEMPTS, retry_on_conflict,
+        };
+
         // 1. Mark reservation as expired
         reservation.expire()?;
 
-        // 2. Find associated stock
-        let mut stock = self
-            .stock_repo
-            .find_by_id(reservation.stock_id())
-            .await?
-            .ok_or(InventoryError::StockNotFound(
-                reservation.stock_id().into_uuid(),
-            ))?;
+        // 2. Release stock with retry on optimistic lock conflict
+        let reservation_stock_id = reservation.stock_id();
+        let reservation_quantity = reservation.quantity();
 
-        // 3. Release reserved quantity
-        let expected_version = stock.version();
-        stock.release(reservation.quantity())?;
-        stock.increment_version();
+        retry_on_conflict(DEFAULT_MAX_ATTEMPTS, DEFAULT_BASE_DELAY_MS, || async {
+            // Re-fetch stock to get latest version
+            let mut stock = self
+                .stock_repo
+                .find_by_id(reservation_stock_id)
+                .await?
+                .ok_or(InventoryError::StockNotFound(
+                    reservation_stock_id.into_uuid(),
+                ))?;
 
-        // 4. Update stock with optimistic locking
-        self.stock_repo
-            .update_with_version(&stock, expected_version)
-            .await?;
+            let expected_version = stock.version();
+            stock.release(reservation_quantity)?;
+            stock.increment_version();
 
-        // 5. Update reservation
+            self.stock_repo
+                .update_with_version(&stock, expected_version)
+                .await?;
+
+            Ok(())
+        })
+        .await?;
+
+        // 3. Update reservation
         self.reservation_repo.update(reservation).await?;
 
-        // 6. Return response
+        // 4. Return response
         Ok(ReservationResponse {
             id: reservation.id().into_uuid(),
             stock_id: reservation.stock_id().into_uuid(),
@@ -333,6 +344,22 @@ mod tests {
         }
 
         async fn find_all_low_stock(&self) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_by_store_and_products(
+            &self,
+            _store_id: StoreId,
+            _product_ids: &[ProductId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
+            unimplemented!()
+        }
+
+        async fn find_by_store_and_variants(
+            &self,
+            _store_id: StoreId,
+            _variant_ids: &[crate::domain::value_objects::VariantId],
+        ) -> Result<Vec<InventoryStock>, InventoryError> {
             unimplemented!()
         }
 
