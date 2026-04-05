@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Edit(*.rs)|Write(*.rs)",
+            "command": "cargo fmt -- --check",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.rs)|Write(*.rs)",
+            "command": "cargo clippy -- -D warnings 2>&1 | head -50",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
