@@ -27,7 +27,8 @@ use purchasing::{
     ClosePurchaseOrderUseCase, CreatePurchaseOrderCommand, CreatePurchaseOrderUseCase,
     GetPurchaseOrderUseCase, ListPurchaseOrdersQuery, ListPurchaseOrdersUseCase,
     PurchaseOrderDetailResponse, PurchaseOrderResponse, RejectOrderCommand,
-    RejectPurchaseOrderUseCase, SubmitPurchaseOrderUseCase,
+    RejectPurchaseOrderUseCase, SubmitPurchaseOrderUseCase, UpdatePurchaseOrderCommand,
+    UpdatePurchaseOrderUseCase,
 };
 
 use crate::error::AppError;
@@ -410,6 +411,32 @@ pub async fn close_purchase_order_handler(
 
     let response = use_case
         .execute(id)
+        .await
+        .map_err(|e| AppError::from(e).into_response())?;
+
+    Ok(Json(response))
+}
+
+// =============================================================================
+// Update Purchase Order Handler
+// =============================================================================
+
+/// Handler for PUT /api/v1/purchase-orders/{id}
+///
+/// Updates a draft purchase order.
+pub async fn update_purchase_order_handler(
+    State(state): State<AppState>,
+    CurrentUser(ctx): CurrentUser,
+    Path(id): Path<Uuid>,
+    Json(command): Json<UpdatePurchaseOrderCommand>,
+) -> Result<Json<PurchaseOrderDetailResponse>, Response> {
+    require_permission(&ctx, "purchase_orders:update")?;
+
+    let use_case =
+        UpdatePurchaseOrderUseCase::new(state.purchase_order_repo(), state.vendor_repo());
+
+    let response = use_case
+        .execute(id, command)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 

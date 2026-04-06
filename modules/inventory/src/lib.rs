@@ -139,6 +139,10 @@ pub use domain::repositories::TransferRepository;
 
 // Product and category use cases
 pub use application::use_cases::CreateCategoryUseCase;
+pub use application::use_cases::DeleteCategoryUseCase;
+pub use application::use_cases::GetCategoryUseCase;
+pub use application::use_cases::ListCategoriesUseCase;
+pub use application::use_cases::UpdateCategoryUseCase;
 pub use application::use_cases::CreateProductUseCase;
 pub use application::use_cases::CreateVariantUseCase;
 pub use application::use_cases::DeleteProductUseCase;
@@ -202,9 +206,14 @@ pub use application::use_cases::ListAdjustmentsUseCase;
 pub use application::use_cases::SubmitAdjustmentUseCase;
 
 // Transfer use cases
+pub use application::use_cases::CancelTransferUseCase;
 pub use application::use_cases::CreateTransferUseCase;
+pub use application::use_cases::GetTransferUseCase;
+pub use application::use_cases::ListTransfersQuery;
+pub use application::use_cases::ListTransfersUseCase;
 pub use application::use_cases::ReceiveTransferUseCase;
 pub use application::use_cases::ShipTransferUseCase;
+pub use application::use_cases::SubmitTransferUseCase;
 
 // -----------------------------------------------------------------------------
 // Application Layer - Command DTOs

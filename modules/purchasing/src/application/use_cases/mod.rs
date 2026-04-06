@@ -31,6 +31,7 @@ mod get_purchase_order_use_case;
 mod list_purchase_orders_use_case;
 mod reject_purchase_order_use_case;
 mod submit_purchase_order_use_case;
+mod update_purchase_order_use_case;
 
 pub use approve_purchase_order_use_case::ApprovePurchaseOrderUseCase;
 pub use cancel_purchase_order_use_case::CancelPurchaseOrderUseCase;
@@ -40,6 +41,7 @@ pub use get_purchase_order_use_case::GetPurchaseOrderUseCase;
 pub use list_purchase_orders_use_case::{ListPurchaseOrdersQuery, ListPurchaseOrdersUseCase};
 pub use reject_purchase_order_use_case::RejectPurchaseOrderUseCase;
 pub use submit_purchase_order_use_case::SubmitPurchaseOrderUseCase;
+pub use update_purchase_order_use_case::UpdatePurchaseOrderUseCase;
 
 // -----------------------------------------------------------------------------
 // Goods Receipt Use Cases

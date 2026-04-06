@@ -265,6 +265,10 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // General errors
     // -------------------------------------------------------------------------
+    /// A general invalid operation that doesn't fit other error categories.
+    #[error("Invalid operation: {0}")]
+    InvalidOperation(String),
+
     /// The requested functionality is not yet implemented.
     #[error("Not implemented")]
     NotImplemented,
