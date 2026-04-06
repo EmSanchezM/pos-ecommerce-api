@@ -584,6 +584,102 @@ impl SaleRepository for PgSaleRepository {
 }
 
 // =============================================================================
+// Transactional methods (for use within an external transaction)
+// =============================================================================
+
+impl PgSaleRepository {
+    /// Updates a sale within an existing transaction.
+    pub async fn update_in_tx(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        sale: &Sale,
+    ) -> Result<(), SalesError> {
+        let result = sqlx::query(
+            r#"
+            UPDATE sales
+            SET status = $2, order_status = $3, customer_id = $4, subtotal = $5,
+                discount_type = $6, discount_value = $7, discount_amount = $8, tax_amount = $9,
+                total = $10, amount_paid = $11, amount_due = $12, change_given = $13,
+                invoice_number = $14, invoice_date = $15, notes = $16, internal_notes = $17,
+                voided_by_id = $18, voided_at = $19, void_reason = $20, completed_at = $21,
+                updated_at = $22
+            WHERE id = $1
+            "#,
+        )
+        .bind(sale.id().into_uuid())
+        .bind(sale.status().to_string())
+        .bind(sale.order_status().map(|s| s.to_string()))
+        .bind(sale.customer_id().map(|c| c.into_uuid()))
+        .bind(sale.subtotal())
+        .bind(sale.discount_type().map(|d| d.to_string()))
+        .bind(sale.discount_value())
+        .bind(sale.discount_amount())
+        .bind(sale.tax_amount())
+        .bind(sale.total())
+        .bind(sale.amount_paid())
+        .bind(sale.amount_due())
+        .bind(sale.change_given())
+        .bind(sale.invoice_number())
+        .bind(sale.invoice_date())
+        .bind(sale.notes())
+        .bind(sale.internal_notes())
+        .bind(sale.voided_by_id().map(|u| u.into_uuid()))
+        .bind(sale.voided_at())
+        .bind(sale.void_reason())
+        .bind(sale.completed_at())
+        .bind(sale.updated_at())
+        .execute(&mut **tx)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(SalesError::SaleNotFound(sale.id().into_uuid()));
+        }
+
+        Ok(())
+    }
+
+    /// Saves a payment within an existing transaction.
+    pub async fn save_payment_in_tx(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        payment: &Payment,
+    ) -> Result<(), SalesError> {
+        sqlx::query(
+            r#"
+            INSERT INTO payments (
+                id, sale_id, payment_method, status, amount, currency, amount_tendered,
+                change_given, reference_number, authorization_code, card_last_four,
+                card_brand, refunded_amount, refunded_at, notes, idempotency_key,
+                processed_at, created_at, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+            "#,
+        )
+        .bind(payment.id().into_uuid())
+        .bind(payment.sale_id().into_uuid())
+        .bind(payment.payment_method().to_string())
+        .bind(payment.status().to_string())
+        .bind(payment.amount())
+        .bind(payment.currency().as_str())
+        .bind(payment.amount_tendered())
+        .bind(payment.change_given())
+        .bind(payment.reference_number())
+        .bind(payment.authorization_code())
+        .bind(payment.card_last_four())
+        .bind(payment.card_brand())
+        .bind(payment.refunded_amount())
+        .bind(payment.refunded_at())
+        .bind(payment.notes())
+        .bind(payment.idempotency_key())
+        .bind(payment.processed_at())
+        .bind(payment.created_at())
+        .bind(payment.updated_at())
+        .execute(&mut **tx)
+        .await?;
+
+        Ok(())
+    }
+}
+
+// =============================================================================
 // Row types
 // =============================================================================
 

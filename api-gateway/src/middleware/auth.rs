@@ -76,7 +76,26 @@ pub async fn auth_middleware(
         })
         .unwrap_or_default();
 
-    let user_context = UserContext::new(user_id, store_id, permissions);
+    // Extract all accessible store IDs from the JWT claims
+    let accessible_store_ids: Vec<uuid::Uuid> = claims
+        .store_permissions
+        .keys()
+        .filter_map(|k| uuid::Uuid::parse_str(k).ok())
+        .collect();
+
+    // Determine if the user is a super admin (any store has system:admin permission)
+    let is_super_admin = claims
+        .store_permissions
+        .values()
+        .any(|perms| perms.iter().any(|p| p == "system:admin"));
+
+    let user_context = UserContext::new(
+        user_id,
+        store_id,
+        permissions,
+        accessible_store_ids,
+        is_super_admin,
+    );
 
     // 6. Insert UserContext into request extensions
     request.extensions_mut().insert(user_context);

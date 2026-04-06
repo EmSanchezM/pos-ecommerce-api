@@ -88,6 +88,34 @@ impl AuditRepository for PgAuditRepository {
     }
 }
 
+// Transactional methods
+impl PgAuditRepository {
+    /// Saves an audit entry within an existing transaction.
+    pub async fn save_in_tx(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        entry: &AuditEntry,
+    ) -> Result<(), IdentityError> {
+        sqlx::query(
+            r#"
+            INSERT INTO audit_log (id, entity_type, entity_id, action, old_value, new_value, actor_id, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            "#,
+        )
+        .bind(entry.id())
+        .bind(entry.entity_type())
+        .bind(entry.entity_id())
+        .bind(entry.action().to_string())
+        .bind(entry.old_value())
+        .bind(entry.new_value())
+        .bind(entry.actor_id().as_uuid())
+        .bind(entry.created_at())
+        .execute(&mut **tx)
+        .await?;
+
+        Ok(())
+    }
+}
+
 /// Internal row type for mapping audit database results
 #[derive(sqlx::FromRow)]
 struct AuditRow {
