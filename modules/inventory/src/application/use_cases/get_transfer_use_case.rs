@@ -24,10 +24,7 @@ where
         Self { transfer_repo }
     }
 
-    pub async fn execute(
-        &self,
-        id: uuid::Uuid,
-    ) -> Result<TransferDetailResponse, InventoryError> {
+    pub async fn execute(&self, id: uuid::Uuid) -> Result<TransferDetailResponse, InventoryError> {
         let transfer_id = TransferId::from_uuid(id);
         let transfer = self
             .transfer_repo

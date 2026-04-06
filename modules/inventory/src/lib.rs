@@ -139,19 +139,19 @@ pub use domain::repositories::TransferRepository;
 
 // Product and category use cases
 pub use application::use_cases::CreateCategoryUseCase;
-pub use application::use_cases::DeleteCategoryUseCase;
-pub use application::use_cases::GetCategoryUseCase;
-pub use application::use_cases::ListCategoriesUseCase;
-pub use application::use_cases::UpdateCategoryUseCase;
 pub use application::use_cases::CreateProductUseCase;
 pub use application::use_cases::CreateVariantUseCase;
+pub use application::use_cases::DeleteCategoryUseCase;
 pub use application::use_cases::DeleteProductUseCase;
 pub use application::use_cases::DeleteVariantUseCase;
+pub use application::use_cases::GetCategoryUseCase;
 pub use application::use_cases::GetProductUseCase;
 pub use application::use_cases::GetVariantUseCase;
+pub use application::use_cases::ListCategoriesUseCase;
 pub use application::use_cases::ListProductsQuery;
 pub use application::use_cases::ListProductsUseCase;
 pub use application::use_cases::ListVariantsUseCase;
+pub use application::use_cases::UpdateCategoryUseCase;
 pub use application::use_cases::UpdateProductUseCase;
 pub use application::use_cases::UpdateVariantUseCase;
 

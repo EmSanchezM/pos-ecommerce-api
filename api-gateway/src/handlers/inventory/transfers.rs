@@ -63,7 +63,7 @@ pub async fn create_transfer_handler(
 
     let actor_id = *ctx.user_id();
     let response = use_case
-        .execute(command, actor_id.into())
+        .execute(command, actor_id)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 
@@ -144,7 +144,7 @@ pub async fn ship_transfer_handler(
 
     let actor_id = *ctx.user_id();
     let response = use_case
-        .execute(command, actor_id.into())
+        .execute(command, actor_id)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 
@@ -170,7 +170,7 @@ pub async fn receive_transfer_handler(
 
     let actor_id = *ctx.user_id();
     let response = use_case
-        .execute(command, actor_id.into())
+        .execute(command, actor_id)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 

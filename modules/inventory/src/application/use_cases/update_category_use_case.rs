@@ -37,17 +37,11 @@ where
             .ok_or(InventoryError::CategoryNotFound(id))?;
 
         // Validate slug uniqueness if changing
-        if let Some(ref new_slug) = command.slug {
-            if new_slug != category.slug() {
-                if self
-                    .category_repo
-                    .find_by_slug(new_slug)
-                    .await?
-                    .is_some()
-                {
-                    return Err(InventoryError::DuplicateCategorySlug(new_slug.clone()));
-                }
-            }
+        if let Some(ref new_slug) = command.slug
+            && new_slug != category.slug()
+            && self.category_repo.find_by_slug(new_slug).await?.is_some()
+        {
+            return Err(InventoryError::DuplicateCategorySlug(new_slug.clone()));
         }
 
         // Validate parent exists if changing
@@ -240,7 +234,9 @@ mod tests {
             is_active: None,
         };
 
-        let result = use_case.execute(CategoryId::new().into_uuid(), command).await;
+        let result = use_case
+            .execute(CategoryId::new().into_uuid(), command)
+            .await;
         assert!(matches!(result, Err(InventoryError::CategoryNotFound(_))));
     }
 }
