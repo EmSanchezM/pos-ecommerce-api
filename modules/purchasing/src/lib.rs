@@ -136,6 +136,7 @@ pub use application::use_cases::ListPurchaseOrdersQuery;
 pub use application::use_cases::ListPurchaseOrdersUseCase;
 pub use application::use_cases::RejectPurchaseOrderUseCase;
 pub use application::use_cases::SubmitPurchaseOrderUseCase;
+pub use application::use_cases::UpdatePurchaseOrderUseCase;
 
 // Goods Receipt Use Cases
 pub use application::use_cases::CancelGoodsReceiptUseCase;

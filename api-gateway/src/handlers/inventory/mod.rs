@@ -10,18 +10,22 @@
 // - reports: Stock history and inventory reports
 
 pub mod adjustments;
+pub mod categories;
 pub mod products;
 pub mod recipes;
 pub mod reports;
 pub mod reservations;
 pub mod stock;
+pub mod transfers;
 pub mod variants;
 
 // Re-export all handlers for easy access
 pub use adjustments::*;
+pub use categories::*;
 pub use products::*;
 pub use recipes::*;
 pub use reports::*;
 pub use reservations::*;
 pub use stock::*;
+pub use transfers::*;
 pub use variants::*;

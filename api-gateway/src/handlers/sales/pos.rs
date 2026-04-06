@@ -14,6 +14,10 @@ use crate::error::AppError;
 use crate::extractors::CurrentUser;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
+use inventory::{
+    Currency, InventoryMovement, InventoryMovementRepository, InventoryStockRepository,
+    MovementType,
+};
 use sales::{
     AddSaleItemCommand, ApplyDiscountCommand, CreatePosSaleCommand, ListSalesQuery, Payment,
     PaymentMethod, PgSaleRepository, PgShiftRepository, ProcessPaymentCommand, SaleDetailResponse,
@@ -312,6 +316,63 @@ pub async fn complete_sale_handler(
         .execute(sale_id, invoice_number)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
+
+    // Deduct inventory stock for each sale item
+    let stock_repo = state.stock_repo();
+    let movement_repo = state.movement_repo();
+    let actor_id = *ctx.user_id();
+    let store_id = identity::StoreId::from_uuid(response.store_id);
+
+    for item in &response.items {
+        let product_id = inventory::ProductId::from_uuid(item.product_id);
+        let variant_id = item.variant_id.map(inventory::VariantId::from_uuid);
+
+        // Find stock record
+        let existing = if let Some(vid) = variant_id {
+            stock_repo
+                .find_by_store_and_variant(store_id, vid)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?
+        } else {
+            stock_repo
+                .find_by_store_and_product(store_id, product_id)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?
+        };
+
+        if let Some(mut stock) = existing {
+            let expected_version = stock.version();
+            stock
+                .adjust_quantity(-item.quantity)
+                .map_err(|e| AppError::from(e).into_response())?;
+            stock.increment_version();
+
+            stock_repo
+                .update_with_version(&stock, expected_version)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?;
+
+            // Create sale movement
+            let movement = InventoryMovement::create(
+                stock.id(),
+                MovementType::Out,
+                Some("Sale completed".to_string()),
+                -item.quantity,
+                Some(item.unit_price),
+                Currency::hnl(),
+                stock.quantity(),
+                Some("sale".to_string()),
+                Some(sale_id),
+                actor_id,
+                None,
+            );
+            movement_repo
+                .save(&movement)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?;
+        }
+        // If no stock record exists, skip (product may not be trackable)
+    }
 
     Ok(Json(response))
 }
