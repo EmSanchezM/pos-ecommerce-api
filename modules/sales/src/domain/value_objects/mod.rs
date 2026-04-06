@@ -14,6 +14,8 @@ mod sale_id;
 mod sale_item_id;
 mod shift_id;
 
+mod promotion_id;
+
 // Enum value objects
 mod credit_note_status;
 mod customer_type;
@@ -21,6 +23,8 @@ mod discount_type;
 mod order_status;
 mod payment_method;
 mod payment_status;
+mod promotion_status;
+mod promotion_type;
 mod return_reason;
 mod return_type;
 mod sale_status;
@@ -34,6 +38,7 @@ pub use credit_note_id::CreditNoteId;
 pub use credit_note_item_id::CreditNoteItemId;
 pub use customer_id::CustomerId;
 pub use payment_id::PaymentId;
+pub use promotion_id::PromotionId;
 pub use sale_id::SaleId;
 pub use sale_item_id::SaleItemId;
 pub use shift_id::ShiftId;
@@ -45,6 +50,8 @@ pub use discount_type::DiscountType;
 pub use order_status::OrderStatus;
 pub use payment_method::PaymentMethod;
 pub use payment_status::PaymentStatus;
+pub use promotion_status::PromotionStatus;
+pub use promotion_type::PromotionType;
 pub use return_reason::ReturnReason;
 pub use return_type::ReturnType;
 pub use sale_status::SaleStatus;

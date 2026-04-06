@@ -14,8 +14,8 @@ use inventory::{
 use pos_core::PgTerminalRepository;
 use purchasing::{PgGoodsReceiptRepository, PgPurchaseOrderRepository, PgVendorRepository};
 use sales::{
-    PgCartRepository, PgCreditNoteRepository, PgCustomerRepository, PgSaleRepository,
-    PgShiftRepository,
+    PgCartRepository, PgCreditNoteRepository, PgCustomerRepository, PgPromotionRepository,
+    PgSaleRepository, PgShiftRepository,
 };
 use sqlx::PgPool;
 
@@ -84,6 +84,8 @@ pub struct AppState {
     cart_repo: Arc<PgCartRepository>,
     /// Credit note repository for returns management
     credit_note_repo: Arc<PgCreditNoteRepository>,
+    /// Promotion repository for discount/coupon management
+    promotion_repo: Arc<PgPromotionRepository>,
 }
 
 impl AppState {
@@ -131,6 +133,7 @@ impl AppState {
         shift_repo: Arc<PgShiftRepository>,
         cart_repo: Arc<PgCartRepository>,
         credit_note_repo: Arc<PgCreditNoteRepository>,
+        promotion_repo: Arc<PgPromotionRepository>,
     ) -> Self {
         Self {
             pool,
@@ -155,6 +158,7 @@ impl AppState {
             shift_repo,
             cart_repo,
             credit_note_repo,
+            promotion_repo,
         }
     }
 
@@ -199,6 +203,7 @@ impl AppState {
         let shift_repo = Arc::new(PgShiftRepository::new((*pool_arc).clone()));
         let cart_repo = Arc::new(PgCartRepository::new((*pool_arc).clone()));
         let credit_note_repo = Arc::new(PgCreditNoteRepository::new((*pool_arc).clone()));
+        let promotion_repo = Arc::new(PgPromotionRepository::new((*pool_arc).clone()));
 
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
@@ -226,6 +231,7 @@ impl AppState {
             shift_repo,
             cart_repo,
             credit_note_repo,
+            promotion_repo,
         }
     }
 
@@ -349,5 +355,10 @@ impl AppState {
     /// Returns a reference to the credit note repository.
     pub fn credit_note_repo(&self) -> Arc<PgCreditNoteRepository> {
         self.credit_note_repo.clone()
+    }
+
+    /// Returns a reference to the promotion repository.
+    pub fn promotion_repo(&self) -> Arc<PgPromotionRepository> {
+        self.promotion_repo.clone()
     }
 }

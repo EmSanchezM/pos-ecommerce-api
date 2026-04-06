@@ -10,6 +10,7 @@ mod credit_note;
 mod credit_note_item;
 mod customer;
 mod payment;
+mod promotion;
 mod sale;
 mod sale_item;
 
@@ -20,5 +21,6 @@ pub use credit_note::CreditNote;
 pub use credit_note_item::CreditNoteItem;
 pub use customer::{Address, Customer};
 pub use payment::Payment;
+pub use promotion::Promotion;
 pub use sale::Sale;
 pub use sale_item::SaleItem;

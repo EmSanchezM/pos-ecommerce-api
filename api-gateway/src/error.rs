@@ -1241,6 +1241,45 @@ impl From<SalesError> for AppError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
             ),
+
+            // Promotion errors
+            SalesError::PromotionNotFound(_) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PROMOTION_NOT_FOUND", "Promotion not found"),
+            ),
+            SalesError::DuplicatePromotionCode(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_PROMOTION_CODE", "Promotion code already exists"),
+            ),
+            SalesError::PromotionNotActive => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "PROMOTION_NOT_ACTIVE",
+                    "Promotion is not active or has expired",
+                ),
+            ),
+            SalesError::PromotionUsageLimitExceeded => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "PROMOTION_USAGE_LIMIT_EXCEEDED",
+                    "Promotion usage limit exceeded",
+                ),
+            ),
+            SalesError::MinimumPurchaseNotMet(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "MINIMUM_PURCHASE_NOT_MET",
+                    "Minimum purchase requirement not met",
+                ),
+            ),
+            SalesError::InvalidPromotionType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_PROMOTION_TYPE", "Invalid promotion type"),
+            ),
+            SalesError::InvalidPromotionStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_PROMOTION_STATUS", "Invalid promotion status"),
+            ),
         };
 
         AppError::new(status, response)

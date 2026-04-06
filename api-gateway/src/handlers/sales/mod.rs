@@ -8,12 +8,16 @@
 pub mod cart;
 pub mod credit_notes;
 pub mod customers;
+pub mod ecommerce;
 pub mod pos;
+pub mod promotions;
 pub mod shifts;
 
 // Re-export all handlers for easy access
 pub use cart::*;
 pub use credit_notes::*;
 pub use customers::*;
+pub use ecommerce::*;
 pub use pos::*;
+pub use promotions::*;
 pub use shifts::*;
