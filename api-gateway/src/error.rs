@@ -600,6 +600,10 @@ impl From<InventoryError> for AppError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
             ),
+            InventoryError::InvalidOperation(msg) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_OPERATION", msg),
+            ),
             InventoryError::NotImplemented => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),

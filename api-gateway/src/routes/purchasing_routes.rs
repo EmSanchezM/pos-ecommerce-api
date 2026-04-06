@@ -19,7 +19,7 @@ use crate::handlers::{
     deactivate_vendor_handler, get_goods_receipt_handler, get_purchase_order_handler,
     get_vendor_handler, list_goods_receipts_handler, list_purchase_orders_handler,
     list_vendors_handler, reject_purchase_order_handler, submit_purchase_order_handler,
-    update_vendor_handler,
+    update_purchase_order_handler, update_vendor_handler,
 };
 use crate::middleware::auth_middleware;
 use crate::state::AppState;
@@ -89,7 +89,10 @@ pub fn purchase_orders_router(state: AppState) -> Router<AppState> {
             post(create_purchase_order_handler).get(list_purchase_orders_handler),
         )
         // Individual purchase order routes
-        .route("/{id}", get(get_purchase_order_handler))
+        .route(
+            "/{id}",
+            get(get_purchase_order_handler).put(update_purchase_order_handler),
+        )
         // Purchase order workflow routes
         .route("/{id}/submit", put(submit_purchase_order_handler))
         .route("/{id}/approve", put(approve_purchase_order_handler))
