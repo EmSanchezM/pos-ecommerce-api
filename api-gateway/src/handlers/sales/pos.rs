@@ -15,7 +15,8 @@ use crate::extractors::CurrentUser;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use inventory::{
-    Currency, InventoryMovement, InventoryMovementRepository, InventoryStockRepository, MovementType,
+    Currency, InventoryMovement, InventoryMovementRepository, InventoryStockRepository,
+    MovementType,
 };
 use sales::{
     AddSaleItemCommand, ApplyDiscountCommand, CreatePosSaleCommand, ListSalesQuery, Payment,

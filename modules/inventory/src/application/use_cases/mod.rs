@@ -36,18 +36,18 @@
 //! - [`ReceiveTransferUseCase`]: Receive transfers and increase destination stock
 
 mod create_category_use_case;
-mod delete_category_use_case;
-mod get_category_use_case;
-mod list_categories_use_case;
-mod update_category_use_case;
 mod create_product_use_case;
 mod create_variant_use_case;
+mod delete_category_use_case;
 mod delete_product_use_case;
 mod delete_variant_use_case;
+mod get_category_use_case;
 mod get_product_use_case;
 mod get_variant_use_case;
+mod list_categories_use_case;
 mod list_products_use_case;
 mod list_variants_use_case;
+mod update_category_use_case;
 mod update_product_use_case;
 mod update_variant_use_case;
 
@@ -99,18 +99,18 @@ mod ship_transfer_use_case;
 mod submit_transfer_use_case;
 
 pub use create_category_use_case::CreateCategoryUseCase;
-pub use delete_category_use_case::DeleteCategoryUseCase;
-pub use get_category_use_case::GetCategoryUseCase;
-pub use list_categories_use_case::ListCategoriesUseCase;
-pub use update_category_use_case::UpdateCategoryUseCase;
 pub use create_product_use_case::CreateProductUseCase;
 pub use create_variant_use_case::CreateVariantUseCase;
+pub use delete_category_use_case::DeleteCategoryUseCase;
 pub use delete_product_use_case::DeleteProductUseCase;
 pub use delete_variant_use_case::DeleteVariantUseCase;
+pub use get_category_use_case::GetCategoryUseCase;
 pub use get_product_use_case::GetProductUseCase;
 pub use get_variant_use_case::GetVariantUseCase;
+pub use list_categories_use_case::ListCategoriesUseCase;
 pub use list_products_use_case::{ListProductsQuery, ListProductsUseCase};
 pub use list_variants_use_case::ListVariantsUseCase;
+pub use update_category_use_case::UpdateCategoryUseCase;
 pub use update_product_use_case::UpdateProductUseCase;
 pub use update_variant_use_case::UpdateVariantUseCase;
 
