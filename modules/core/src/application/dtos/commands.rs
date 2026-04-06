@@ -7,6 +7,8 @@ use chrono::NaiveDate;
 use serde::Deserialize;
 use uuid::Uuid;
 
+// Re-export Uuid for use by consumers that set user_store_ids programmatically.
+
 /// Command to create a new terminal for a store
 #[derive(Debug, Clone, Deserialize)]
 pub struct CreateTerminalCommand {
@@ -53,6 +55,9 @@ pub struct ListStoresQuery {
     pub page: Option<u32>,
     /// Number of items per page (defaults to 20, max 100)
     pub page_size: Option<u32>,
+    /// Restrict results to these store IDs (set by access control, not by the client).
+    #[serde(skip)]
+    pub user_store_ids: Option<Vec<Uuid>>,
 }
 
 /// Query parameters for listing terminals of a store

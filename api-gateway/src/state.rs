@@ -31,6 +31,8 @@ use sqlx::PgPool;
 /// For testing, handlers can be tested with mock implementations directly.
 #[derive(Clone)]
 pub struct AppState {
+    /// Direct access to the PostgreSQL connection pool for transactional operations
+    pool: PgPool,
     /// User repository for user persistence operations
     user_repo: Arc<PgUserRepository>,
     /// Store repository for store persistence operations
@@ -107,6 +109,7 @@ impl AppState {
     /// * `goods_receipt_repo` - Goods receipt repository implementation
     #[allow(clippy::too_many_arguments)]
     pub fn new(
+        pool: PgPool,
         user_repo: Arc<PgUserRepository>,
         store_repo: Arc<PgStoreRepository>,
         terminal_repo: Arc<PgTerminalRepository>,
@@ -130,6 +133,7 @@ impl AppState {
         credit_note_repo: Arc<PgCreditNoteRepository>,
     ) -> Self {
         Self {
+            pool,
             user_repo,
             store_repo,
             terminal_repo,
@@ -164,7 +168,7 @@ impl AppState {
     /// * `pool` - PostgreSQL connection pool
     /// * `jwt_secret` - Secret key for JWT signing (should be at least 32 bytes)
     pub fn from_pool(pool: PgPool, jwt_secret: String) -> Self {
-        let pool_arc = Arc::new(pool);
+        let pool_arc = Arc::new(pool.clone());
 
         // Identity repositories
         let user_repo = Arc::new(PgUserRepository::new((*pool_arc).clone()));
@@ -200,6 +204,7 @@ impl AppState {
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
         Self {
+            pool,
             user_repo,
             store_repo,
             terminal_repo,
@@ -222,6 +227,11 @@ impl AppState {
             cart_repo,
             credit_note_repo,
         }
+    }
+
+    /// Returns a reference to the PostgreSQL connection pool.
+    pub fn pool(&self) -> &PgPool {
+        &self.pool
     }
 
     /// Returns a reference to the user repository.

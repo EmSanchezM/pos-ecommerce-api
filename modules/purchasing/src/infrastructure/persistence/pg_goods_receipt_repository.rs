@@ -296,6 +296,41 @@ impl GoodsReceiptRepository for PgGoodsReceiptRepository {
     }
 }
 
+// Transactional methods
+impl PgGoodsReceiptRepository {
+    /// Updates a goods receipt within an existing transaction.
+    pub async fn update_in_tx(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        receipt: &GoodsReceipt,
+    ) -> Result<(), PurchasingError> {
+        let result = sqlx::query(
+            r#"
+            UPDATE goods_receipts
+            SET receipt_date = $2, status = $3, notes = $4, confirmed_by_id = $5,
+                confirmed_at = $6, updated_at = $7
+            WHERE id = $1
+            "#,
+        )
+        .bind(receipt.id().into_uuid())
+        .bind(receipt.receipt_date())
+        .bind(receipt.status().to_string())
+        .bind(receipt.notes())
+        .bind(receipt.confirmed_by_id().map(|id| id.into_uuid()))
+        .bind(receipt.confirmed_at())
+        .bind(receipt.updated_at())
+        .execute(&mut **tx)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(PurchasingError::GoodsReceiptNotFound(
+                receipt.id().into_uuid(),
+            ));
+        }
+
+        Ok(())
+    }
+}
+
 impl PgGoodsReceiptRepository {
     async fn save_item_internal(
         &self,

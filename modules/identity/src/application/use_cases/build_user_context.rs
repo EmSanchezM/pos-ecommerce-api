@@ -96,7 +96,13 @@ where
 
         // 5. Build and return the UserContext
         // If user has no roles in the store, permission_set will be empty (Requirement 4.4)
-        Ok(UserContext::new(user_id, store_id, permission_set))
+        Ok(UserContext::new(
+            user_id,
+            store_id,
+            permission_set,
+            vec![],
+            false,
+        ))
     }
 }
 

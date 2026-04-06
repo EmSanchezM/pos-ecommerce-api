@@ -113,7 +113,7 @@ fn hash_password(password: &str) -> Result<String, IdentityError> {
     argon2
         .hash_password(password.as_bytes(), &salt)
         .map(|hash| hash.to_string())
-        .map_err(|_| IdentityError::NotImplemented) // Using NotImplemented as a placeholder for password hash error
+        .map_err(|e| IdentityError::PasswordHashError(e.to_string()))
 }
 
 // =============================================================================
@@ -859,6 +859,7 @@ mod tests {
             _is_ecommerce: Option<bool>,
             _page: i64,
             _page_size: i64,
+            _user_store_ids: Option<&[uuid::Uuid]>,
         ) -> Result<(Vec<Store>, i64), IdentityError> {
             unimplemented!()
         }

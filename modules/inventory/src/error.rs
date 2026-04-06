@@ -254,6 +254,10 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Database errors
     // -------------------------------------------------------------------------
+    /// An error occurred while recording an audit entry.
+    #[error("Audit error: {0}")]
+    AuditError(String),
+
     /// A database error occurred during the operation.
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),

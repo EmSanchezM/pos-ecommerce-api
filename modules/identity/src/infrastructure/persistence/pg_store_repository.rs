@@ -116,6 +116,7 @@ impl StoreRepository for PgStoreRepository {
         is_ecommerce: Option<bool>,
         page: i64,
         page_size: i64,
+        user_store_ids: Option<&[uuid::Uuid]>,
     ) -> Result<(Vec<Store>, i64), IdentityError> {
         let offset = (page - 1) * page_size;
 
@@ -125,10 +126,12 @@ impl StoreRepository for PgStoreRepository {
             FROM stores
             WHERE ($1::bool IS NULL OR is_active = $1)
               AND ($2::bool IS NULL OR is_ecommerce = $2)
+              AND ($3::uuid[] IS NULL OR id = ANY($3))
             "#,
         )
         .bind(is_active)
         .bind(is_ecommerce)
+        .bind(user_store_ids)
         .fetch_one(&self.pool)
         .await?;
 
@@ -138,12 +141,14 @@ impl StoreRepository for PgStoreRepository {
             FROM stores
             WHERE ($1::bool IS NULL OR is_active = $1)
               AND ($2::bool IS NULL OR is_ecommerce = $2)
+              AND ($3::uuid[] IS NULL OR id = ANY($3))
             ORDER BY name
-            LIMIT $3 OFFSET $4
+            LIMIT $4 OFFSET $5
             "#,
         )
         .bind(is_active)
         .bind(is_ecommerce)
+        .bind(user_store_ids)
         .bind(page_size)
         .bind(offset)
         .fetch_all(&self.pool)

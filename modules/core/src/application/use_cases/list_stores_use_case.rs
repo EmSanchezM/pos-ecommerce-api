@@ -61,6 +61,7 @@ where
                 query.is_ecommerce,
                 page as i64,
                 page_size as i64,
+                query.user_store_ids.as_deref(),
             )
             .await
             .map_err(|e| CoreError::Database(sqlx::Error::Protocol(e.to_string())))?;

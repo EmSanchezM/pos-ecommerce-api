@@ -208,7 +208,7 @@ mod tests {
             .iter()
             .filter_map(|p| PermissionCode::new(p).ok())
             .collect();
-        UserContext::new(UserId::new(), StoreId::new(), perms)
+        UserContext::new(UserId::new(), StoreId::new(), perms, vec![], false)
     }
 
     #[test]
