@@ -17,9 +17,9 @@ mod state;
 
 use routes::{
     auth_router, cart_router, categories_router, credit_notes_router, customers_router,
-    goods_receipts_router, inventory_router, pos_sales_router, products_router,
-    purchase_orders_router, recipes_router, reports_router, shifts_router, store_router,
-    store_terminals_router, terminals_router, transfers_router, vendors_router,
+    goods_receipts_router, inventory_router, orders_router, pos_sales_router, products_router,
+    promotions_router, purchase_orders_router, recipes_router, reports_router, shifts_router,
+    store_router, store_terminals_router, terminals_router, transfers_router, vendors_router,
 };
 use state::AppState;
 
@@ -84,6 +84,8 @@ async fn main() {
         )
         .nest("/api/v1/customers", customers_router(app_state.clone()))
         .nest("/api/v1/shifts", shifts_router(app_state.clone()))
+        .nest("/api/v1/orders", orders_router(app_state.clone()))
+        .nest("/api/v1/promotions", promotions_router(app_state.clone()))
         .nest("/api/v1/sales", pos_sales_router(app_state.clone()))
         .nest("/api/v1/carts", cart_router(app_state.clone()))
         .nest(

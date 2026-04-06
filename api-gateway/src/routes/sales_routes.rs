@@ -15,15 +15,18 @@ use axum::{
 use crate::handlers::{
     activate_customer_handler, add_cart_item_handler, add_credit_note_item_handler,
     add_sale_item_handler, apply_credit_note_handler, apply_discount_handler,
-    approve_credit_note_handler, cancel_credit_note_handler, cash_in_handler, cash_out_handler,
-    clear_cart_handler, close_shift_handler, complete_sale_handler, create_cart_handler,
-    create_credit_note_handler, create_customer_handler, create_pos_sale_handler,
-    deactivate_customer_handler, get_cart_handler, get_credit_note_handler,
-    get_current_shift_handler, get_customer_handler, get_sale_handler, get_shift_report_handler,
-    list_credit_notes_handler, list_customers_handler, list_sales_handler, list_shifts_handler,
-    open_shift_handler, process_payment_handler, remove_cart_item_handler,
-    remove_credit_note_item_handler, remove_sale_item_handler, submit_credit_note_handler,
-    update_cart_item_handler, update_customer_handler, update_sale_item_handler, void_sale_handler,
+    apply_promotion_handler, approve_credit_note_handler, cancel_credit_note_handler,
+    cancel_order_handler, cash_in_handler, cash_out_handler, clear_cart_handler,
+    close_shift_handler, complete_sale_handler, create_cart_handler, create_credit_note_handler,
+    create_customer_handler, create_pos_sale_handler, create_promotion_handler,
+    deactivate_customer_handler, deactivate_promotion_handler, deliver_order_handler,
+    get_cart_handler, get_credit_note_handler, get_current_shift_handler, get_customer_handler,
+    get_promotion_handler, get_sale_handler, get_shift_report_handler, list_credit_notes_handler,
+    list_customers_handler, list_promotions_handler, list_sales_handler, list_shifts_handler,
+    mark_order_paid_handler, open_shift_handler, process_order_handler, process_payment_handler,
+    remove_cart_item_handler, remove_credit_note_item_handler, remove_sale_item_handler,
+    ship_order_handler, submit_credit_note_handler, update_cart_item_handler,
+    update_customer_handler, update_promotion_handler, update_sale_item_handler, void_sale_handler,
 };
 use crate::middleware::auth_middleware;
 use crate::state::AppState;
@@ -99,6 +102,7 @@ pub fn pos_sales_router(state: AppState) -> Router<AppState> {
         .route("/{id}/payment", post(process_payment_handler))
         .route("/{id}/complete", put(complete_sale_handler))
         .route("/{id}/void", put(void_sale_handler))
+        .route("/{id}/apply-promotion", post(apply_promotion_handler))
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }
 
@@ -154,5 +158,45 @@ pub fn credit_notes_router(state: AppState) -> Router<AppState> {
         .route("/{id}/approve", put(approve_credit_note_handler))
         .route("/{id}/apply", put(apply_credit_note_handler))
         .route("/{id}/cancel", put(cancel_credit_note_handler))
+        .layer(middleware::from_fn_with_state(state, auth_middleware))
+}
+
+/// Creates the promotions router.
+///
+/// # Routes
+/// - `POST /` - Create promotion (requires promotions:create)
+/// - `GET /` - List promotions (requires promotions:read)
+/// - `GET /{id}` - Get promotion (requires promotions:read)
+/// - `PUT /{id}` - Update promotion (requires promotions:update)
+/// - `POST /{id}/deactivate` - Deactivate promotion (requires promotions:update)
+pub fn promotions_router(state: AppState) -> Router<AppState> {
+    Router::new()
+        .route(
+            "/",
+            post(create_promotion_handler).get(list_promotions_handler),
+        )
+        .route(
+            "/{id}",
+            get(get_promotion_handler).put(update_promotion_handler),
+        )
+        .route("/{id}/deactivate", post(deactivate_promotion_handler))
+        .layer(middleware::from_fn_with_state(state, auth_middleware))
+}
+
+/// Creates the e-commerce orders router for order workflow transitions.
+///
+/// # Routes
+/// - `PUT /{id}/mark-paid` - Mark order as paid (requires orders:mark_paid)
+/// - `PUT /{id}/process` - Start processing (requires orders:process)
+/// - `PUT /{id}/ship` - Ship order (requires orders:ship)
+/// - `PUT /{id}/deliver` - Mark delivered (requires orders:deliver)
+/// - `PUT /{id}/cancel` - Cancel order (requires orders:cancel)
+pub fn orders_router(state: AppState) -> Router<AppState> {
+    Router::new()
+        .route("/{id}/mark-paid", put(mark_order_paid_handler))
+        .route("/{id}/process", put(process_order_handler))
+        .route("/{id}/ship", put(ship_order_handler))
+        .route("/{id}/deliver", put(deliver_order_handler))
+        .route("/{id}/cancel", put(cancel_order_handler))
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }

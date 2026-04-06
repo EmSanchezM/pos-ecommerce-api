@@ -323,6 +323,37 @@ pub enum SalesError {
     ReservationCancelFailed,
 
     // -------------------------------------------------------------------------
+    // Promotion errors
+    // -------------------------------------------------------------------------
+    /// The requested promotion was not found.
+    #[error("Promotion not found: {0}")]
+    PromotionNotFound(Uuid),
+
+    /// A promotion with the given code already exists.
+    #[error("Promotion code '{0}' already exists")]
+    DuplicatePromotionCode(String),
+
+    /// The promotion is not active or has expired.
+    #[error("Promotion is not active")]
+    PromotionNotActive,
+
+    /// The promotion has exceeded its usage limit.
+    #[error("Promotion usage limit exceeded")]
+    PromotionUsageLimitExceeded,
+
+    /// The order total does not meet the minimum purchase requirement.
+    #[error("Minimum purchase of {0} required")]
+    MinimumPurchaseNotMet(rust_decimal::Decimal),
+
+    /// Invalid promotion type string.
+    #[error("Invalid promotion type")]
+    InvalidPromotionType,
+
+    /// Invalid promotion status string.
+    #[error("Invalid promotion status")]
+    InvalidPromotionStatus,
+
+    // -------------------------------------------------------------------------
     // Database errors
     // -------------------------------------------------------------------------
     /// An error occurred while recording an audit entry.

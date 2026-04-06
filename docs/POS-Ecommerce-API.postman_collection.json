@@ -135,6 +135,16 @@
 			"key": "store_id_2",
 			"value": "",
 			"type": "string"
+		},
+		{
+			"key": "promotion_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "order_id",
+			"value": "",
+			"type": "string"
 		}
 	],
 	"item": [
@@ -4915,6 +4925,351 @@
 				}
 			],
 			"description": "Endpoints de gestión de transferencias de inventario entre tiendas. Requieren autenticación."
+		},
+		{
+			"name": "Promotions",
+			"item": [
+				{
+					"name": "Create Promotion",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('promotion_id', jsonData.id);",
+									"    pm.test('Promotion created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.code).to.equal('SUMMER2026');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"SUMMER2026\",\n    \"name\": \"Summer Sale\",\n    \"promotion_type\": \"percentage\",\n    \"discount_value\": 10,\n    \"minimum_purchase\": 50,\n    \"start_date\": \"2026-01-01T00:00:00Z\",\n    \"end_date\": \"2026-12-31T23:59:59Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/promotions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"promotions"
+							]
+						},
+						"description": "Crea una nueva promoción. Requiere autenticación.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| code | string | Sí | Código único de la promoción |\n| name | string | Sí | Nombre de la promoción |\n| promotion_type | string | Sí | Tipo de promoción (percentage, fixed) |\n| discount_value | decimal | Sí | Valor del descuento |\n| minimum_purchase | decimal | No | Compra mínima requerida |\n| start_date | datetime | Sí | Fecha de inicio |\n| end_date | datetime | Sí | Fecha de finalización |\n\n## Respuestas\n\n- **201 Created**: Promoción creada exitosamente\n- **400 Bad Request**: Error de validación\n- **409 Conflict**: Código de promoción ya existe"
+					},
+					"response": []
+				},
+				{
+					"name": "List Promotions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/promotions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"promotions"
+							]
+						},
+						"description": "Lista todas las promociones con paginación. Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Promotion",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/promotions/{{promotion_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"promotions",
+								"{{promotion_id}}"
+							]
+						},
+						"description": "Obtiene el detalle de una promoción por su ID. Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Promotion",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Summer Sale\",\n    \"discount_value\": 15,\n    \"maximum_discount\": 100\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/promotions/{{promotion_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"promotions",
+								"{{promotion_id}}"
+							]
+						},
+						"description": "Actualiza una promoción existente. Requiere autenticación.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | No | Nombre de la promoción |\n| discount_value | decimal | No | Valor del descuento |\n| maximum_discount | decimal | No | Descuento máximo aplicable |"
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Promotion",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/promotions/{{promotion_id}}/deactivate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"promotions",
+								"{{promotion_id}}",
+								"deactivate"
+							]
+						},
+						"description": "Desactiva una promoción. Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "Apply Promotion to Sale",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"promotion_code\": \"SUMMER2026\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales/{{sale_id}}/apply-promotion",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales",
+								"{{sale_id}}",
+								"apply-promotion"
+							]
+						},
+						"description": "Aplica una promoción a una venta existente usando el código de promoción. Requiere autenticación.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| promotion_code | string | Sí | Código de la promoción a aplicar |"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de promociones y descuentos. Requieren autenticación."
+		},
+		{
+			"name": "E-Commerce Orders",
+			"item": [
+				{
+					"name": "Mark Order Paid",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order_id}}/mark-paid",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order_id}}",
+								"mark-paid"
+							]
+						},
+						"description": "Marca una orden de e-commerce como pagada. Requiere autenticación.\n\nLa orden debe estar en estado 'pending_payment'."
+					},
+					"response": []
+				},
+				{
+					"name": "Process Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order_id}}/process",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order_id}}",
+								"process"
+							]
+						},
+						"description": "Inicia el procesamiento de una orden de e-commerce. Requiere autenticación.\n\nLa orden debe estar en estado 'paid'."
+					},
+					"response": []
+				},
+				{
+					"name": "Ship Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order_id}}/ship",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order_id}}",
+								"ship"
+							]
+						},
+						"description": "Marca una orden como enviada. Requiere autenticación.\n\nLa orden debe estar en estado 'processing'."
+					},
+					"response": []
+				},
+				{
+					"name": "Deliver Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order_id}}/deliver",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order_id}}",
+								"deliver"
+							]
+						},
+						"description": "Marca una orden como entregada. Requiere autenticación.\n\nLa orden debe estar en estado 'shipped'."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order_id}}/cancel",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order_id}}",
+								"cancel"
+							]
+						},
+						"description": "Cancela una orden de e-commerce. Requiere autenticación.\n\nSolo se pueden cancelar órdenes que no hayan sido entregadas."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints del ciclo de vida de órdenes de e-commerce (pending_payment -> paid -> processing -> shipped -> delivered). Requieren autenticación."
 		}
 	]
 }
