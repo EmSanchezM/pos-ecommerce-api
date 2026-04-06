@@ -18,7 +18,10 @@ use axum::{
 use serde::Deserialize;
 use uuid::Uuid;
 
-use inventory::PaginatedResponse;
+use inventory::{
+    Currency, InventoryMovement, InventoryMovementRepository, InventoryStock,
+    InventoryStockRepository, MovementType, PaginatedResponse,
+};
 use purchasing::{
     CancelGoodsReceiptUseCase, CreateGoodsReceiptCommand, CreateGoodsReceiptUseCase,
     GetGoodsReceiptUseCase, GoodsReceiptDetailResponse, GoodsReceiptItemResponse,
@@ -296,6 +299,80 @@ pub async fn confirm_goods_receipt_handler(
     tx.commit()
         .await
         .map_err(|e| AppError::from(PurchasingError::from(e)).into_response())?;
+
+    // Update inventory stock for each receipt item
+    let receipt_store_id = receipt.store_id();
+    let receipt_uuid = receipt.id().into_uuid();
+    let stock_repo = state.stock_repo();
+    let movement_repo = state.movement_repo();
+
+    for receipt_item in receipt.items() {
+        let product_id = receipt_item.product_id();
+        let variant_id = receipt_item.variant_id();
+        let quantity = receipt_item.quantity_received();
+        let unit_cost = Some(receipt_item.unit_cost());
+
+        // Find or create stock record at the store
+        let existing = if let Some(vid) = variant_id {
+            stock_repo
+                .find_by_store_and_variant(receipt_store_id, vid)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?
+        } else {
+            stock_repo
+                .find_by_store_and_product(receipt_store_id, product_id)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?
+        };
+
+        let mut stock = match existing {
+            Some(s) => s,
+            None => {
+                let new_stock = if let Some(vid) = variant_id {
+                    InventoryStock::create_for_variant(receipt_store_id, vid)
+                        .map_err(|e| AppError::from(e).into_response())?
+                } else {
+                    InventoryStock::create_for_product(receipt_store_id, product_id)
+                        .map_err(|e| AppError::from(e).into_response())?
+                };
+                stock_repo
+                    .save(&new_stock)
+                    .await
+                    .map_err(|e| AppError::from(e).into_response())?;
+                new_stock
+            }
+        };
+
+        let expected_version = stock.version();
+        stock
+            .adjust_quantity(quantity)
+            .map_err(|e| AppError::from(e).into_response())?;
+        stock.increment_version();
+
+        stock_repo
+            .update_with_version(&stock, expected_version)
+            .await
+            .map_err(|e| AppError::from(e).into_response())?;
+
+        // Create inventory movement for goods receipt
+        let movement = InventoryMovement::create(
+            stock.id(),
+            MovementType::In,
+            Some("Goods receipt confirmed".to_string()),
+            quantity,
+            unit_cost,
+            Currency::hnl(),
+            stock.quantity(),
+            Some("goods_receipt".to_string()),
+            Some(receipt_uuid),
+            actor_id,
+            None,
+        );
+        movement_repo
+            .save(&movement)
+            .await
+            .map_err(|e| AppError::from(e).into_response())?;
+    }
 
     // Build response
     let items: Vec<GoodsReceiptItemResponse> = receipt

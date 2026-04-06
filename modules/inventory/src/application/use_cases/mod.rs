@@ -38,12 +38,16 @@
 mod create_category_use_case;
 mod create_product_use_case;
 mod create_variant_use_case;
+mod delete_category_use_case;
 mod delete_product_use_case;
 mod delete_variant_use_case;
+mod get_category_use_case;
 mod get_product_use_case;
 mod get_variant_use_case;
+mod list_categories_use_case;
 mod list_products_use_case;
 mod list_variants_use_case;
+mod update_category_use_case;
 mod update_product_use_case;
 mod update_variant_use_case;
 
@@ -86,19 +90,27 @@ mod list_adjustments_use_case;
 mod submit_adjustment_use_case;
 
 // Transfer use cases
+mod cancel_transfer_use_case;
 mod create_transfer_use_case;
+mod get_transfer_use_case;
+mod list_transfers_use_case;
 mod receive_transfer_use_case;
 mod ship_transfer_use_case;
+mod submit_transfer_use_case;
 
 pub use create_category_use_case::CreateCategoryUseCase;
 pub use create_product_use_case::CreateProductUseCase;
 pub use create_variant_use_case::CreateVariantUseCase;
+pub use delete_category_use_case::DeleteCategoryUseCase;
 pub use delete_product_use_case::DeleteProductUseCase;
 pub use delete_variant_use_case::DeleteVariantUseCase;
+pub use get_category_use_case::GetCategoryUseCase;
 pub use get_product_use_case::GetProductUseCase;
 pub use get_variant_use_case::GetVariantUseCase;
+pub use list_categories_use_case::ListCategoriesUseCase;
 pub use list_products_use_case::{ListProductsQuery, ListProductsUseCase};
 pub use list_variants_use_case::ListVariantsUseCase;
+pub use update_category_use_case::UpdateCategoryUseCase;
 pub use update_product_use_case::UpdateProductUseCase;
 pub use update_variant_use_case::UpdateVariantUseCase;
 
@@ -143,6 +155,10 @@ pub use list_adjustments_use_case::{ListAdjustmentsQuery, ListAdjustmentsUseCase
 pub use submit_adjustment_use_case::SubmitAdjustmentUseCase;
 
 // Transfer use cases exports
+pub use cancel_transfer_use_case::CancelTransferUseCase;
 pub use create_transfer_use_case::CreateTransferUseCase;
+pub use get_transfer_use_case::GetTransferUseCase;
+pub use list_transfers_use_case::{ListTransfersQuery, ListTransfersUseCase};
 pub use receive_transfer_use_case::ReceiveTransferUseCase;
 pub use ship_transfer_use_case::ShipTransferUseCase;
+pub use submit_transfer_use_case::SubmitTransferUseCase;
