@@ -20,13 +20,13 @@ use uuid::Uuid;
 
 use inventory::{
     CancelTransferUseCase, CreateTransferCommand, CreateTransferUseCase, GetTransferUseCase,
-    ListTransfersQuery, ListTransfersUseCase, ReceiveTransferCommand, ReceiveTransferUseCase,
-    ShipTransferCommand, ShipTransferUseCase, SubmitTransferUseCase, TransferDetailResponse,
-    TransferResponse,
+    ListResponse, ListTransfersQuery, ListTransfersUseCase, ReceiveTransferCommand,
+    ReceiveTransferUseCase, ShipTransferCommand, ShipTransferUseCase, SubmitTransferUseCase,
+    TransferDetailResponse, TransferResponse,
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -55,7 +55,7 @@ impl From<ListTransfersQueryParams> for ListTransfersQuery {
 pub async fn create_transfer_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateTransferCommand>,
+    JsonBody(command): JsonBody<CreateTransferCommand>,
 ) -> Result<(StatusCode, Json<TransferDetailResponse>), Response> {
     require_permission(&ctx, "transfers:create")?;
 
@@ -75,7 +75,7 @@ pub async fn list_transfers_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Query(params): Query<ListTransfersQueryParams>,
-) -> Result<Json<Vec<TransferResponse>>, Response> {
+) -> Result<Json<ListResponse<TransferResponse>>, Response> {
     require_permission(&ctx, "transfers:read")?;
 
     let use_case = ListTransfersUseCase::new(state.transfer_repo());
@@ -86,7 +86,7 @@ pub async fn list_transfers_handler(
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 
-    Ok(Json(response))
+    Ok(Json(ListResponse::new(response)))
 }
 
 /// Handler for GET /api/v1/transfers/{id}

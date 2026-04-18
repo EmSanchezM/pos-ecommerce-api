@@ -9,7 +9,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use sales::{
@@ -20,7 +20,7 @@ use sales::{
 pub async fn open_shift_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<OpenShiftCommand>,
+    JsonBody(command): JsonBody<OpenShiftCommand>,
 ) -> Result<(StatusCode, Json<ShiftResponse>), Response> {
     require_permission(&ctx, "sales:manage_shift")?;
 
@@ -38,7 +38,7 @@ pub async fn close_shift_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<CloseShiftCommand>,
+    JsonBody(command): JsonBody<CloseShiftCommand>,
 ) -> Result<Json<ShiftResponse>, Response> {
     require_permission(&ctx, "sales:manage_shift")?;
 
@@ -110,7 +110,7 @@ pub async fn cash_in_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<CashMovementCommand>,
+    JsonBody(command): JsonBody<CashMovementCommand>,
 ) -> Result<Json<ShiftResponse>, Response> {
     require_permission(&ctx, "sales:manage_shift")?;
 
@@ -131,7 +131,7 @@ pub async fn cash_out_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<CashMovementCommand>,
+    JsonBody(command): JsonBody<CashMovementCommand>,
 ) -> Result<Json<ShiftResponse>, Response> {
     require_permission(&ctx, "sales:manage_shift")?;
 

@@ -94,7 +94,7 @@ pub struct PaymentBreakdownItem {
 /// Paginated response for shift list
 #[derive(Debug, Serialize)]
 pub struct ShiftListResponse {
-    pub data: Vec<ShiftResponse>,
+    pub items: Vec<ShiftResponse>,
     pub total: i64,
     pub page: i64,
     pub page_size: i64,

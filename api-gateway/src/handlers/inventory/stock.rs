@@ -28,7 +28,7 @@ use inventory::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -244,7 +244,7 @@ pub async fn get_product_stock_handler(
 pub async fn initialize_stock_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<InitializeStockCommand>,
+    JsonBody(command): JsonBody<InitializeStockCommand>,
 ) -> Result<(StatusCode, Json<StockResponse>), Response> {
     require_permission(&ctx, "inventory:write")?;
 
@@ -301,7 +301,7 @@ pub async fn initialize_stock_handler(
 pub async fn bulk_initialize_stock_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<BulkInitializeStockCommand>,
+    JsonBody(command): JsonBody<BulkInitializeStockCommand>,
 ) -> Result<Json<BulkInitializeStockResult>, Response> {
     require_permission(&ctx, "inventory:write")?;
 

@@ -26,7 +26,7 @@ use pos_core::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_super_admin;
 use crate::state::AppState;
 
@@ -91,7 +91,7 @@ impl From<identity::Store> for StoreResponse {
 pub async fn create_store_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateStoreCommand>,
+    JsonBody(command): JsonBody<CreateStoreCommand>,
 ) -> Result<(StatusCode, Json<StoreResponse>), Response> {
     // Check super_admin permission (Requirement 1.5)
     require_super_admin(&ctx)?;
@@ -223,7 +223,7 @@ pub async fn update_store_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<UpdateStoreCommand>,
+    JsonBody(command): JsonBody<UpdateStoreCommand>,
 ) -> Result<Json<StoreResponse>, Response> {
     let use_case = UpdateStoreUseCase::new(state.store_repo(), state.audit_repo());
 

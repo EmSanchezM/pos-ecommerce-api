@@ -23,7 +23,7 @@ use inventory::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -100,7 +100,7 @@ impl From<ListProductsQueryParams> for ListProductsQuery {
 pub async fn create_product_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateProductCommand>,
+    JsonBody(command): JsonBody<CreateProductCommand>,
 ) -> Result<(StatusCode, Json<ProductResponse>), Response> {
     require_permission(&ctx, "products:create")?;
 
@@ -223,7 +223,7 @@ pub async fn update_product_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<UpdateProductCommand>,
+    JsonBody(command): JsonBody<UpdateProductCommand>,
 ) -> Result<Json<ProductResponse>, Response> {
     require_permission(&ctx, "products:update")?;
 

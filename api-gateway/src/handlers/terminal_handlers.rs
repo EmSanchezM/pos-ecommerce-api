@@ -26,7 +26,7 @@ use pos_core::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_super_admin;
 use crate::state::AppState;
 
@@ -67,7 +67,7 @@ pub async fn create_terminal_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(store_id): Path<Uuid>,
-    Json(command): Json<CreateTerminalCommandRequest>,
+    JsonBody(command): JsonBody<CreateTerminalCommandRequest>,
 ) -> Result<(StatusCode, Json<TerminalResponse>), Response> {
     // Check super_admin permission (Requirement 2.4)
     require_super_admin(&ctx)?;
@@ -211,7 +211,7 @@ pub async fn update_terminal_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<UpdateTerminalCommand>,
+    JsonBody(command): JsonBody<UpdateTerminalCommand>,
 ) -> Result<Json<TerminalResponse>, Response> {
     let use_case = UpdateTerminalUseCase::new(state.terminal_repo(), state.audit_repo());
 

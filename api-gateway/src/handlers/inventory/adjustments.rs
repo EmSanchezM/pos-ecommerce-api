@@ -28,7 +28,7 @@ use inventory::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -107,7 +107,7 @@ pub struct ApproveRejectRequest {
 pub async fn create_adjustment_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateAdjustmentCommand>,
+    JsonBody(command): JsonBody<CreateAdjustmentCommand>,
 ) -> Result<(StatusCode, Json<AdjustmentDetailResponse>), Response> {
     require_permission(&ctx, "adjustments:create")?;
 
@@ -263,7 +263,7 @@ pub async fn approve_adjustment_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(body): Json<Option<ApproveRejectRequest>>,
+    JsonBody(body): JsonBody<Option<ApproveRejectRequest>>,
 ) -> Result<Json<AdjustmentDetailResponse>, Response> {
     require_permission(&ctx, "adjustments:approve")?;
 
@@ -315,7 +315,7 @@ pub async fn reject_adjustment_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(body): Json<Option<ApproveRejectRequest>>,
+    JsonBody(body): JsonBody<Option<ApproveRejectRequest>>,
 ) -> Result<Json<AdjustmentDetailResponse>, Response> {
     require_permission(&ctx, "adjustments:reject")?;
 

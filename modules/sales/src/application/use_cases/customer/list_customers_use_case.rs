@@ -38,7 +38,7 @@ impl ListCustomersUseCase {
         let total_pages = (total as f64 / page_size as f64).ceil() as i64;
 
         Ok(CustomerListResponse {
-            data: customers.into_iter().map(CustomerResponse::from).collect(),
+            items: customers.into_iter().map(CustomerResponse::from).collect(),
             total,
             page,
             page_size,

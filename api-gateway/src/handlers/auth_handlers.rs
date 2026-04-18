@@ -13,6 +13,7 @@ use identity::{
 };
 
 use crate::error::AppError;
+use crate::extractors::JsonBody;
 use crate::state::AppState;
 
 // =============================================================================
@@ -47,7 +48,7 @@ use crate::state::AppState;
 /// - HTTP 500 without exposing internal details
 pub async fn register_handler(
     State(state): State<AppState>,
-    Json(command): Json<RegisterEcommerceCommand>,
+    JsonBody(command): JsonBody<RegisterEcommerceCommand>,
 ) -> Result<(StatusCode, Json<RegisterResponse>), AppError> {
     let use_case = RegisterUserUseCase::new(state.user_repo(), state.audit_repo());
 
@@ -87,7 +88,7 @@ pub async fn register_handler(
 /// - HTTP 500 without exposing internal details
 pub async fn login_handler(
     State(state): State<AppState>,
-    Json(command): Json<LoginCommand>,
+    JsonBody(command): JsonBody<LoginCommand>,
 ) -> Result<Json<LoginResponse>, AppError> {
     let use_case = LoginUseCase::new(state.user_repo(), state.token_service());
 
@@ -128,7 +129,7 @@ pub async fn login_handler(
 /// - HTTP 500 without exposing internal details
 pub async fn refresh_handler(
     State(state): State<AppState>,
-    Json(command): Json<RefreshCommand>,
+    JsonBody(command): JsonBody<RefreshCommand>,
 ) -> Result<Json<LoginResponse>, AppError> {
     let use_case = RefreshTokenUseCase::new(state.user_repo(), state.token_service());
 

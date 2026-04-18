@@ -9,7 +9,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use sales::{AddCartItemCommand, CartResponse, CreateCartCommand, UpdateCartItemCommand};
@@ -17,7 +17,7 @@ use sales::{AddCartItemCommand, CartResponse, CreateCartCommand, UpdateCartItemC
 pub async fn create_cart_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateCartCommand>,
+    JsonBody(command): JsonBody<CreateCartCommand>,
 ) -> Result<(StatusCode, Json<CartResponse>), Response> {
     require_permission(&ctx, "sales:manage_cart")?;
 
@@ -52,7 +52,7 @@ pub async fn add_cart_item_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(cart_id): Path<Uuid>,
-    Json(command): Json<AddCartItemCommand>,
+    JsonBody(command): JsonBody<AddCartItemCommand>,
 ) -> Result<(StatusCode, Json<CartResponse>), Response> {
     require_permission(&ctx, "sales:manage_cart")?;
 
@@ -73,7 +73,7 @@ pub async fn update_cart_item_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path((cart_id, item_id)): Path<(Uuid, Uuid)>,
-    Json(command): Json<UpdateCartItemCommand>,
+    JsonBody(command): JsonBody<UpdateCartItemCommand>,
 ) -> Result<Json<CartResponse>, Response> {
     require_permission(&ctx, "sales:manage_cart")?;
 

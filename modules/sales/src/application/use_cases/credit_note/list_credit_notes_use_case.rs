@@ -39,13 +39,13 @@ impl ListCreditNotesUseCase {
             .find_paginated(filter, query.page, query.page_size)
             .await?;
 
-        let data: Vec<CreditNoteResponse> = credit_notes
+        let items: Vec<CreditNoteResponse> = credit_notes
             .into_iter()
             .map(CreditNoteResponse::from)
             .collect();
 
         Ok(CreditNoteListResponse {
-            data,
+            items,
             total,
             page: query.page,
             page_size: query.page_size,

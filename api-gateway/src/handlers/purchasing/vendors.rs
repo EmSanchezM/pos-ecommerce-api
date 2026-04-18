@@ -27,7 +27,7 @@ use purchasing::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -106,7 +106,7 @@ impl From<ListVendorsQueryParams> for ListVendorsQuery {
 pub async fn create_vendor_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateVendorCommand>,
+    JsonBody(command): JsonBody<CreateVendorCommand>,
 ) -> Result<(StatusCode, Json<VendorResponse>), Response> {
     require_permission(&ctx, "vendors:create")?;
 
@@ -235,7 +235,7 @@ pub async fn update_vendor_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<UpdateVendorCommand>,
+    JsonBody(command): JsonBody<UpdateVendorCommand>,
 ) -> Result<Json<VendorResponse>, Response> {
     require_permission(&ctx, "vendors:update")?;
 

@@ -30,7 +30,7 @@ use purchasing::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -116,7 +116,7 @@ impl From<ListGoodsReceiptsQueryParams> for ListGoodsReceiptsQuery {
 pub async fn create_goods_receipt_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateGoodsReceiptCommand>,
+    JsonBody(command): JsonBody<CreateGoodsReceiptCommand>,
 ) -> Result<(StatusCode, Json<GoodsReceiptDetailResponse>), Response> {
     require_permission(&ctx, "goods_receipts:create")?;
 

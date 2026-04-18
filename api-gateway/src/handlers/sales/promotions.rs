@@ -24,7 +24,7 @@ use sales::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -62,7 +62,7 @@ pub struct PaginatedPromotionResponse {
 pub async fn create_promotion_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreatePromotionCommand>,
+    JsonBody(command): JsonBody<CreatePromotionCommand>,
 ) -> Result<(StatusCode, Json<PromotionResponse>), Response> {
     require_permission(&ctx, "promotions:create")?;
 
@@ -138,7 +138,7 @@ pub async fn update_promotion_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<UpdatePromotionCommand>,
+    JsonBody(command): JsonBody<UpdatePromotionCommand>,
 ) -> Result<Json<PromotionResponse>, Response> {
     require_permission(&ctx, "promotions:update")?;
 
@@ -181,7 +181,7 @@ pub async fn apply_promotion_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(sale_id): Path<Uuid>,
-    Json(body): Json<ApplyPromotionBody>,
+    JsonBody(body): JsonBody<ApplyPromotionBody>,
 ) -> Result<Json<SaleDetailResponse>, Response> {
     require_permission(&ctx, "promotions:apply")?;
 
