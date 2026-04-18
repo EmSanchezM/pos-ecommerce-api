@@ -41,7 +41,7 @@ use identity::{ErrorResponse, UserContext};
 /// - Return 403 Forbidden if permission is missing
 #[allow(clippy::result_large_err)]
 pub fn require_permission(ctx: &UserContext, permission: &str) -> Result<(), Response> {
-    if ctx.has_permission(permission) {
+    if ctx.is_super_admin() || ctx.has_permission(permission) {
         Ok(())
     } else {
         Err(forbidden_response(&format!(
@@ -81,6 +81,10 @@ pub fn require_permission(ctx: &UserContext, permission: &str) -> Result<(), Res
 /// - Return 403 Forbidden if any permission is missing
 #[allow(clippy::result_large_err)]
 pub fn require_all_permissions(ctx: &UserContext, permissions: &[&str]) -> Result<(), Response> {
+    if ctx.is_super_admin() {
+        return Ok(());
+    }
+
     let missing: Vec<&str> = permissions
         .iter()
         .filter(|p| !ctx.has_permission(p))
@@ -131,7 +135,7 @@ pub fn require_any_permission(ctx: &UserContext, permissions: &[&str]) -> Result
         return Err(forbidden_response("No permissions specified"));
     }
 
-    if ctx.has_any_permission(permissions) {
+    if ctx.is_super_admin() || ctx.has_any_permission(permissions) {
         Ok(())
     } else {
         Err(forbidden_response(&format!(
@@ -172,9 +176,10 @@ pub fn require_any_permission(ctx: &UserContext, permissions: &[&str]) -> Result
 /// - Only super_admin can create terminals
 #[allow(clippy::result_large_err)]
 pub fn require_super_admin(ctx: &UserContext) -> Result<(), Response> {
-    // super_admin is identified by having the "system:admin" permission
-    // This permission is only granted to users with the super_admin role
-    if ctx.has_permission("system:admin") {
+    // The auth middleware computes `is_super_admin` by scanning ALL stores in the
+    // JWT claims for `system:admin` — so it stays true regardless of which store
+    // is selected via `X-Store-Id`. `has_permission` only looks at the current store.
+    if ctx.is_super_admin() {
         Ok(())
     } else {
         Err(forbidden_response(

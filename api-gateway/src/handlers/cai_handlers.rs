@@ -22,7 +22,7 @@ use pos_core::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_super_admin;
 use crate::state::AppState;
 
@@ -99,7 +99,7 @@ pub async fn assign_cai_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(terminal_id): Path<Uuid>,
-    Json(command): Json<AssignCaiRequest>,
+    JsonBody(command): JsonBody<AssignCaiRequest>,
 ) -> Result<(StatusCode, Json<CaiAssignmentResponse>), Response> {
     // Check super_admin permission
     require_super_admin(&ctx)?;

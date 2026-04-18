@@ -9,7 +9,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use sales::{
@@ -20,7 +20,7 @@ use sales::{
 pub async fn create_credit_note_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateCreditNoteCommand>,
+    JsonBody(command): JsonBody<CreateCreditNoteCommand>,
 ) -> Result<(StatusCode, Json<CreditNoteResponse>), Response> {
     require_permission(&ctx, "sales:manage_credit_note")?;
 
@@ -38,7 +38,7 @@ pub async fn add_credit_note_item_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(credit_note_id): Path<Uuid>,
-    Json(command): Json<AddCreditNoteItemCommand>,
+    JsonBody(command): JsonBody<AddCreditNoteItemCommand>,
 ) -> Result<(StatusCode, Json<CreditNoteResponse>), Response> {
     require_permission(&ctx, "sales:manage_credit_note")?;
 
@@ -110,7 +110,7 @@ pub async fn apply_credit_note_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(credit_note_id): Path<Uuid>,
-    Json(body): Json<serde_json::Value>,
+    JsonBody(body): JsonBody<serde_json::Value>,
 ) -> Result<Json<CreditNoteResponse>, Response> {
     require_permission(&ctx, "sales:manage_credit_note")?;
 
@@ -139,7 +139,7 @@ pub async fn cancel_credit_note_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(credit_note_id): Path<Uuid>,
-    Json(body): Json<serde_json::Value>,
+    JsonBody(body): JsonBody<serde_json::Value>,
 ) -> Result<Json<CreditNoteResponse>, Response> {
     require_permission(&ctx, "sales:manage_credit_note")?;
 

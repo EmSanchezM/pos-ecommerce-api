@@ -32,7 +32,7 @@ use purchasing::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -124,7 +124,7 @@ impl From<ListPurchaseOrdersQueryParams> for ListPurchaseOrdersQuery {
 pub async fn create_purchase_order_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreatePurchaseOrderCommand>,
+    JsonBody(command): JsonBody<CreatePurchaseOrderCommand>,
 ) -> Result<(StatusCode, Json<PurchaseOrderDetailResponse>), Response> {
     require_permission(&ctx, "purchase_orders:create")?;
 
@@ -320,7 +320,7 @@ pub async fn reject_purchase_order_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(body): Json<Option<RejectOrderCommand>>,
+    JsonBody(body): JsonBody<Option<RejectOrderCommand>>,
 ) -> Result<Json<PurchaseOrderDetailResponse>, Response> {
     require_permission(&ctx, "purchase_orders:approve")?;
 
@@ -366,7 +366,7 @@ pub async fn cancel_purchase_order_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<CancelOrderCommand>,
+    JsonBody(command): JsonBody<CancelOrderCommand>,
 ) -> Result<Json<PurchaseOrderDetailResponse>, Response> {
     require_permission(&ctx, "purchase_orders:cancel")?;
 
@@ -428,7 +428,7 @@ pub async fn update_purchase_order_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<UpdatePurchaseOrderCommand>,
+    JsonBody(command): JsonBody<UpdatePurchaseOrderCommand>,
 ) -> Result<Json<PurchaseOrderDetailResponse>, Response> {
     require_permission(&ctx, "purchase_orders:update")?;
 

@@ -19,12 +19,12 @@ use uuid::Uuid;
 
 use inventory::{
     CategoryResponse, CategoryTreeResponse, CreateCategoryCommand, CreateCategoryUseCase,
-    DeleteCategoryUseCase, GetCategoryUseCase, ListCategoriesUseCase, UpdateCategoryCommand,
-    UpdateCategoryUseCase,
+    DeleteCategoryUseCase, GetCategoryUseCase, ListCategoriesUseCase, ListResponse,
+    UpdateCategoryCommand, UpdateCategoryUseCase,
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -46,7 +46,7 @@ fn default_format() -> String {
 pub async fn create_category_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateCategoryCommand>,
+    JsonBody(command): JsonBody<CreateCategoryCommand>,
 ) -> Result<(StatusCode, Json<CategoryResponse>), Response> {
     require_permission(&ctx, "categories:create")?;
 
@@ -75,19 +75,19 @@ pub async fn list_categories_handler(
             .execute_children(parent_id)
             .await
             .map_err(|e| AppError::from(e).into_response())?;
-        Ok(Json(response).into_response())
+        Ok(Json(ListResponse::new(response)).into_response())
     } else if params.format == "tree" {
         let response: Vec<CategoryTreeResponse> = use_case
             .execute_tree()
             .await
             .map_err(|e| AppError::from(e).into_response())?;
-        Ok(Json(response).into_response())
+        Ok(Json(ListResponse::new(response)).into_response())
     } else {
         let response = use_case
             .execute_flat()
             .await
             .map_err(|e| AppError::from(e).into_response())?;
-        Ok(Json(response).into_response())
+        Ok(Json(ListResponse::new(response)).into_response())
     }
 }
 
@@ -114,7 +114,7 @@ pub async fn get_category_children_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-) -> Result<Json<Vec<CategoryResponse>>, Response> {
+) -> Result<Json<ListResponse<CategoryResponse>>, Response> {
     require_permission(&ctx, "categories:read")?;
 
     let use_case = ListCategoriesUseCase::new(state.category_repo());
@@ -124,7 +124,7 @@ pub async fn get_category_children_handler(
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 
-    Ok(Json(response))
+    Ok(Json(ListResponse::new(response)))
 }
 
 /// Handler for PUT /api/v1/categories/{id}
@@ -132,7 +132,7 @@ pub async fn update_category_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<UpdateCategoryCommand>,
+    JsonBody(command): JsonBody<UpdateCategoryCommand>,
 ) -> Result<Json<CategoryResponse>, Response> {
     require_permission(&ctx, "categories:update")?;
 

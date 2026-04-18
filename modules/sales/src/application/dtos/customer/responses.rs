@@ -88,7 +88,7 @@ impl From<&Address> for AddressResponse {
 /// Paginated response for customer list
 #[derive(Debug, Serialize)]
 pub struct CustomerListResponse {
-    pub data: Vec<CustomerResponse>,
+    pub items: Vec<CustomerResponse>,
     pub total: i64,
     pub page: i64,
     pub page_size: i64,

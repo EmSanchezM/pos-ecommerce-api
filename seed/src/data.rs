@@ -94,12 +94,24 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     ("sales:create_customer", "Create customers"),
     ("sales:read_customer", "View customer information"),
     ("sales:update_customer", "Update customer information"),
+    // Promotions module permissions
+    ("promotions:create", "Create promotions"),
+    ("promotions:read", "View promotions"),
+    ("promotions:update", "Update promotions"),
+    ("promotions:apply", "Apply promotions to sales"),
+    // E-commerce order workflow permissions
+    ("orders:mark_paid", "Mark e-commerce order as paid"),
+    ("orders:process", "Start processing an e-commerce order"),
+    ("orders:ship", "Ship an e-commerce order"),
+    ("orders:deliver", "Mark e-commerce order as delivered"),
+    ("orders:cancel", "Cancel an e-commerce order"),
     // Purchasing module permissions
     ("vendors:create", "Create new vendors/suppliers"),
     ("vendors:read", "View vendor information"),
     ("vendors:update", "Update vendor information"),
     ("purchase_orders:create", "Create purchase orders"),
     ("purchase_orders:read", "View purchase order details"),
+    ("purchase_orders:update", "Update draft purchase orders"),
     (
         "purchase_orders:submit",
         "Submit purchase orders for approval",
@@ -271,12 +283,24 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "sales:manage_credit_note",
             "sales:read_credit_note",
             "sales:approve_credit_note",
+            // Promotions
+            "promotions:create",
+            "promotions:read",
+            "promotions:update",
+            "promotions:apply",
+            // E-commerce orders
+            "orders:mark_paid",
+            "orders:process",
+            "orders:ship",
+            "orders:deliver",
+            "orders:cancel",
             // Purchasing
             "vendors:create",
             "vendors:read",
             "vendors:update",
             "purchase_orders:create",
             "purchase_orders:read",
+            "purchase_orders:update",
             "purchase_orders:submit",
             "purchase_orders:approve",
             "purchase_orders:cancel",
@@ -379,12 +403,24 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "sales:manage_credit_note",
             "sales:read_credit_note",
             "sales:approve_credit_note",
+            // Promotions
+            "promotions:create",
+            "promotions:read",
+            "promotions:update",
+            "promotions:apply",
+            // E-commerce orders
+            "orders:mark_paid",
+            "orders:process",
+            "orders:ship",
+            "orders:deliver",
+            "orders:cancel",
             // Purchasing
             "vendors:create",
             "vendors:read",
             "vendors:update",
             "purchase_orders:create",
             "purchase_orders:read",
+            "purchase_orders:update",
             "purchase_orders:submit",
             "purchase_orders:approve",
             "purchase_orders:cancel",
@@ -466,10 +502,21 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "sales:manage_credit_note",
             "sales:read_credit_note",
             "sales:approve_credit_note",
+            // Promotions
+            "promotions:create",
+            "promotions:read",
+            "promotions:update",
+            "promotions:apply",
+            // E-commerce orders
+            "orders:process",
+            "orders:ship",
+            "orders:deliver",
+            "orders:cancel",
             // Purchasing
             "vendors:read",
             "purchase_orders:create",
             "purchase_orders:read",
+            "purchase_orders:update",
             "purchase_orders:submit",
             "goods_receipts:create",
             "goods_receipts:read",
@@ -514,6 +561,9 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "sales:manage_cart",
             "sales:manage_credit_note",
             "sales:read_credit_note",
+            // Promotions (read + apply at checkout)
+            "promotions:read",
+            "promotions:apply",
         ],
     ),
     // Inventory clerk
@@ -568,6 +618,7 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "vendors:update",
             "purchase_orders:create",
             "purchase_orders:read",
+            "purchase_orders:update",
             "purchase_orders:submit",
             "goods_receipts:create",
             "goods_receipts:read",
@@ -600,6 +651,8 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "vendors:read",
             "purchase_orders:read",
             "goods_receipts:read",
+            // Promotions
+            "promotions:read",
         ],
     ),
     // Customer - e-commerce user

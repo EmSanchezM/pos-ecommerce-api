@@ -24,7 +24,7 @@ use inventory::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -121,7 +121,7 @@ impl From<RecipeCostResult> for RecipeCostResponse {
 pub async fn create_recipe_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateRecipeCommand>,
+    JsonBody(command): JsonBody<CreateRecipeCommand>,
 ) -> Result<(StatusCode, Json<RecipeResponse>), Response> {
     require_permission(&ctx, "recipes:create")?;
 
@@ -269,7 +269,7 @@ pub async fn update_recipe_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<UpdateRecipeCommand>,
+    JsonBody(command): JsonBody<UpdateRecipeCommand>,
 ) -> Result<Json<RecipeResponse>, Response> {
     require_permission(&ctx, "recipes:update")?;
 

@@ -11,7 +11,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use inventory::{
@@ -51,7 +51,7 @@ pub struct UpdateSaleItemRequest {
 pub async fn create_pos_sale_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreatePosSaleCommand>,
+    JsonBody(command): JsonBody<CreatePosSaleCommand>,
 ) -> Result<(StatusCode, Json<SaleDetailResponse>), Response> {
     require_permission(&ctx, "sales:create")?;
 
@@ -69,7 +69,7 @@ pub async fn add_sale_item_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(sale_id): Path<Uuid>,
-    Json(req): Json<AddSaleItemRequest>,
+    JsonBody(req): JsonBody<AddSaleItemRequest>,
 ) -> Result<(StatusCode, Json<SaleDetailResponse>), Response> {
     require_permission(&ctx, "sales:create")?;
 
@@ -109,7 +109,7 @@ pub async fn update_sale_item_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path((_sale_id, item_id)): Path<(Uuid, Uuid)>,
-    Json(req): Json<UpdateSaleItemRequest>,
+    JsonBody(req): JsonBody<UpdateSaleItemRequest>,
 ) -> Result<Json<SaleDetailResponse>, Response> {
     require_permission(&ctx, "sales:update")?;
 
@@ -300,7 +300,7 @@ pub async fn complete_sale_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(sale_id): Path<Uuid>,
-    Json(body): Json<serde_json::Value>,
+    JsonBody(body): JsonBody<serde_json::Value>,
 ) -> Result<Json<SaleDetailResponse>, Response> {
     require_permission(&ctx, "sales:complete")?;
 
@@ -381,7 +381,7 @@ pub async fn void_sale_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(sale_id): Path<Uuid>,
-    Json(command): Json<VoidSaleCommand>,
+    JsonBody(command): JsonBody<VoidSaleCommand>,
 ) -> Result<Json<SaleDetailResponse>, Response> {
     require_permission(&ctx, "sales:void")?;
 

@@ -244,7 +244,7 @@ impl From<&Payment> for PaymentResponse {
 /// Paginated response for sale list
 #[derive(Debug, Serialize)]
 pub struct SaleListResponse {
-    pub data: Vec<SaleResponse>,
+    pub items: Vec<SaleResponse>,
     pub total: i64,
     pub page: i64,
     pub page_size: i64,

@@ -21,7 +21,7 @@ use inventory::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -181,7 +181,7 @@ pub async fn update_variant_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path((product_id, variant_id)): Path<(Uuid, Uuid)>,
-    Json(command): Json<UpdateVariantCommand>,
+    JsonBody(command): JsonBody<UpdateVariantCommand>,
 ) -> Result<Json<VariantResponse>, Response> {
     require_permission(&ctx, "products:update")?;
 

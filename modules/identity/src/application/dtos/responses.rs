@@ -10,15 +10,15 @@ use serde::{Deserialize, Serialize};
 /// Use this for collections that are typically small (e.g., permissions, roles)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ListResponse<T> {
-    /// The data items
-    pub data: Vec<T>,
+    /// The collection items
+    pub items: Vec<T>,
     /// Total number of items
     pub total: i64,
 }
 
 impl<T> ListResponse<T> {
-    pub fn new(data: Vec<T>) -> Self {
-        let total = data.len() as i64;
-        Self { data, total }
+    pub fn new(items: Vec<T>) -> Self {
+        let total = items.len() as i64;
+        Self { items, total }
     }
 }

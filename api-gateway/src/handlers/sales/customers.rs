@@ -9,7 +9,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use sales::{
@@ -20,7 +20,7 @@ use sales::{
 pub async fn create_customer_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateCustomerCommand>,
+    JsonBody(command): JsonBody<CreateCustomerCommand>,
 ) -> Result<(StatusCode, Json<CustomerResponse>), Response> {
     require_permission(&ctx, "sales:create_customer")?;
 
@@ -72,7 +72,7 @@ pub async fn update_customer_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
-    Json(command): Json<UpdateCustomerCommand>,
+    JsonBody(command): JsonBody<UpdateCustomerCommand>,
 ) -> Result<Json<CustomerResponse>, Response> {
     require_permission(&ctx, "sales:update_customer")?;
 

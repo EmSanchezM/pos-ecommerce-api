@@ -27,7 +27,7 @@ use inventory::{
 };
 
 use crate::error::AppError;
-use crate::extractors::CurrentUser;
+use crate::extractors::{CurrentUser, JsonBody};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -116,7 +116,7 @@ impl From<ExpireReservationsResult> for ExpireReservationsResponse {
 pub async fn create_reservation_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
-    Json(command): Json<CreateReservationCommand>,
+    JsonBody(command): JsonBody<CreateReservationCommand>,
 ) -> Result<(StatusCode, Json<ReservationResponse>), Response> {
     // Check for cart:add OR sales:create permission
     let has_cart_add = ctx.has_permission("cart:add");

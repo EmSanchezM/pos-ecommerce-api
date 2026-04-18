@@ -42,7 +42,7 @@ impl ListShiftsUseCase {
         let total_pages = (total as f64 / page_size as f64).ceil() as i64;
 
         Ok(ShiftListResponse {
-            data: shifts.into_iter().map(ShiftResponse::from).collect(),
+            items: shifts.into_iter().map(ShiftResponse::from).collect(),
             total,
             page,
             page_size,

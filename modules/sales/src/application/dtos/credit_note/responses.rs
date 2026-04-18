@@ -135,7 +135,7 @@ impl From<CreditNote> for CreditNoteResponse {
 /// Response DTO for credit note list
 #[derive(Debug, Serialize)]
 pub struct CreditNoteListResponse {
-    pub data: Vec<CreditNoteResponse>,
+    pub items: Vec<CreditNoteResponse>,
     pub total: i64,
     pub page: i64,
     pub page_size: i64,
