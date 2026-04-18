@@ -208,6 +208,14 @@ impl From<IdentityError> for AppError {
             }
 
             // 500 Internal Server Error - Database and other errors
+            IdentityError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
+            IdentityError::PasswordHashError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
             IdentityError::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
@@ -584,9 +592,17 @@ impl From<InventoryError> for AppError {
             // -----------------------------------------------------------------
             // 500 Internal Server Error - Database and system errors
             // -----------------------------------------------------------------
+            InventoryError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
             InventoryError::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
+            ),
+            InventoryError::InvalidOperation(msg) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_OPERATION", msg),
             ),
             InventoryError::NotImplemented => (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -804,6 +820,10 @@ impl From<PurchasingError> for AppError {
             // -----------------------------------------------------------------
             // 500 Internal Server Error - Database and system errors
             // -----------------------------------------------------------------
+            PurchasingError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
             PurchasingError::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
@@ -1209,6 +1229,10 @@ impl From<SalesError> for AppError {
             // -----------------------------------------------------------------
             // 500 Internal Server Error
             // -----------------------------------------------------------------
+            SalesError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
             SalesError::Database(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
@@ -1216,6 +1240,45 @@ impl From<SalesError> for AppError {
             SalesError::NotImplemented => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+
+            // Promotion errors
+            SalesError::PromotionNotFound(_) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PROMOTION_NOT_FOUND", "Promotion not found"),
+            ),
+            SalesError::DuplicatePromotionCode(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_PROMOTION_CODE", "Promotion code already exists"),
+            ),
+            SalesError::PromotionNotActive => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "PROMOTION_NOT_ACTIVE",
+                    "Promotion is not active or has expired",
+                ),
+            ),
+            SalesError::PromotionUsageLimitExceeded => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "PROMOTION_USAGE_LIMIT_EXCEEDED",
+                    "Promotion usage limit exceeded",
+                ),
+            ),
+            SalesError::MinimumPurchaseNotMet(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "MINIMUM_PURCHASE_NOT_MET",
+                    "Minimum purchase requirement not met",
+                ),
+            ),
+            SalesError::InvalidPromotionType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_PROMOTION_TYPE", "Invalid promotion type"),
+            ),
+            SalesError::InvalidPromotionStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_PROMOTION_STATUS", "Invalid promotion status"),
             ),
         };
 

@@ -140,7 +140,7 @@ where
         self.audit_repo
             .save(&audit_entry)
             .await
-            .map_err(|_| InventoryError::NotImplemented)?; // Convert IdentityError to InventoryError
+            .map_err(|e| InventoryError::AuditError(e.to_string()))?;
 
         // Convert to response
         Ok(ProductResponse {

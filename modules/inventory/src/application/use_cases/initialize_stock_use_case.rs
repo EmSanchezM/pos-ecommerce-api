@@ -172,7 +172,7 @@ where
         self.audit_repo
             .save(&audit_entry)
             .await
-            .map_err(|_| InventoryError::NotImplemented)?;
+            .map_err(|e| InventoryError::AuditError(e.to_string()))?;
 
         // 10. Return response
         Ok(StockResponse {

@@ -254,6 +254,49 @@ impl ShiftRepository for PgShiftRepository {
     }
 }
 
+// Transactional methods
+impl PgShiftRepository {
+    /// Updates a cashier shift within an existing transaction.
+    pub async fn update_in_tx(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        shift: &CashierShift,
+    ) -> Result<(), SalesError> {
+        let result = sqlx::query(
+            r#"
+            UPDATE cashier_shifts
+            SET status = $2, closed_at = $3, closing_balance = $4, expected_balance = $5,
+                cash_sales = $6, card_sales = $7, other_sales = $8, refunds = $9,
+                cash_in = $10, cash_out = $11, transaction_count = $12, notes = $13,
+                closing_notes = $14, updated_at = $15
+            WHERE id = $1
+            "#,
+        )
+        .bind(shift.id().into_uuid())
+        .bind(shift.status().to_string())
+        .bind(shift.closed_at())
+        .bind(shift.closing_balance())
+        .bind(shift.expected_balance())
+        .bind(shift.cash_sales())
+        .bind(shift.card_sales())
+        .bind(shift.other_sales())
+        .bind(shift.refunds())
+        .bind(shift.cash_in())
+        .bind(shift.cash_out())
+        .bind(shift.transaction_count())
+        .bind(shift.notes())
+        .bind(shift.closing_notes())
+        .bind(shift.updated_at())
+        .execute(&mut **tx)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(SalesError::ShiftNotFound(shift.id().into_uuid()));
+        }
+
+        Ok(())
+    }
+}
+
 #[derive(sqlx::FromRow)]
 struct ShiftRow {
     id: uuid::Uuid,

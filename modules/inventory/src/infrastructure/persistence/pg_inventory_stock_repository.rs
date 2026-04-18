@@ -197,92 +197,49 @@ impl InventoryStockRepository for PgInventoryStockRepository {
     ) -> Result<(Vec<InventoryStock>, i64), InventoryError> {
         let offset = (page - 1) * page_size;
 
-        // Build dynamic query based on filters
-        let mut conditions = Vec::new();
-        if store_id.is_some() {
-            conditions.push("store_id = $1");
+        // Helper: appends WHERE/AND conditions using QueryBuilder
+        fn push_filters(
+            qb: &mut sqlx::QueryBuilder<'_, sqlx::Postgres>,
+            store_id: Option<StoreId>,
+            product_id: Option<ProductId>,
+            low_stock_only: bool,
+        ) {
+            let mut has_condition = false;
+            if let Some(sid) = store_id {
+                qb.push(" WHERE store_id = ");
+                qb.push_bind(sid.into_uuid());
+                has_condition = true;
+            }
+            if let Some(pid) = product_id {
+                qb.push(if has_condition { " AND " } else { " WHERE " });
+                qb.push("product_id = ");
+                qb.push_bind(pid.into_uuid());
+                has_condition = true;
+            }
+            if low_stock_only {
+                qb.push(if has_condition { " AND " } else { " WHERE " });
+                qb.push("(quantity - reserved_quantity) <= min_stock_level");
+            }
         }
-        if product_id.is_some() {
-            conditions.push(if store_id.is_some() {
-                "product_id = $2"
-            } else {
-                "product_id = $1"
-            });
-        }
-        if low_stock_only {
-            conditions.push("(quantity - reserved_quantity) <= min_stock_level");
-        }
-
-        let where_clause = if conditions.is_empty() {
-            String::new()
-        } else {
-            format!("WHERE {}", conditions.join(" AND "))
-        };
 
         // Count query
-        let count_query = format!(
-            "SELECT COUNT(*) as count FROM inventory_stock {}",
-            where_clause
-        );
+        let mut count_qb = sqlx::QueryBuilder::new("SELECT COUNT(*) as count FROM inventory_stock");
+        push_filters(&mut count_qb, store_id, product_id, low_stock_only);
+        let (total,): (i64,) = count_qb.build_query_as().fetch_one(&self.pool).await?;
 
         // Data query
-        let data_query = format!(
-            r#"
-            SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
+        let mut data_qb = sqlx::QueryBuilder::new(
+            r#"SELECT id, store_id, product_id, variant_id, quantity, reserved_quantity,
                    version, min_stock_level, max_stock_level, created_at, updated_at
-            FROM inventory_stock
-            {}
-            ORDER BY created_at DESC
-            LIMIT {} OFFSET {}
-            "#,
-            where_clause, page_size, offset
+            FROM inventory_stock"#,
         );
+        push_filters(&mut data_qb, store_id, product_id, low_stock_only);
+        data_qb.push(" ORDER BY created_at DESC LIMIT ");
+        data_qb.push_bind(page_size);
+        data_qb.push(" OFFSET ");
+        data_qb.push_bind(offset);
 
-        // Execute queries based on which parameters are provided
-        let (rows, total): (Vec<StockRow>, i64) = match (store_id, product_id) {
-            (Some(sid), Some(pid)) => {
-                let count: (i64,) = sqlx::query_as(&count_query)
-                    .bind(sid.as_uuid())
-                    .bind(pid.into_uuid())
-                    .fetch_one(&self.pool)
-                    .await?;
-                let rows = sqlx::query_as::<_, StockRow>(&data_query)
-                    .bind(sid.as_uuid())
-                    .bind(pid.into_uuid())
-                    .fetch_all(&self.pool)
-                    .await?;
-                (rows, count.0)
-            }
-            (Some(sid), None) => {
-                let count: (i64,) = sqlx::query_as(&count_query)
-                    .bind(sid.as_uuid())
-                    .fetch_one(&self.pool)
-                    .await?;
-                let rows = sqlx::query_as::<_, StockRow>(&data_query)
-                    .bind(sid.as_uuid())
-                    .fetch_all(&self.pool)
-                    .await?;
-                (rows, count.0)
-            }
-            (None, Some(pid)) => {
-                let count: (i64,) = sqlx::query_as(&count_query)
-                    .bind(pid.into_uuid())
-                    .fetch_one(&self.pool)
-                    .await?;
-                let rows = sqlx::query_as::<_, StockRow>(&data_query)
-                    .bind(pid.into_uuid())
-                    .fetch_all(&self.pool)
-                    .await?;
-                (rows, count.0)
-            }
-            (None, None) => {
-                let count: (i64,) = sqlx::query_as(&count_query).fetch_one(&self.pool).await?;
-                let rows = sqlx::query_as::<_, StockRow>(&data_query)
-                    .fetch_all(&self.pool)
-                    .await?;
-                (rows, count.0)
-            }
-        };
+        let rows: Vec<StockRow> = data_qb.build_query_as().fetch_all(&self.pool).await?;
 
         let stocks: Result<Vec<InventoryStock>, InventoryError> =
             rows.into_iter().map(|r| r.try_into()).collect();
@@ -405,6 +362,45 @@ impl InventoryStockRepository for PgInventoryStockRepository {
         .await?;
 
         rows.into_iter().map(|r| r.try_into()).collect()
+    }
+}
+
+// Transactional methods
+impl PgInventoryStockRepository {
+    /// Updates stock with optimistic locking within an existing transaction.
+    pub async fn update_with_version_in_tx(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        stock: &InventoryStock,
+        expected_version: i32,
+    ) -> Result<(), InventoryError> {
+        let result = sqlx::query(
+            r#"
+            UPDATE inventory_stock
+            SET quantity = $2,
+                reserved_quantity = $3,
+                version = $4,
+                min_stock_level = $5,
+                max_stock_level = $6,
+                updated_at = $7
+            WHERE id = $1 AND version = $8
+            "#,
+        )
+        .bind(stock.id().into_uuid())
+        .bind(stock.quantity())
+        .bind(stock.reserved_quantity())
+        .bind(stock.version())
+        .bind(stock.min_stock_level())
+        .bind(stock.max_stock_level())
+        .bind(stock.updated_at())
+        .bind(expected_version)
+        .execute(&mut **tx)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(InventoryError::OptimisticLockError);
+        }
+
+        Ok(())
     }
 }
 

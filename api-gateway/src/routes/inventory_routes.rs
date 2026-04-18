@@ -14,17 +14,22 @@ use axum::{
 
 use crate::handlers::{
     apply_adjustment_handler, approve_adjustment_handler, bulk_initialize_stock_handler,
-    calculate_recipe_cost_handler, cancel_reservation_handler, confirm_reservation_handler,
-    create_adjustment_handler, create_product_handler, create_recipe_handler,
-    create_reservation_handler, create_variant_handler, delete_product_handler,
-    delete_variant_handler, expire_reservations_handler, get_adjustment_handler,
+    calculate_recipe_cost_handler, cancel_reservation_handler, cancel_transfer_handler,
+    confirm_reservation_handler, create_adjustment_handler, create_category_handler,
+    create_product_handler, create_recipe_handler, create_reservation_handler,
+    create_transfer_handler, create_variant_handler, delete_category_handler,
+    delete_product_handler, delete_variant_handler, expire_reservations_handler,
+    get_adjustment_handler, get_category_children_handler, get_category_handler,
     get_low_stock_report_handler, get_movements_report_handler, get_product_handler,
     get_product_recipe_handler, get_product_stock_handler, get_recipe_handler, get_stock_handler,
-    get_stock_history_handler, get_valuation_report_handler, get_variant_handler,
-    initialize_stock_handler, list_adjustments_handler, list_products_handler,
-    list_recipes_handler, list_reservations_handler, list_stock_handler, list_variants_handler,
-    reject_adjustment_handler, submit_adjustment_handler, update_product_handler,
-    update_recipe_handler, update_stock_levels_handler, update_variant_handler,
+    get_stock_history_handler, get_transfer_handler, get_valuation_report_handler,
+    get_variant_handler, initialize_stock_handler, list_adjustments_handler,
+    list_categories_handler, list_products_handler, list_recipes_handler,
+    list_reservations_handler, list_stock_handler, list_transfers_handler, list_variants_handler,
+    receive_transfer_handler, reject_adjustment_handler, ship_transfer_handler,
+    submit_adjustment_handler, submit_transfer_handler, update_category_handler,
+    update_product_handler, update_recipe_handler, update_stock_levels_handler,
+    update_variant_handler,
 };
 use crate::middleware::auth_middleware;
 use crate::state::AppState;
@@ -216,14 +221,6 @@ pub fn inventory_router(state: AppState) -> Router<AppState> {
 /// - `GET /inventory/valuation` - Get inventory valuation report (requires reports:inventory)
 /// - `GET /inventory/low-stock` - Get low stock report (requires reports:inventory)
 /// - `GET /inventory/movements` - Get movements report (requires reports:inventory)
-///
-/// # Usage
-///
-/// ```rust,ignore
-/// let app = Router::new()
-///     .nest("/api/v1/reports", reports_router(app_state.clone()))
-///     .with_state(app_state);
-/// ```
 pub fn reports_router(state: AppState) -> Router<AppState> {
     Router::new()
         // Inventory reports
@@ -231,5 +228,56 @@ pub fn reports_router(state: AppState) -> Router<AppState> {
         .route("/inventory/low-stock", get(get_low_stock_report_handler))
         .route("/inventory/movements", get(get_movements_report_handler))
         // Apply authentication middleware to all routes
+        .layer(middleware::from_fn_with_state(state, auth_middleware))
+}
+
+/// Creates the transfers router with all stock transfer endpoints.
+///
+/// # Routes
+///
+/// - `POST /` - Create a new transfer (requires transfers:create)
+/// - `GET /` - List transfers (requires transfers:read)
+/// - `GET /{id}` - Get transfer details (requires transfers:read)
+/// - `PUT /{id}/submit` - Submit for processing (requires transfers:create)
+/// - `PUT /{id}/ship` - Ship the transfer (requires transfers:ship)
+/// - `PUT /{id}/receive` - Receive the transfer (requires transfers:receive)
+/// - `PUT /{id}/cancel` - Cancel the transfer (requires transfers:create)
+pub fn transfers_router(state: AppState) -> Router<AppState> {
+    Router::new()
+        .route(
+            "/",
+            post(create_transfer_handler).get(list_transfers_handler),
+        )
+        .route("/{id}", get(get_transfer_handler))
+        .route("/{id}/submit", put(submit_transfer_handler))
+        .route("/{id}/ship", put(ship_transfer_handler))
+        .route("/{id}/receive", put(receive_transfer_handler))
+        .route("/{id}/cancel", put(cancel_transfer_handler))
+        .layer(middleware::from_fn_with_state(state, auth_middleware))
+}
+
+/// Creates the categories router with all category endpoints.
+///
+/// # Routes
+///
+/// - `POST /` - Create a new category (requires categories:create)
+/// - `GET /` - List categories (flat or tree, requires categories:read)
+/// - `GET /{id}` - Get category details (requires categories:read)
+/// - `GET /{id}/children` - Get child categories (requires categories:read)
+/// - `PUT /{id}` - Update category (requires categories:update)
+/// - `DELETE /{id}` - Soft delete category (requires categories:delete)
+pub fn categories_router(state: AppState) -> Router<AppState> {
+    Router::new()
+        .route(
+            "/",
+            post(create_category_handler).get(list_categories_handler),
+        )
+        .route(
+            "/{id}",
+            get(get_category_handler)
+                .put(update_category_handler)
+                .delete(delete_category_handler),
+        )
+        .route("/{id}/children", get(get_category_children_handler))
         .layer(middleware::from_fn_with_state(state, auth_middleware))
 }

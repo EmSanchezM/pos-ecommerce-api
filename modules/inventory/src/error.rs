@@ -254,6 +254,10 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // Database errors
     // -------------------------------------------------------------------------
+    /// An error occurred while recording an audit entry.
+    #[error("Audit error: {0}")]
+    AuditError(String),
+
     /// A database error occurred during the operation.
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
@@ -261,6 +265,10 @@ pub enum InventoryError {
     // -------------------------------------------------------------------------
     // General errors
     // -------------------------------------------------------------------------
+    /// A general invalid operation that doesn't fit other error categories.
+    #[error("Invalid operation: {0}")]
+    InvalidOperation(String),
+
     /// The requested functionality is not yet implemented.
     #[error("Not implemented")]
     NotImplemented,

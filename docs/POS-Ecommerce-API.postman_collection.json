@@ -115,6 +115,36 @@
 			"key": "credit_note_item_id",
 			"value": "",
 			"type": "string"
+		},
+		{
+			"key": "category_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "transfer_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "transfer_item_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "store_id_2",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "promotion_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "order_id",
+			"value": "",
+			"type": "string"
 		}
 	],
 	"item": [
@@ -2726,6 +2756,40 @@
 						"description": "Cierra manualmente una orden de compra. Requiere permiso purchase_orders:close.\n\nLa orden debe estar en estado 'approved', 'partially_received' o 'received'.\n\nÚtil cuando no se esperan más recepciones o hay items que no se van a recibir."
 					},
 					"response": []
+				},
+				{
+					"name": "Update Purchase Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"vendor_id\": null,\n    \"order_date\": null,\n    \"expected_delivery_date\": \"2026-05-01\",\n    \"payment_terms_days\": 60,\n    \"notes\": \"Updated notes\",\n    \"internal_notes\": \"Internal update\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/purchase-orders/{{purchase_order_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								"{{purchase_order_id}}"
+							]
+						},
+						"description": "Actualiza una orden de compra en estado borrador. Requiere permiso purchase_orders:update.\n\nLa orden debe estar en estado 'draft'.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| vendor_id | uuid | No | ID del proveedor (null para no cambiar) |\n| order_date | date | No | Fecha de la orden (null para no cambiar) |\n| expected_delivery_date | date | No | Fecha esperada de entrega |\n| payment_terms_days | number | No | Días de crédito |\n| notes | string | No | Notas de la orden |\n| internal_notes | string | No | Notas internas |"
+					},
+					"response": []
 				}
 			],
 			"description": "Endpoints de gestión de órdenes de compra. Requieren autenticación."
@@ -4397,6 +4461,815 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "Categories",
+			"item": [
+				{
+					"name": "Create Category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('category_id', jsonData.id);",
+									"    pm.test('Category created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.name).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Electronics\",\n    \"slug\": \"electronics\",\n    \"parent_id\": null,\n    \"description\": \"Electronic devices\",\n    \"icon\": \"icon-electronics\",\n    \"sort_order\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						},
+						"description": "Crea una nueva categoría de productos. Requiere autenticación.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | Sí | Nombre de la categoría |\n| slug | string | Sí | Slug URL-friendly |\n| parent_id | uuid | No | ID de la categoría padre (null para raíz) |\n| description | string | No | Descripción de la categoría |\n| icon | string | No | Icono de la categoría |\n| sort_order | number | No | Orden de visualización |"
+					},
+					"response": []
+				},
+				{
+					"name": "List Categories (Flat)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							]
+						},
+						"description": "Lista todas las categorías en formato plano. Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "List Categories (Tree)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories?format=tree",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "tree"
+								}
+							]
+						},
+						"description": "Lista todas las categorías en formato de árbol jerárquico. Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Category",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{category_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{category_id}}"
+							]
+						},
+						"description": "Obtiene el detalle de una categoría. Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Category Children",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{category_id}}/children",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{category_id}}",
+								"children"
+							]
+						},
+						"description": "Obtiene las subcategorías directas de una categoría. Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Category",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Electronics\",\n    \"description\": \"Updated description\",\n    \"sort_order\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{category_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{category_id}}"
+							]
+						},
+						"description": "Actualiza una categoría existente. Requiere autenticación.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | No | Nuevo nombre |\n| description | string | No | Nueva descripción |\n| sort_order | number | No | Nuevo orden de visualización |"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Category",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/categories/{{category_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"categories",
+								"{{category_id}}"
+							]
+						},
+						"description": "Elimina una categoría. Requiere autenticación.\n\nLa categoría no debe tener subcategorías ni productos asociados."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de categorías de productos. Requieren autenticación."
+		},
+		{
+			"name": "Transfers",
+			"item": [
+				{
+					"name": "Create Transfer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('transfer_id', jsonData.id);",
+									"    pm.test('Transfer created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.status).to.equal('draft');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"from_store_id\": \"{{store_id}}\",\n    \"to_store_id\": \"{{store_id_2}}\",\n    \"notes\": \"Transfer to branch\",\n    \"shipping_method\": \"Ground\",\n    \"items\": [\n        {\n            \"product_id\": \"{{product_id}}\",\n            \"quantity_requested\": 10,\n            \"unit_cost\": 5.0\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/transfers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transfers"
+							]
+						},
+						"description": "Crea una nueva transferencia de inventario entre tiendas en estado borrador. Requiere autenticación.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| from_store_id | uuid | Sí | ID de la tienda origen |\n| to_store_id | uuid | Sí | ID de la tienda destino |\n| notes | string | No | Notas de la transferencia |\n| shipping_method | string | No | Método de envío |\n| items | array | Sí | Lista de items a transferir |\n\n## Item Fields\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| product_id | uuid | Sí | ID del producto |\n| quantity_requested | decimal | Sí | Cantidad solicitada |\n| unit_cost | decimal | No | Costo unitario |"
+					},
+					"response": []
+				},
+				{
+					"name": "List Transfers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transfers?store_id={{store_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transfers"
+							],
+							"query": [
+								{
+									"key": "store_id",
+									"value": "{{store_id}}"
+								}
+							]
+						},
+						"description": "Lista transferencias de inventario con filtro por tienda. Requiere autenticación.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| store_id | uuid | Filtrar por tienda (origen o destino) |"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Transfer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transfers/{{transfer_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transfers",
+								"{{transfer_id}}"
+							]
+						},
+						"description": "Obtiene el detalle de una transferencia incluyendo todos sus items. Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Transfer",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transfers/{{transfer_id}}/submit",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transfers",
+								"{{transfer_id}}",
+								"submit"
+							]
+						},
+						"description": "Envía una transferencia en borrador para procesamiento. Requiere autenticación.\n\nLa transferencia debe estar en estado 'draft' y tener al menos un item."
+					},
+					"response": []
+				},
+				{
+					"name": "Ship Transfer",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"transfer_id\": \"{{transfer_id}}\",\n    \"tracking_number\": \"TRACK123\",\n    \"items\": [\n        {\n            \"item_id\": \"{{transfer_item_id}}\",\n            \"quantity_shipped\": 10\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/transfers/{{transfer_id}}/ship",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transfers",
+								"{{transfer_id}}",
+								"ship"
+							]
+						},
+						"description": "Marca una transferencia como enviada con información de seguimiento. Requiere autenticación.\n\nLa transferencia debe estar en estado 'submitted'.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| transfer_id | uuid | Sí | ID de la transferencia |\n| tracking_number | string | No | Número de seguimiento |\n| items | array | Sí | Items enviados |\n\n## Item Fields\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| item_id | uuid | Sí | ID del item de transferencia |\n| quantity_shipped | decimal | Sí | Cantidad enviada |"
+					},
+					"response": []
+				},
+				{
+					"name": "Receive Transfer",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"transfer_id\": \"{{transfer_id}}\",\n    \"items\": [\n        {\n            \"item_id\": \"{{transfer_item_id}}\",\n            \"quantity_received\": 10\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/transfers/{{transfer_id}}/receive",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transfers",
+								"{{transfer_id}}",
+								"receive"
+							]
+						},
+						"description": "Registra la recepción de una transferencia en la tienda destino. Requiere autenticación.\n\nLa transferencia debe estar en estado 'shipped'.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| transfer_id | uuid | Sí | ID de la transferencia |\n| items | array | Sí | Items recibidos |\n\n## Item Fields\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| item_id | uuid | Sí | ID del item de transferencia |\n| quantity_received | decimal | Sí | Cantidad recibida |"
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Transfer",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transfers/{{transfer_id}}/cancel",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"transfers",
+								"{{transfer_id}}",
+								"cancel"
+							]
+						},
+						"description": "Cancela una transferencia. Requiere autenticación.\n\nSolo se pueden cancelar transferencias en estado: draft, submitted."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de transferencias de inventario entre tiendas. Requieren autenticación."
+		},
+		{
+			"name": "Promotions",
+			"item": [
+				{
+					"name": "Create Promotion",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('promotion_id', jsonData.id);",
+									"    pm.test('Promotion created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.code).to.equal('SUMMER2026');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"SUMMER2026\",\n    \"name\": \"Summer Sale\",\n    \"promotion_type\": \"percentage\",\n    \"discount_value\": 10,\n    \"minimum_purchase\": 50,\n    \"start_date\": \"2026-01-01T00:00:00Z\",\n    \"end_date\": \"2026-12-31T23:59:59Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/promotions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"promotions"
+							]
+						},
+						"description": "Crea una nueva promoción. Requiere autenticación.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| code | string | Sí | Código único de la promoción |\n| name | string | Sí | Nombre de la promoción |\n| promotion_type | string | Sí | Tipo de promoción (percentage, fixed) |\n| discount_value | decimal | Sí | Valor del descuento |\n| minimum_purchase | decimal | No | Compra mínima requerida |\n| start_date | datetime | Sí | Fecha de inicio |\n| end_date | datetime | Sí | Fecha de finalización |\n\n## Respuestas\n\n- **201 Created**: Promoción creada exitosamente\n- **400 Bad Request**: Error de validación\n- **409 Conflict**: Código de promoción ya existe"
+					},
+					"response": []
+				},
+				{
+					"name": "List Promotions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/promotions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"promotions"
+							]
+						},
+						"description": "Lista todas las promociones con paginación. Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Promotion",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/promotions/{{promotion_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"promotions",
+								"{{promotion_id}}"
+							]
+						},
+						"description": "Obtiene el detalle de una promoción por su ID. Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Promotion",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Summer Sale\",\n    \"discount_value\": 15,\n    \"maximum_discount\": 100\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/promotions/{{promotion_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"promotions",
+								"{{promotion_id}}"
+							]
+						},
+						"description": "Actualiza una promoción existente. Requiere autenticación.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| name | string | No | Nombre de la promoción |\n| discount_value | decimal | No | Valor del descuento |\n| maximum_discount | decimal | No | Descuento máximo aplicable |"
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Promotion",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/promotions/{{promotion_id}}/deactivate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"promotions",
+								"{{promotion_id}}",
+								"deactivate"
+							]
+						},
+						"description": "Desactiva una promoción. Requiere autenticación."
+					},
+					"response": []
+				},
+				{
+					"name": "Apply Promotion to Sale",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"promotion_code\": \"SUMMER2026\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/sales/{{sale_id}}/apply-promotion",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"sales",
+								"{{sale_id}}",
+								"apply-promotion"
+							]
+						},
+						"description": "Aplica una promoción a una venta existente usando el código de promoción. Requiere autenticación.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| promotion_code | string | Sí | Código de la promoción a aplicar |"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints de gestión de promociones y descuentos. Requieren autenticación."
+		},
+		{
+			"name": "E-Commerce Orders",
+			"item": [
+				{
+					"name": "Mark Order Paid",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order_id}}/mark-paid",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order_id}}",
+								"mark-paid"
+							]
+						},
+						"description": "Marca una orden de e-commerce como pagada. Requiere autenticación.\n\nLa orden debe estar en estado 'pending_payment'."
+					},
+					"response": []
+				},
+				{
+					"name": "Process Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order_id}}/process",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order_id}}",
+								"process"
+							]
+						},
+						"description": "Inicia el procesamiento de una orden de e-commerce. Requiere autenticación.\n\nLa orden debe estar en estado 'paid'."
+					},
+					"response": []
+				},
+				{
+					"name": "Ship Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order_id}}/ship",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order_id}}",
+								"ship"
+							]
+						},
+						"description": "Marca una orden como enviada. Requiere autenticación.\n\nLa orden debe estar en estado 'processing'."
+					},
+					"response": []
+				},
+				{
+					"name": "Deliver Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order_id}}/deliver",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order_id}}",
+								"deliver"
+							]
+						},
+						"description": "Marca una orden como entregada. Requiere autenticación.\n\nLa orden debe estar en estado 'shipped'."
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/orders/{{order_id}}/cancel",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"orders",
+								"{{order_id}}",
+								"cancel"
+							]
+						},
+						"description": "Cancela una orden de e-commerce. Requiere autenticación.\n\nSolo se pueden cancelar órdenes que no hayan sido entregadas."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints del ciclo de vida de órdenes de e-commerce (pending_payment -> paid -> processing -> shipped -> delivered). Requieren autenticación."
 		}
 	]
 }

@@ -67,6 +67,8 @@ pub use domain::value_objects::SaleId;
 pub use domain::value_objects::SaleItemId;
 pub use domain::value_objects::ShiftId;
 
+pub use domain::value_objects::PromotionId;
+
 // Enum value objects
 pub use domain::value_objects::CreditNoteStatus;
 pub use domain::value_objects::CustomerType;
@@ -74,6 +76,8 @@ pub use domain::value_objects::DiscountType;
 pub use domain::value_objects::OrderStatus;
 pub use domain::value_objects::PaymentMethod;
 pub use domain::value_objects::PaymentStatus;
+pub use domain::value_objects::PromotionStatus;
+pub use domain::value_objects::PromotionType;
 pub use domain::value_objects::ReturnReason;
 pub use domain::value_objects::ReturnType;
 pub use domain::value_objects::SaleStatus;
@@ -92,6 +96,7 @@ pub use domain::entities::CreditNote;
 pub use domain::entities::CreditNoteItem;
 pub use domain::entities::Customer;
 pub use domain::entities::Payment;
+pub use domain::entities::Promotion;
 pub use domain::entities::Sale;
 pub use domain::entities::SaleItem;
 
@@ -105,6 +110,8 @@ pub use domain::repositories::CreditNoteFilter;
 pub use domain::repositories::CreditNoteRepository;
 pub use domain::repositories::CustomerFilter;
 pub use domain::repositories::CustomerRepository;
+pub use domain::repositories::PromotionFilter;
+pub use domain::repositories::PromotionRepository;
 pub use domain::repositories::SaleFilter;
 pub use domain::repositories::SaleRepository;
 pub use domain::repositories::ShiftFilter;
@@ -117,6 +124,7 @@ pub use domain::repositories::ShiftRepository;
 pub use infrastructure::persistence::PgCartRepository;
 pub use infrastructure::persistence::PgCreditNoteRepository;
 pub use infrastructure::persistence::PgCustomerRepository;
+pub use infrastructure::persistence::PgPromotionRepository;
 pub use infrastructure::persistence::PgSaleRepository;
 pub use infrastructure::persistence::PgShiftRepository;
 
@@ -161,6 +169,12 @@ pub use application::dtos::CreditNoteListResponse;
 pub use application::dtos::CreditNoteResponse;
 pub use application::dtos::ListCreditNotesQuery;
 pub use application::dtos::SubmitCreditNoteCommand;
+
+// Promotion DTOs
+pub use application::dtos::ApplyPromotionCommand;
+pub use application::dtos::CreatePromotionCommand;
+pub use application::dtos::PromotionResponse;
+pub use application::dtos::UpdatePromotionCommand;
 
 // Sale DTOs
 pub use application::dtos::AddSaleItemCommand;
@@ -213,6 +227,22 @@ pub use application::use_cases::GetCreditNoteUseCase;
 pub use application::use_cases::ListCreditNotesUseCase;
 pub use application::use_cases::RemoveCreditNoteItemUseCase;
 pub use application::use_cases::SubmitCreditNoteUseCase;
+
+// Promotion Use Cases
+pub use application::use_cases::ApplyPromotionUseCase;
+pub use application::use_cases::CreatePromotionUseCase;
+pub use application::use_cases::DeactivatePromotionUseCase;
+pub use application::use_cases::GetPromotionUseCase;
+pub use application::use_cases::ListPromotionsQuery;
+pub use application::use_cases::ListPromotionsUseCase;
+pub use application::use_cases::UpdatePromotionUseCase;
+
+// E-commerce Order Use Cases
+pub use application::use_cases::CancelOrderUseCase;
+pub use application::use_cases::DeliverOrderUseCase;
+pub use application::use_cases::MarkOrderPaidUseCase;
+pub use application::use_cases::ProcessOrderUseCase;
+pub use application::use_cases::ShipOrderUseCase;
 
 // POS Sale Use Cases
 pub use application::use_cases::AddSaleItemUseCase;

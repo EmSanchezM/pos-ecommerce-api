@@ -18,11 +18,15 @@ use axum::{
 use serde::Deserialize;
 use uuid::Uuid;
 
-use inventory::PaginatedResponse;
+use inventory::{
+    Currency, InventoryMovement, InventoryMovementRepository, InventoryStock,
+    InventoryStockRepository, MovementType, PaginatedResponse,
+};
 use purchasing::{
-    CancelGoodsReceiptUseCase, ConfirmGoodsReceiptUseCase, CreateGoodsReceiptCommand,
-    CreateGoodsReceiptUseCase, GetGoodsReceiptUseCase, GoodsReceiptDetailResponse,
-    GoodsReceiptResponse, ListGoodsReceiptsQuery, ListGoodsReceiptsUseCase,
+    CancelGoodsReceiptUseCase, CreateGoodsReceiptCommand, CreateGoodsReceiptUseCase,
+    GetGoodsReceiptUseCase, GoodsReceiptDetailResponse, GoodsReceiptItemResponse,
+    GoodsReceiptRepository, GoodsReceiptResponse, ListGoodsReceiptsQuery, ListGoodsReceiptsUseCase,
+    PgGoodsReceiptRepository, PgPurchaseOrderRepository, PurchaseOrderRepository, PurchasingError,
 };
 
 use crate::error::AppError;
@@ -228,16 +232,181 @@ pub async fn confirm_goods_receipt_handler(
 ) -> Result<Json<GoodsReceiptDetailResponse>, Response> {
     require_permission(&ctx, "goods_receipts:confirm")?;
 
-    let use_case =
-        ConfirmGoodsReceiptUseCase::new(state.goods_receipt_repo(), state.purchase_order_repo());
-
     let actor_id = *ctx.user_id();
-    let response = use_case
-        .execute(id, actor_id)
+    let receipt_id = purchasing::GoodsReceiptId::from_uuid(id);
+
+    // Read receipt
+    let mut receipt = state
+        .goods_receipt_repo()
+        .find_by_id_with_items(receipt_id)
+        .await
+        .map_err(|e| AppError::from(e).into_response())?
+        .ok_or_else(|| AppError::from(PurchasingError::GoodsReceiptNotFound(id)).into_response())?;
+
+    // Domain logic: confirm receipt
+    receipt
+        .confirm(actor_id)
+        .map_err(|e| AppError::from(e).into_response())?;
+
+    // Read purchase order
+    let mut order = state
+        .purchase_order_repo()
+        .find_by_id_with_items(receipt.purchase_order_id())
+        .await
+        .map_err(|e| AppError::from(e).into_response())?
+        .ok_or_else(|| {
+            AppError::from(PurchasingError::PurchaseOrderNotFound(
+                receipt.purchase_order_id().into_uuid(),
+            ))
+            .into_response()
+        })?;
+
+    // Domain logic: update received quantities
+    for receipt_item in receipt.items() {
+        for order_item in order.items_mut() {
+            if order_item.id() == receipt_item.purchase_order_item_id() {
+                order_item.add_received_quantity(receipt_item.quantity_received());
+                break;
+            }
+        }
+    }
+
+    if order.all_items_received() {
+        order
+            .receive_complete(actor_id, receipt.receipt_date())
+            .map_err(|e| AppError::from(e).into_response())?;
+    } else if order.has_received_items() {
+        order
+            .receive_partial(actor_id)
+            .map_err(|e| AppError::from(e).into_response())?;
+    }
+
+    // All writes in a single transaction
+    let mut tx = state
+        .pool()
+        .begin()
+        .await
+        .map_err(|e| AppError::from(PurchasingError::from(e)).into_response())?;
+
+    PgGoodsReceiptRepository::update_in_tx(&mut tx, &receipt)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 
-    Ok(Json(response))
+    PgPurchaseOrderRepository::update_in_tx(&mut tx, &order)
+        .await
+        .map_err(|e| AppError::from(e).into_response())?;
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from(PurchasingError::from(e)).into_response())?;
+
+    // Update inventory stock for each receipt item
+    let receipt_store_id = receipt.store_id();
+    let receipt_uuid = receipt.id().into_uuid();
+    let stock_repo = state.stock_repo();
+    let movement_repo = state.movement_repo();
+
+    for receipt_item in receipt.items() {
+        let product_id = receipt_item.product_id();
+        let variant_id = receipt_item.variant_id();
+        let quantity = receipt_item.quantity_received();
+        let unit_cost = Some(receipt_item.unit_cost());
+
+        // Find or create stock record at the store
+        let existing = if let Some(vid) = variant_id {
+            stock_repo
+                .find_by_store_and_variant(receipt_store_id, vid)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?
+        } else {
+            stock_repo
+                .find_by_store_and_product(receipt_store_id, product_id)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?
+        };
+
+        let mut stock = match existing {
+            Some(s) => s,
+            None => {
+                let new_stock = if let Some(vid) = variant_id {
+                    InventoryStock::create_for_variant(receipt_store_id, vid)
+                        .map_err(|e| AppError::from(e).into_response())?
+                } else {
+                    InventoryStock::create_for_product(receipt_store_id, product_id)
+                        .map_err(|e| AppError::from(e).into_response())?
+                };
+                stock_repo
+                    .save(&new_stock)
+                    .await
+                    .map_err(|e| AppError::from(e).into_response())?;
+                new_stock
+            }
+        };
+
+        let expected_version = stock.version();
+        stock
+            .adjust_quantity(quantity)
+            .map_err(|e| AppError::from(e).into_response())?;
+        stock.increment_version();
+
+        stock_repo
+            .update_with_version(&stock, expected_version)
+            .await
+            .map_err(|e| AppError::from(e).into_response())?;
+
+        // Create inventory movement for goods receipt
+        let movement = InventoryMovement::create(
+            stock.id(),
+            MovementType::In,
+            Some("Goods receipt confirmed".to_string()),
+            quantity,
+            unit_cost,
+            Currency::hnl(),
+            stock.quantity(),
+            Some("goods_receipt".to_string()),
+            Some(receipt_uuid),
+            actor_id,
+            None,
+        );
+        movement_repo
+            .save(&movement)
+            .await
+            .map_err(|e| AppError::from(e).into_response())?;
+    }
+
+    // Build response
+    let items: Vec<GoodsReceiptItemResponse> = receipt
+        .items()
+        .iter()
+        .map(|item| GoodsReceiptItemResponse {
+            id: item.id().into_uuid(),
+            goods_receipt_id: item.goods_receipt_id().into_uuid(),
+            purchase_order_item_id: item.purchase_order_item_id().into_uuid(),
+            product_id: item.product_id().into_uuid(),
+            variant_id: item.variant_id().map(|v| v.into_uuid()),
+            quantity_received: item.quantity_received(),
+            unit_cost: item.unit_cost(),
+            lot_number: item.lot_number().map(|s| s.to_string()),
+            expiry_date: item.expiry_date(),
+            notes: item.notes().map(|s| s.to_string()),
+        })
+        .collect();
+
+    Ok(Json(GoodsReceiptDetailResponse {
+        id: receipt.id().into_uuid(),
+        receipt_number: receipt.receipt_number().to_string(),
+        purchase_order_id: receipt.purchase_order_id().into_uuid(),
+        store_id: receipt.store_id().into_uuid(),
+        receipt_date: receipt.receipt_date(),
+        status: receipt.status().to_string(),
+        notes: receipt.notes().map(|s| s.to_string()),
+        received_by_id: receipt.received_by_id().into_uuid(),
+        confirmed_by_id: receipt.confirmed_by_id().map(|id| id.into_uuid()),
+        confirmed_at: receipt.confirmed_at(),
+        items,
+        created_at: receipt.created_at(),
+        updated_at: receipt.updated_at(),
+    }))
 }
 
 // =============================================================================

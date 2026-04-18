@@ -300,6 +300,85 @@ impl InventoryMovementRepository for PgInventoryMovementRepository {
     }
 }
 
+// Transactional methods
+impl PgInventoryMovementRepository {
+    /// Saves a single movement within an existing transaction.
+    pub async fn save_in_tx(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        movement: &InventoryMovement,
+    ) -> Result<(), InventoryError> {
+        sqlx::query(
+            r#"
+            INSERT INTO inventory_movements (
+                id, stock_id, movement_type, movement_reason, quantity, unit_cost, currency,
+                balance_after, reference_type, reference_id, actor_id, notes, metadata, created_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+            "#,
+        )
+        .bind(movement.id().into_uuid())
+        .bind(movement.stock_id().into_uuid())
+        .bind(movement.movement_type().to_string())
+        .bind(movement.movement_reason())
+        .bind(movement.quantity())
+        .bind(movement.unit_cost())
+        .bind(movement.currency().as_str())
+        .bind(movement.balance_after())
+        .bind(movement.reference_type())
+        .bind(movement.reference_id())
+        .bind(movement.actor_id().into_uuid())
+        .bind(movement.notes())
+        .bind(movement.metadata())
+        .bind(movement.created_at())
+        .execute(&mut **tx)
+        .await?;
+
+        Ok(())
+    }
+
+    /// Saves a batch of movements within an existing transaction.
+    pub async fn save_batch_in_tx(
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        movements: &[InventoryMovement],
+    ) -> Result<(), InventoryError> {
+        if movements.is_empty() {
+            return Ok(());
+        }
+
+        const CHUNK_SIZE: usize = 4000;
+
+        for chunk in movements.chunks(CHUNK_SIZE) {
+            let mut query_builder = sqlx::QueryBuilder::new(
+                r#"INSERT INTO inventory_movements (
+                    id, stock_id, movement_type, movement_reason, quantity, unit_cost, currency,
+                    balance_after, reference_type, reference_id, actor_id, notes, metadata, created_at
+                ) "#,
+            );
+
+            query_builder.push_values(chunk, |mut b, movement| {
+                b.push_bind(movement.id().into_uuid())
+                    .push_bind(movement.stock_id().into_uuid())
+                    .push_bind(movement.movement_type().to_string())
+                    .push_bind(movement.movement_reason().map(|s| s.to_string()))
+                    .push_bind(movement.quantity())
+                    .push_bind(movement.unit_cost())
+                    .push_bind(movement.currency().as_str().to_string())
+                    .push_bind(movement.balance_after())
+                    .push_bind(movement.reference_type().map(|s| s.to_string()))
+                    .push_bind(movement.reference_id())
+                    .push_bind(movement.actor_id().into_uuid())
+                    .push_bind(movement.notes().map(|s| s.to_string()))
+                    .push_bind(movement.metadata().clone())
+                    .push_bind(movement.created_at());
+            });
+
+            query_builder.build().execute(&mut **tx).await?;
+        }
+
+        Ok(())
+    }
+}
+
 /// Internal row type for mapping movement database results
 #[derive(sqlx::FromRow)]
 struct MovementRow {

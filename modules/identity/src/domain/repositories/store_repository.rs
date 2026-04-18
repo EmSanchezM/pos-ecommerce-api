@@ -41,11 +41,14 @@ pub trait StoreRepository: Send + Sync {
 
     /// Finds stores with pagination and optional filters
     /// Returns (stores, total_count)
+    ///
+    /// If `user_store_ids` is `Some`, results are restricted to those store IDs.
     async fn find_paginated(
         &self,
         is_active: Option<bool>,
         is_ecommerce: Option<bool>,
         page: i64,
         page_size: i64,
+        user_store_ids: Option<&[uuid::Uuid]>,
     ) -> Result<(Vec<Store>, i64), IdentityError>;
 }

@@ -5,6 +5,8 @@
 
 use std::collections::HashSet;
 
+use uuid::Uuid;
+
 use crate::domain::value_objects::{PermissionCode, StoreId, UserId};
 
 /// Result of a permission check operation
@@ -27,21 +29,26 @@ pub struct UserContext {
     user_id: UserId,
     store_id: StoreId,
     permissions: HashSet<PermissionCode>,
+    accessible_store_ids: Vec<Uuid>,
+    is_super_admin: bool,
 }
 
 impl UserContext {
-    /// Creates a new UserContext with the given user_id, store_id, and permissions.
-    ///
-    /// # Arguments
-    ///
-    /// * `user_id` - The ID of the user
-    /// * `store_id` - The ID of the store/tenant context
-    /// * `permissions` - A deduplicated set of permission codes
-    pub fn new(user_id: UserId, store_id: StoreId, permissions: HashSet<PermissionCode>) -> Self {
+    /// Creates a new UserContext with the given user_id, store_id, permissions,
+    /// the full list of accessible store IDs from the JWT, and super-admin flag.
+    pub fn new(
+        user_id: UserId,
+        store_id: StoreId,
+        permissions: HashSet<PermissionCode>,
+        accessible_store_ids: Vec<Uuid>,
+        is_super_admin: bool,
+    ) -> Self {
         Self {
             user_id,
             store_id,
             permissions,
+            accessible_store_ids,
+            is_super_admin,
         }
     }
 
@@ -58,6 +65,16 @@ impl UserContext {
     /// Returns a reference to the permissions set
     pub fn permissions(&self) -> &HashSet<PermissionCode> {
         &self.permissions
+    }
+
+    /// Returns the list of store IDs this user has access to (from JWT).
+    pub fn accessible_store_ids(&self) -> &[Uuid] {
+        &self.accessible_store_ids
+    }
+
+    /// Returns true if this user is a super admin.
+    pub fn is_super_admin(&self) -> bool {
+        self.is_super_admin
     }
 
     /// Checks if the user has a specific permission.
@@ -177,7 +194,7 @@ mod tests {
             .iter()
             .filter_map(|p| PermissionCode::new(p).ok())
             .collect();
-        UserContext::new(UserId::new(), StoreId::new(), perms)
+        UserContext::new(UserId::new(), StoreId::new(), perms, vec![], false)
     }
 
     #[test]
@@ -186,11 +203,34 @@ mod tests {
         let store_id = StoreId::new();
         let permissions = HashSet::new();
 
-        let ctx = UserContext::new(user_id, store_id, permissions);
+        let ctx = UserContext::new(user_id, store_id, permissions, vec![], false);
 
         assert_eq!(*ctx.user_id(), user_id);
         assert_eq!(*ctx.store_id(), store_id);
         assert!(ctx.permissions().is_empty());
+        assert!(ctx.accessible_store_ids().is_empty());
+        assert!(!ctx.is_super_admin());
+    }
+
+    #[test]
+    fn test_user_context_with_store_access() {
+        let store1 = Uuid::now_v7();
+        let store2 = Uuid::now_v7();
+        let ctx = UserContext::new(
+            UserId::new(),
+            StoreId::new(),
+            HashSet::new(),
+            vec![store1, store2],
+            false,
+        );
+        assert_eq!(ctx.accessible_store_ids(), &[store1, store2]);
+        assert!(!ctx.is_super_admin());
+    }
+
+    #[test]
+    fn test_user_context_super_admin() {
+        let ctx = UserContext::new(UserId::new(), StoreId::new(), HashSet::new(), vec![], true);
+        assert!(ctx.is_super_admin());
     }
 
     #[test]

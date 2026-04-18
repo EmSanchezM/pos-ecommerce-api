@@ -14,9 +14,14 @@ use crate::error::AppError;
 use crate::extractors::CurrentUser;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
+use inventory::{
+    Currency, InventoryMovement, InventoryMovementRepository, InventoryStockRepository,
+    MovementType,
+};
 use sales::{
-    AddSaleItemCommand, ApplyDiscountCommand, CreatePosSaleCommand, ListSalesQuery,
-    ProcessPaymentCommand, SaleDetailResponse, SaleListResponse, VoidSaleCommand,
+    AddSaleItemCommand, ApplyDiscountCommand, CreatePosSaleCommand, ListSalesQuery, Payment,
+    PaymentMethod, PgSaleRepository, PgShiftRepository, ProcessPaymentCommand, SaleDetailResponse,
+    SaleId, SaleListResponse, SaleRepository, ShiftRepository, VoidSaleCommand,
 };
 
 /// Extended request for adding a sale item.
@@ -172,14 +177,123 @@ pub async fn process_payment_handler(
 
     command.sale_id = sale_id;
 
-    let use_case = sales::ProcessPaymentUseCase::new(state.sale_repo(), state.shift_repo());
+    // Idempotency check: if key provided, look for existing payment
+    if let Some(ref key) = command.idempotency_key
+        && let Some(existing_payment) = state
+            .sale_repo()
+            .find_payment_by_idempotency_key(key)
+            .await
+            .map_err(|e| AppError::from(e).into_response())?
+    {
+        let sale = state
+            .sale_repo()
+            .find_by_id_with_details(existing_payment.sale_id())
+            .await
+            .map_err(|e| AppError::from(e).into_response())?
+            .ok_or_else(|| {
+                AppError::from(sales::SalesError::SaleNotFound(
+                    existing_payment.sale_id().into_uuid(),
+                ))
+                .into_response()
+            })?;
+        return Ok((StatusCode::CREATED, Json(SaleDetailResponse::from(sale))));
+    }
 
-    let response = use_case
-        .execute(command)
+    let sale_id_vo = SaleId::from_uuid(command.sale_id);
+    let payment_method: PaymentMethod = command
+        .payment_method
+        .parse()
+        .map_err(|_| AppError::from(sales::SalesError::InvalidPaymentMethod).into_response())?;
+
+    let mut sale = state
+        .sale_repo()
+        .find_by_id_with_details(sale_id_vo)
+        .await
+        .map_err(|e| AppError::from(e).into_response())?
+        .ok_or_else(|| {
+            AppError::from(sales::SalesError::SaleNotFound(command.sale_id)).into_response()
+        })?;
+
+    if !sale.is_editable() {
+        return Err(AppError::from(sales::SalesError::SaleNotEditable).into_response());
+    }
+
+    // Create the payment
+    let mut payment = if payment_method == PaymentMethod::Cash {
+        let tendered = command.amount_tendered.unwrap_or(command.amount);
+        Payment::create_cash(
+            sale_id_vo,
+            command.amount,
+            sale.currency().clone(),
+            tendered,
+        )
+        .map_err(|e| AppError::from(e).into_response())?
+    } else {
+        Payment::create(
+            sale_id_vo,
+            payment_method,
+            command.amount,
+            sale.currency().clone(),
+        )
+        .map_err(|e| AppError::from(e).into_response())?
+    };
+
+    payment.set_reference_number(command.reference.clone());
+    payment.set_notes(command.notes.clone());
+    payment.set_idempotency_key(command.idempotency_key.clone());
+
+    sale.add_payment(payment.clone())
+        .map_err(|e| AppError::from(e).into_response())?;
+
+    // Find shift before transaction to minimize TX duration
+    let shift_update = if let Some(shift_id) = sale.shift_id() {
+        state
+            .shift_repo()
+            .find_by_id(shift_id)
+            .await
+            .map_err(|e| AppError::from(e).into_response())?
+            .map(|mut shift| {
+                let result = match payment_method {
+                    PaymentMethod::Cash => shift.record_cash_sale(command.amount),
+                    PaymentMethod::CreditCard | PaymentMethod::DebitCard => {
+                        shift.record_card_sale(command.amount)
+                    }
+                    _ => shift.record_other_sale(command.amount),
+                };
+                result.map(|()| shift)
+            })
+            .transpose()
+            .map_err(|e| AppError::from(e).into_response())?
+    } else {
+        None
+    };
+
+    // All writes in a single transaction
+    let mut tx = state
+        .pool()
+        .begin()
+        .await
+        .map_err(|e| AppError::from(sales::SalesError::from(e)).into_response())?;
+
+    PgSaleRepository::save_payment_in_tx(&mut tx, &payment)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 
-    Ok((StatusCode::CREATED, Json(response)))
+    PgSaleRepository::update_in_tx(&mut tx, &sale)
+        .await
+        .map_err(|e| AppError::from(e).into_response())?;
+
+    if let Some(shift) = &shift_update {
+        PgShiftRepository::update_in_tx(&mut tx, shift)
+            .await
+            .map_err(|e| AppError::from(e).into_response())?;
+    }
+
+    tx.commit()
+        .await
+        .map_err(|e| AppError::from(sales::SalesError::from(e)).into_response())?;
+
+    Ok((StatusCode::CREATED, Json(SaleDetailResponse::from(sale))))
 }
 
 pub async fn complete_sale_handler(
@@ -202,6 +316,63 @@ pub async fn complete_sale_handler(
         .execute(sale_id, invoice_number)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
+
+    // Deduct inventory stock for each sale item
+    let stock_repo = state.stock_repo();
+    let movement_repo = state.movement_repo();
+    let actor_id = *ctx.user_id();
+    let store_id = identity::StoreId::from_uuid(response.store_id);
+
+    for item in &response.items {
+        let product_id = inventory::ProductId::from_uuid(item.product_id);
+        let variant_id = item.variant_id.map(inventory::VariantId::from_uuid);
+
+        // Find stock record
+        let existing = if let Some(vid) = variant_id {
+            stock_repo
+                .find_by_store_and_variant(store_id, vid)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?
+        } else {
+            stock_repo
+                .find_by_store_and_product(store_id, product_id)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?
+        };
+
+        if let Some(mut stock) = existing {
+            let expected_version = stock.version();
+            stock
+                .adjust_quantity(-item.quantity)
+                .map_err(|e| AppError::from(e).into_response())?;
+            stock.increment_version();
+
+            stock_repo
+                .update_with_version(&stock, expected_version)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?;
+
+            // Create sale movement
+            let movement = InventoryMovement::create(
+                stock.id(),
+                MovementType::Out,
+                Some("Sale completed".to_string()),
+                -item.quantity,
+                Some(item.unit_price),
+                Currency::hnl(),
+                stock.quantity(),
+                Some("sale".to_string()),
+                Some(sale_id),
+                actor_id,
+                None,
+            );
+            movement_repo
+                .save(&movement)
+                .await
+                .map_err(|e| AppError::from(e).into_response())?;
+        }
+        // If no stock record exists, skip (product may not be trackable)
+    }
 
     Ok(Json(response))
 }

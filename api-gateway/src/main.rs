@@ -1,9 +1,11 @@
 use std::env;
+use std::net::SocketAddr;
 use std::str::FromStr;
 use std::time::Duration;
 
 use axum::{Router, routing::get};
 use common::health::infrastructure::health_check_simple;
+use tower_http::cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer};
 
 pub mod error;
 pub mod extractors;
@@ -14,10 +16,10 @@ mod routes;
 mod state;
 
 use routes::{
-    auth_router, cart_router, credit_notes_router, customers_router, goods_receipts_router,
-    inventory_router, pos_sales_router, products_router, purchase_orders_router, recipes_router,
-    reports_router, shifts_router, store_router, store_terminals_router, terminals_router,
-    vendors_router,
+    auth_router, cart_router, categories_router, credit_notes_router, customers_router,
+    goods_receipts_router, inventory_router, orders_router, pos_sales_router, products_router,
+    promotions_router, purchase_orders_router, recipes_router, reports_router, shifts_router,
+    store_router, store_terminals_router, terminals_router, transfers_router, vendors_router,
 };
 use state::AppState;
 
@@ -29,9 +31,8 @@ async fn main() {
     // Get database URL from environment
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
-    // Get JWT secret from environment (or use a default for development)
-    let jwt_secret = env::var("JWT_SECRET")
-        .unwrap_or_else(|_| "development-secret-key-change-in-production".to_string());
+    // Get JWT secret from environment (required)
+    let jwt_secret = env::var("JWT_SECRET").expect("JWT_SECRET environment variable must be set");
 
     // Create PostgreSQL connection pool with configurable settings
     let max_connections = env_or::<u32>("DB_MAX_CONNECTIONS", 50);
@@ -53,6 +54,9 @@ async fn main() {
     // Create application state with repositories and services
     let app_state = AppState::from_pool(pool, jwt_secret);
 
+    // Configure CORS
+    let cors_layer = build_cors_layer();
+
     // Build the application router
     let app = Router::new()
         .route("/health", get(health_check_simple))
@@ -63,6 +67,8 @@ async fn main() {
             store_terminals_router(app_state.clone()),
         )
         .nest("/api/v1/terminals", terminals_router(app_state.clone()))
+        .nest("/api/v1/transfers", transfers_router(app_state.clone()))
+        .nest("/api/v1/categories", categories_router(app_state.clone()))
         .nest("/api/v1/products", products_router(app_state.clone()))
         .nest("/api/v1/recipes", recipes_router(app_state.clone()))
         .nest("/api/v1/inventory", inventory_router(app_state.clone()))
@@ -78,12 +84,15 @@ async fn main() {
         )
         .nest("/api/v1/customers", customers_router(app_state.clone()))
         .nest("/api/v1/shifts", shifts_router(app_state.clone()))
+        .nest("/api/v1/orders", orders_router(app_state.clone()))
+        .nest("/api/v1/promotions", promotions_router(app_state.clone()))
         .nest("/api/v1/sales", pos_sales_router(app_state.clone()))
         .nest("/api/v1/carts", cart_router(app_state.clone()))
         .nest(
             "/api/v1/credit-notes",
             credit_notes_router(app_state.clone()),
         )
+        .layer(cors_layer)
         .with_state(app_state.clone());
 
     // Start background jobs
@@ -99,7 +108,12 @@ async fn main() {
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
     println!("API Gateway running on http://0.0.0.0:8000");
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }
 
 /// Reads an environment variable, parsing it to `T`. Returns `default` if the
@@ -109,4 +123,42 @@ fn env_or<T: FromStr>(name: &str, default: T) -> T {
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(default)
+}
+
+/// Builds a CORS layer from the `CORS_ALLOWED_ORIGINS` environment variable.
+///
+/// If the variable is set, it is parsed as a comma-separated list of origins.
+/// If unset, all origins are allowed (development mode).
+fn build_cors_layer() -> CorsLayer {
+    use axum::http::{HeaderName, Method};
+
+    let methods = AllowMethods::from(vec![
+        Method::GET,
+        Method::POST,
+        Method::PUT,
+        Method::DELETE,
+        Method::OPTIONS,
+    ]);
+
+    let headers = AllowHeaders::from(vec![
+        HeaderName::from_static("authorization"),
+        HeaderName::from_static("content-type"),
+        HeaderName::from_static("x-store-id"),
+    ]);
+
+    let origins = match env::var("CORS_ALLOWED_ORIGINS") {
+        Ok(origins_str) if !origins_str.is_empty() => {
+            let parsed: Vec<_> = origins_str
+                .split(',')
+                .filter_map(|s| s.trim().parse().ok())
+                .collect();
+            AllowOrigin::list(parsed)
+        }
+        _ => AllowOrigin::any(),
+    };
+
+    CorsLayer::new()
+        .allow_methods(methods)
+        .allow_headers(headers)
+        .allow_origin(origins)
 }
