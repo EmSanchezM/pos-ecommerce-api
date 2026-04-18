@@ -4,6 +4,8 @@
 .vscode/
 .cursor/
 .kiro/
+.claude/
+CLAUDE.md
 
 # Variables de entorno
 .env
