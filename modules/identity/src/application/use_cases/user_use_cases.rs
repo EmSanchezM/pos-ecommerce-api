@@ -1,6 +1,4 @@
 // User use cases - Application layer business logic for user management
-//
-// Requirements: 3.1, 3.5, 6.1, 6.2, 6.3, 6.5, 6.6
 
 use std::sync::Arc;
 
@@ -25,8 +23,6 @@ use crate::error::IdentityError;
 ///
 /// Validates username/email uniqueness, hashes the password using Argon2,
 /// generates a unique UUID, and creates an audit entry.
-///
-/// Requirements: 6.1, 6.2
 pub struct CreateUserUseCase<U, A>
 where
     U: UserRepository,
@@ -72,20 +68,20 @@ where
         let username = Username::new(&command.username)?;
         let email = Email::new(&command.email)?;
 
-        // Check username uniqueness (Requirement 6.1)
+        // Check username uniqueness
         if self.user_repo.find_by_username(&username).await?.is_some() {
             return Err(IdentityError::DuplicateUsername(command.username));
         }
 
-        // Check email uniqueness (Requirement 6.1)
+        // Check email uniqueness
         if self.user_repo.find_by_email(&email).await?.is_some() {
             return Err(IdentityError::DuplicateEmail(command.email));
         }
 
-        // Hash the password using Argon2 (Requirement 6.2)
+        // Hash the password using Argon2
         let password_hash = hash_password(&command.password)?;
 
-        // Create user with generated UUID (Requirement 6.2)
+        // Create user with generated UUID
         let user = User::create(
             username,
             email,
@@ -124,8 +120,6 @@ fn hash_password(password: &str) -> Result<String, IdentityError> {
 ///
 /// Validates email uniqueness if changed, updates the user,
 /// and creates an audit entry.
-///
-/// Requirements: 6.5, 6.6
 pub struct UpdateUserUseCase<U, A>
 where
     U: UserRepository,
@@ -178,23 +172,23 @@ where
         // Store old state for audit
         let old_user = user.clone();
 
-        // Update first name if provided (Requirement 6.5)
+        // Update first name if provided
         if let Some(first_name) = command.first_name {
             user.set_first_name(first_name);
         }
 
-        // Update last name if provided (Requirement 6.5)
+        // Update last name if provided
         if let Some(last_name) = command.last_name {
             user.set_last_name(last_name);
         }
 
-        // Update email if provided (Requirement 6.5, 6.6)
+        // Update email if provided
         if let Some(email_str) = command.email {
             let new_email = Email::new(&email_str)?;
 
             // Check uniqueness only if email is actually changing
             if new_email.as_str() != user.email().as_str() {
-                // Check if new email is already in use by another user (Requirement 6.6)
+                // Check if new email is already in use by another user
                 if let Some(existing_user) = self.user_repo.find_by_email(&new_email).await?
                     && existing_user.id() != &user_id
                 {
@@ -223,8 +217,6 @@ where
 /// Use case for enabling or disabling a user account
 ///
 /// Updates the user's is_active flag and creates an audit entry.
-///
-/// Requirements: 6.3
 pub struct SetUserActiveUseCase<U, A>
 where
     U: UserRepository,
@@ -275,7 +267,7 @@ where
         // Store old state for audit
         let old_user = user.clone();
 
-        // Update active status (Requirement 6.3)
+        // Update active status
         if is_active {
             user.activate();
         } else {
@@ -302,8 +294,6 @@ where
 ///
 /// Verifies the user exists, belongs to the store, and the role exists,
 /// then assigns the role and creates an audit entry.
-///
-/// Requirements: 3.1, 3.5
 pub struct AssignRoleUseCase<U, R, S, A>
 where
     U: UserRepository,
@@ -349,7 +339,7 @@ where
     ///
     /// # Errors
     /// * `IdentityError::UserNotFound` - If user doesn't exist
-    /// * `IdentityError::RoleNotFound` - If role doesn't exist (Requirement 3.5)
+    /// * `IdentityError::RoleNotFound` - If role doesn't exist
     /// * `IdentityError::StoreNotFound` - If store doesn't exist
     /// * `IdentityError::UserNotInStore` - If user is not a member of the store
     pub async fn execute(
@@ -366,7 +356,7 @@ where
             .await?
             .ok_or(IdentityError::UserNotFound(user_id.into_uuid()))?;
 
-        // Verify role exists (Requirement 3.5)
+        // Verify role exists
         let role = self
             .role_repo
             .find_by_id(role_id)
@@ -384,7 +374,7 @@ where
             return Err(IdentityError::UserNotInStore(store_id.into_uuid()));
         }
 
-        // Assign role to user in store (Requirement 3.1)
+        // Assign role to user in store
         self.user_repo
             .assign_role(user_id, role_id, store_id)
             .await?;
@@ -418,8 +408,6 @@ where
 ///
 /// Verifies the user exists, then removes the role assignment
 /// and creates an audit entry.
-///
-/// Requirements: 3.1
 pub struct RemoveRoleUseCase<U, R, A>
 where
     U: UserRepository,

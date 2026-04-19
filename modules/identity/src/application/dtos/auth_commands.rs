@@ -15,8 +15,6 @@ use uuid::Uuid;
 ///
 /// This is for public self-registration. The username will be
 /// auto-generated from the email prefix.
-///
-/// Requirements: 1.1
 #[derive(Debug, Clone, Deserialize)]
 pub struct RegisterEcommerceCommand {
     /// User's email address (must be unique)
@@ -33,8 +31,6 @@ pub struct RegisterEcommerceCommand {
 ///
 /// This is for administrative registration only. Requires specifying
 /// a username and store assignment.
-///
-/// Requirements: 2.1
 #[derive(Debug, Clone, Deserialize)]
 pub struct RegisterPosCommand {
     /// Unique username (3-50 chars, alphanumeric with underscores, starts with letter)
@@ -59,8 +55,6 @@ pub struct RegisterPosCommand {
 ///
 /// The identifier can be either an email or username. The system
 /// will automatically detect the format and search accordingly.
-///
-/// Requirements: 3.1
 #[derive(Debug, Clone, Deserialize)]
 pub struct LoginCommand {
     /// Login identifier - can be email or username
@@ -74,8 +68,6 @@ pub struct LoginCommand {
 // =============================================================================
 
 /// Command to refresh an access token using a refresh token.
-///
-/// Requirements: 4.5
 #[derive(Debug, Clone, Deserialize)]
 pub struct RefreshCommand {
     /// The refresh token obtained from login
