@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "pos-ecommerce-api-collection",
 		"name": "POS Ecommerce API",
-		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n- GET /api/v1/stores/:id/inventory - Obtener inventario de tienda (inventory:read)\n- GET /api/v1/stores/:id/low-stock - Obtener alertas de stock bajo (inventory:read)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI\n\n### Products (requiere autenticación)\n- POST /api/v1/products - Crear producto (products:create)\n- GET /api/v1/products - Listar productos con paginación\n- GET /api/v1/products/:id - Obtener detalle de producto\n- PUT /api/v1/products/:id - Actualizar producto (products:update)\n- DELETE /api/v1/products/:id - Eliminar producto (products:delete)\n- POST /api/v1/products/:id/variants - Crear variante (products:create)\n- GET /api/v1/products/:id/variants - Listar variantes\n- GET /api/v1/products/:id/variants/:variant_id - Obtener variante\n- PUT /api/v1/products/:id/variants/:variant_id - Actualizar variante (products:update)\n- DELETE /api/v1/products/:id/variants/:variant_id - Eliminar variante (products:delete)\n- GET /api/v1/products/:id/recipe - Obtener receta activa del producto\n- GET /api/v1/products/:id/stock - Obtener stock del producto\n\n### Recipes (requiere autenticación)\n- POST /api/v1/recipes - Crear receta (recipes:create)\n- GET /api/v1/recipes - Listar recetas con paginación\n- GET /api/v1/recipes/:id - Obtener detalle de receta\n- PUT /api/v1/recipes/:id - Actualizar receta (recipes:update)\n- POST /api/v1/recipes/:id/calculate-cost - Calcular costo de receta\n\n### Inventory (requiere autenticación)\n- POST /api/v1/inventory/stock - Inicializar stock (inventory:write)\n- POST /api/v1/inventory/stock/bulk - Inicializar stock masivo (inventory:write)\n- GET /api/v1/inventory/stock - Listar stock con paginación\n- GET /api/v1/inventory/stock/:stock_id - Obtener detalle de stock\n- PUT /api/v1/inventory/stock/:stock_id/levels - Actualizar niveles de stock (inventory:write)\n- POST /api/v1/inventory/reservations - Crear reserva\n- GET /api/v1/inventory/reservations - Listar reservas\n- PUT /api/v1/inventory/reservations/:id/confirm - Confirmar reserva\n- PUT /api/v1/inventory/reservations/:id/cancel - Cancelar reserva\n- POST /api/v1/inventory/reservations/expire - Expirar reservas vencidas\n\n### Adjustments (requiere autenticación)\n- POST /api/v1/inventory/adjustments - Crear ajuste de stock (inventory:adjustments:create)\n- GET /api/v1/inventory/adjustments - Listar ajustes con paginación (inventory:adjustments:read)\n- GET /api/v1/inventory/adjustments/:id - Obtener detalle de ajuste (inventory:adjustments:read)\n- PUT /api/v1/inventory/adjustments/:id/submit - Enviar ajuste para aprobación (inventory:adjustments:submit)\n- PUT /api/v1/inventory/adjustments/:id/approve - Aprobar ajuste (inventory:adjustments:approve)\n- PUT /api/v1/inventory/adjustments/:id/reject - Rechazar ajuste (inventory:adjustments:approve)\n- POST /api/v1/inventory/adjustments/:id/apply - Aplicar ajuste al stock (inventory:adjustments:apply)\n\n### Vendors (requiere autenticación)\n- POST /api/v1/vendors - Crear proveedor (vendors:create)\n- GET /api/v1/vendors - Listar proveedores con paginación (vendors:read)\n- GET /api/v1/vendors/:id - Obtener detalle de proveedor (vendors:read)\n- PUT /api/v1/vendors/:id - Actualizar proveedor (vendors:update)\n- PUT /api/v1/vendors/:id/activate - Activar proveedor (vendors:update)\n- PUT /api/v1/vendors/:id/deactivate - Desactivar proveedor (vendors:update)\n\n### Purchase Orders (requiere autenticación)\n- POST /api/v1/purchase-orders - Crear orden de compra (purchase_orders:create)\n- GET /api/v1/purchase-orders - Listar órdenes de compra (purchase_orders:read)\n- GET /api/v1/purchase-orders/:id - Obtener detalle de orden (purchase_orders:read)\n- PUT /api/v1/purchase-orders/:id/submit - Enviar para aprobación (purchase_orders:submit)\n- PUT /api/v1/purchase-orders/:id/approve - Aprobar orden (purchase_orders:approve)\n- PUT /api/v1/purchase-orders/:id/reject - Rechazar orden (purchase_orders:approve)\n- PUT /api/v1/purchase-orders/:id/cancel - Cancelar orden (purchase_orders:cancel)\n- PUT /api/v1/purchase-orders/:id/close - Cerrar orden (purchase_orders:close)\n\n### Goods Receipts (requiere autenticación)\n- POST /api/v1/goods-receipts - Crear recepción de mercancía (goods_receipts:create)\n- GET /api/v1/goods-receipts - Listar recepciones (goods_receipts:read)\n- GET /api/v1/goods-receipts/:id - Obtener detalle de recepción (goods_receipts:read)\n- PUT /api/v1/goods-receipts/:id/confirm - Confirmar recepción (goods_receipts:confirm)\n- PUT /api/v1/goods-receipts/:id/cancel - Cancelar recepción (goods_receipts:cancel)\n\n### Customers (requiere autenticación)\n- POST /api/v1/customers - Crear cliente (sales:create_customer)\n- GET /api/v1/customers - Listar clientes (sales:read_customer)\n- GET /api/v1/customers/:id - Obtener detalle de cliente (sales:read_customer)\n- PUT /api/v1/customers/:id - Actualizar cliente (sales:update_customer)\n- PUT /api/v1/customers/:id/activate - Activar cliente (sales:update_customer)\n- PUT /api/v1/customers/:id/deactivate - Desactivar cliente (sales:update_customer)\n\n### Cashier Shifts (requiere autenticación)\n- POST /api/v1/shifts - Abrir turno (sales:manage_shift)\n- GET /api/v1/shifts - Listar turnos (sales:read_shift)\n- GET /api/v1/shifts/current/:terminal_id - Obtener turno actual (sales:read_shift)\n- GET /api/v1/shifts/:id/report - Reporte de turno (sales:read_shift)\n- PUT /api/v1/shifts/:id/close - Cerrar turno (sales:manage_shift)\n- POST /api/v1/shifts/:id/cash-in - Entrada de efectivo (sales:manage_shift)\n- POST /api/v1/shifts/:id/cash-out - Salida de efectivo (sales:manage_shift)\n\n### POS Sales (requiere autenticación)\n- POST /api/v1/sales - Crear venta POS (sales:create)\n- GET /api/v1/sales - Listar ventas (sales:read)\n- GET /api/v1/sales/:id - Obtener detalle de venta (sales:read)\n- POST /api/v1/sales/:id/items - Agregar item a venta (sales:create)\n- PUT /api/v1/sales/:id/items/:item_id - Actualizar item (sales:update)\n- DELETE /api/v1/sales/:id/items/:item_id - Eliminar item (sales:update)\n- POST /api/v1/sales/:id/discount - Aplicar descuento (sales:apply_discount)\n- POST /api/v1/sales/:id/payment - Procesar pago (sales:process_payment)\n- PUT /api/v1/sales/:id/complete - Completar venta (sales:complete)\n- PUT /api/v1/sales/:id/void - Anular venta (sales:void)\n\n### Carts (requiere autenticación)\n- POST /api/v1/carts - Crear carrito (sales:manage_cart)\n- GET /api/v1/carts/:id - Obtener carrito (sales:manage_cart)\n- POST /api/v1/carts/:id/items - Agregar item (sales:manage_cart)\n- PUT /api/v1/carts/:id/items/:item_id - Actualizar item (sales:manage_cart)\n- DELETE /api/v1/carts/:id/items/:item_id - Eliminar item (sales:manage_cart)\n- DELETE /api/v1/carts/:id/items - Limpiar carrito (sales:manage_cart)\n\n### Credit Notes / Returns (requiere autenticación)\n- POST /api/v1/credit-notes - Crear nota de crédito (sales:manage_credit_note)\n- GET /api/v1/credit-notes - Listar notas de crédito (sales:read_credit_note)\n- GET /api/v1/credit-notes/:id - Obtener nota de crédito (sales:read_credit_note)\n- POST /api/v1/credit-notes/:id/items - Agregar item (sales:manage_credit_note)\n- DELETE /api/v1/credit-notes/:id/items/:item_id - Eliminar item (sales:manage_credit_note)\n- PUT /api/v1/credit-notes/:id/submit - Enviar para aprobación (sales:manage_credit_note)\n- PUT /api/v1/credit-notes/:id/approve - Aprobar (sales:approve_credit_note)\n- PUT /api/v1/credit-notes/:id/apply - Aplicar reembolso (sales:manage_credit_note)\n- PUT /api/v1/credit-notes/:id/cancel - Cancelar (sales:manage_credit_note)",
+		"description": "Colección de Postman para probar los endpoints de la API de POS Ecommerce.\n\n## Credenciales de Super Admin\n- Email: admin@pos-ecommerce.com\n- Password: SuperAdmin123!\n\n## Endpoints disponibles\n\n### Health Check\n- GET /health - Verificar estado del servidor\n\n### Autenticación\n- POST /api/v1/auth/register - Registrar nuevo usuario\n- POST /api/v1/auth/login - Iniciar sesión\n- POST /api/v1/auth/refresh - Refrescar token de acceso\n\n### Stores (requiere autenticación)\n- POST /api/v1/stores - Crear tienda (super_admin)\n- GET /api/v1/stores - Listar tiendas\n- GET /api/v1/stores/:id - Obtener detalle de tienda\n- PUT /api/v1/stores/:id - Actualizar tienda\n- POST /api/v1/stores/:id/activate - Activar tienda (super_admin)\n- POST /api/v1/stores/:id/deactivate - Desactivar tienda (super_admin)\n- GET /api/v1/stores/:id/inventory - Obtener inventario de tienda (inventory:read)\n- GET /api/v1/stores/:id/low-stock - Obtener alertas de stock bajo (inventory:read)\n\n### Terminals (requiere autenticación)\n- POST /api/v1/stores/:store_id/terminals - Crear terminal (super_admin)\n- GET /api/v1/stores/:store_id/terminals - Listar terminales de tienda\n- GET /api/v1/terminals/:id - Obtener detalle de terminal\n- PUT /api/v1/terminals/:id - Actualizar terminal\n- POST /api/v1/terminals/:id/activate - Activar terminal\n- POST /api/v1/terminals/:id/deactivate - Desactivar terminal\n\n### CAI Management (requiere autenticación)\n- POST /api/v1/terminals/:id/cai - Asignar CAI (super_admin)\n- GET /api/v1/terminals/:id/cai/status - Estado del CAI\n- POST /api/v1/terminals/:id/cai/next-number - Obtener siguiente número de factura\n- GET /api/v1/terminals/:id/cai/history - Historial de CAI\n\n### Products (requiere autenticación)\n- POST /api/v1/products - Crear producto (products:create)\n- GET /api/v1/products - Listar productos con paginación\n- GET /api/v1/products/:id - Obtener detalle de producto\n- PUT /api/v1/products/:id - Actualizar producto (products:update)\n- DELETE /api/v1/products/:id - Eliminar producto (products:delete)\n- POST /api/v1/products/:id/variants - Crear variante (products:create)\n- GET /api/v1/products/:id/variants - Listar variantes\n- GET /api/v1/products/:id/variants/:variant_id - Obtener variante\n- PUT /api/v1/products/:id/variants/:variant_id - Actualizar variante (products:update)\n- DELETE /api/v1/products/:id/variants/:variant_id - Eliminar variante (products:delete)\n- GET /api/v1/products/:id/recipe - Obtener receta activa del producto\n- GET /api/v1/products/:id/stock - Obtener stock del producto\n\n### Recipes (requiere autenticación)\n- POST /api/v1/recipes - Crear receta (recipes:create)\n- GET /api/v1/recipes - Listar recetas con paginación\n- GET /api/v1/recipes/:id - Obtener detalle de receta\n- PUT /api/v1/recipes/:id - Actualizar receta (recipes:update)\n- POST /api/v1/recipes/:id/calculate-cost - Calcular costo de receta\n\n### Inventory (requiere autenticación)\n- POST /api/v1/inventory/stock - Inicializar stock (inventory:write)\n- POST /api/v1/inventory/stock/bulk - Inicializar stock masivo (inventory:write)\n- GET /api/v1/inventory/stock - Listar stock con paginación\n- GET /api/v1/inventory/stock/:stock_id - Obtener detalle de stock\n- PUT /api/v1/inventory/stock/:stock_id/levels - Actualizar niveles de stock (inventory:write)\n- POST /api/v1/inventory/reservations - Crear reserva\n- GET /api/v1/inventory/reservations - Listar reservas\n- PUT /api/v1/inventory/reservations/:id/confirm - Confirmar reserva\n- PUT /api/v1/inventory/reservations/:id/cancel - Cancelar reserva\n- POST /api/v1/inventory/reservations/expire - Expirar reservas vencidas\n\n### Adjustments (requiere autenticación)\n- POST /api/v1/inventory/adjustments - Crear ajuste de stock (inventory:adjustments:create)\n- GET /api/v1/inventory/adjustments - Listar ajustes con paginación (inventory:adjustments:read)\n- GET /api/v1/inventory/adjustments/:id - Obtener detalle de ajuste (inventory:adjustments:read)\n- PUT /api/v1/inventory/adjustments/:id/submit - Enviar ajuste para aprobación (inventory:adjustments:submit)\n- PUT /api/v1/inventory/adjustments/:id/approve - Aprobar ajuste (inventory:adjustments:approve)\n- PUT /api/v1/inventory/adjustments/:id/reject - Rechazar ajuste (inventory:adjustments:approve)\n- POST /api/v1/inventory/adjustments/:id/apply - Aplicar ajuste al stock (inventory:adjustments:apply)\n\n### Vendors (requiere autenticación)\n- POST /api/v1/vendors - Crear proveedor (vendors:create)\n- GET /api/v1/vendors - Listar proveedores con paginación (vendors:read)\n- GET /api/v1/vendors/:id - Obtener detalle de proveedor (vendors:read)\n- PUT /api/v1/vendors/:id - Actualizar proveedor (vendors:update)\n- PUT /api/v1/vendors/:id/activate - Activar proveedor (vendors:update)\n- PUT /api/v1/vendors/:id/deactivate - Desactivar proveedor (vendors:update)\n\n### Purchase Orders (requiere autenticación)\n- POST /api/v1/purchase-orders - Crear orden de compra (purchase_orders:create)\n- GET /api/v1/purchase-orders - Listar órdenes de compra (purchase_orders:read)\n- GET /api/v1/purchase-orders/:id - Obtener detalle de orden (purchase_orders:read)\n- PUT /api/v1/purchase-orders/:id/submit - Enviar para aprobación (purchase_orders:submit)\n- PUT /api/v1/purchase-orders/:id/approve - Aprobar orden (purchase_orders:approve)\n- PUT /api/v1/purchase-orders/:id/reject - Rechazar orden (purchase_orders:approve)\n- PUT /api/v1/purchase-orders/:id/cancel - Cancelar orden (purchase_orders:cancel)\n- PUT /api/v1/purchase-orders/:id/close - Cerrar orden (purchase_orders:close)\n\n### Goods Receipts (requiere autenticación)\n- POST /api/v1/goods-receipts - Crear recepción de mercancía (goods_receipts:create)\n- GET /api/v1/goods-receipts - Listar recepciones (goods_receipts:read)\n- GET /api/v1/goods-receipts/:id - Obtener detalle de recepción (goods_receipts:read)\n- PUT /api/v1/goods-receipts/:id/confirm - Confirmar recepción (goods_receipts:confirm)\n- PUT /api/v1/goods-receipts/:id/cancel - Cancelar recepción (goods_receipts:cancel)\n\n### Customers (requiere autenticación)\n- POST /api/v1/customers - Crear cliente (sales:create_customer)\n- GET /api/v1/customers - Listar clientes (sales:read_customer)\n- GET /api/v1/customers/:id - Obtener detalle de cliente (sales:read_customer)\n- PUT /api/v1/customers/:id - Actualizar cliente (sales:update_customer)\n- PUT /api/v1/customers/:id/activate - Activar cliente (sales:update_customer)\n- PUT /api/v1/customers/:id/deactivate - Desactivar cliente (sales:update_customer)\n\n### Cashier Shifts (requiere autenticación)\n- POST /api/v1/shifts - Abrir turno (sales:manage_shift)\n- GET /api/v1/shifts - Listar turnos (sales:read_shift)\n- GET /api/v1/shifts/current/:terminal_id - Obtener turno actual (sales:read_shift)\n- GET /api/v1/shifts/:id/report - Reporte de turno (sales:read_shift)\n- PUT /api/v1/shifts/:id/close - Cerrar turno (sales:manage_shift)\n- POST /api/v1/shifts/:id/cash-in - Entrada de efectivo (sales:manage_shift)\n- POST /api/v1/shifts/:id/cash-out - Salida de efectivo (sales:manage_shift)\n\n### POS Sales (requiere autenticación)\n- POST /api/v1/sales - Crear venta POS (sales:create)\n- GET /api/v1/sales - Listar ventas (sales:read)\n- GET /api/v1/sales/:id - Obtener detalle de venta (sales:read)\n- POST /api/v1/sales/:id/items - Agregar item a venta (sales:create)\n- PUT /api/v1/sales/:id/items/:item_id - Actualizar item (sales:update)\n- DELETE /api/v1/sales/:id/items/:item_id - Eliminar item (sales:update)\n- POST /api/v1/sales/:id/discount - Aplicar descuento (sales:apply_discount)\n- POST /api/v1/sales/:id/payment - Procesar pago (sales:process_payment)\n- PUT /api/v1/sales/:id/complete - Completar venta (sales:complete)\n- PUT /api/v1/sales/:id/void - Anular venta (sales:void)\n\n### Carts (requiere autenticación)\n- POST /api/v1/carts - Crear carrito (sales:manage_cart)\n- GET /api/v1/carts/:id - Obtener carrito (sales:manage_cart)\n- POST /api/v1/carts/:id/items - Agregar item (sales:manage_cart)\n- PUT /api/v1/carts/:id/items/:item_id - Actualizar item (sales:manage_cart)\n- DELETE /api/v1/carts/:id/items/:item_id - Eliminar item (sales:manage_cart)\n- DELETE /api/v1/carts/:id/items - Limpiar carrito (sales:manage_cart)\n\n### Credit Notes / Returns (requiere autenticación)\n- POST /api/v1/credit-notes - Crear nota de crédito (sales:manage_credit_note)\n- GET /api/v1/credit-notes - Listar notas de crédito (sales:read_credit_note)\n- GET /api/v1/credit-notes/:id - Obtener nota de crédito (sales:read_credit_note)\n- POST /api/v1/credit-notes/:id/items - Agregar item (sales:manage_credit_note)\n- DELETE /api/v1/credit-notes/:id/items/:item_id - Eliminar item (sales:manage_credit_note)\n- PUT /api/v1/credit-notes/:id/submit - Enviar para aprobación (sales:manage_credit_note)\n- PUT /api/v1/credit-notes/:id/approve - Aprobar (sales:approve_credit_note)\n- PUT /api/v1/credit-notes/:id/apply - Aplicar reembolso (sales:manage_credit_note)\n- PUT /api/v1/credit-notes/:id/cancel - Cancelar (sales:manage_credit_note)\n\n### Tax Rates (requiere autenticación)\n- POST /api/v1/tax-rates - Crear tasa de impuesto (tax_rates:create)\n- GET /api/v1/tax-rates/store/:store_id - Listar tasas por tienda (tax_rates:read)\n- GET /api/v1/tax-rates/:id - Obtener tasa (tax_rates:read)\n- PUT /api/v1/tax-rates/:id - Actualizar tasa (tax_rates:update)\n- DELETE /api/v1/tax-rates/:id - Eliminar tasa (tax_rates:delete)\n\n### Invoices / Fiscal (requiere autenticación)\n- POST /api/v1/invoices - Generar factura electrónica (invoices:create)\n- GET /api/v1/invoices - Listar facturas con filtros (invoices:read)\n- GET /api/v1/invoices/:id - Obtener detalle de factura (invoices:read)\n- PUT /api/v1/invoices/:id/void - Anular factura (invoices:void)\n- POST /api/v1/invoices/calculate-tax - Calcular impuestos (invoices:read)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -143,6 +143,16 @@
 		},
 		{
 			"key": "order_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "invoice_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "tax_rate_id",
 			"value": "",
 			"type": "string"
 		}
@@ -5270,6 +5280,536 @@
 				}
 			],
 			"description": "Endpoints del ciclo de vida de órdenes de e-commerce (pending_payment -> paid -> processing -> shipped -> delivered). Requieren autenticación."
+		},
+		{
+			"name": "Tax Rates",
+			"item": [
+				{
+					"name": "Create Tax Rate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('tax_rate_id', jsonData.id);",
+									"    pm.test('Tax rate created successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.name).to.not.be.empty;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"name\": \"ISV 15%\",\n    \"tax_type\": \"isv_15\",\n    \"rate\": 0.15,\n    \"is_default\": true,\n    \"applies_to\": \"all\",\n    \"category_ids\": null\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/tax-rates",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tax-rates"
+							]
+						},
+						"description": "Crea una nueva tasa de impuesto para una tienda.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | UUID | Sí | ID de la tienda |\n| name | string | Sí | Nombre descriptivo (ej: \"ISV 15%\") |\n| tax_type | string | Sí | Tipo: \"isv_15\", \"isv_18\", \"exempt\" |\n| rate | decimal | Sí | Tasa (0.15 = 15%, 0.18 = 18%, 0.0 = exento) |\n| is_default | boolean | Sí | Si es la tasa por defecto |\n| applies_to | string | Sí | \"all\" o \"categories\" |\n| category_ids | UUID[] | No | IDs de categorías (cuando applies_to = \"categories\") |\n\n## Respuestas\n\n- **201 Created**: Tasa creada exitosamente\n- **400 Bad Request**: Error de validación\n- **409 Conflict**: Nombre duplicado"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Tax Rate - ISV 18%",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"name\": \"ISV 18%\",\n    \"tax_type\": \"isv_18\",\n    \"rate\": 0.18,\n    \"is_default\": false,\n    \"applies_to\": \"categories\",\n    \"category_ids\": []\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/tax-rates",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tax-rates"
+							]
+						},
+						"description": "Crea la tasa ISV 18% para productos especiales (ej: alcohol, tabaco)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Tax Rate - Exempt",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"name\": \"Exento\",\n    \"tax_type\": \"exempt\",\n    \"rate\": 0.0,\n    \"is_default\": false,\n    \"applies_to\": \"categories\",\n    \"category_ids\": []\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/tax-rates",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tax-rates"
+							]
+						},
+						"description": "Crea la tasa exenta para productos de la canasta básica."
+					},
+					"response": []
+				},
+				{
+					"name": "List Tax Rates by Store",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/tax-rates/store/{{store_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tax-rates",
+								"store",
+								"{{store_id}}"
+							]
+						},
+						"description": "Lista todas las tasas de impuesto configuradas para una tienda.\n\nRequiere permiso: `tax_rates:read`"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Tax Rate",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/tax-rates/{{tax_rate_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tax-rates",
+								"{{tax_rate_id}}"
+							]
+						},
+						"description": "Obtiene el detalle de una tasa de impuesto específica.\n\nRequiere permiso: `tax_rates:read`"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Tax Rate",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"ISV General 15%\",\n    \"rate\": 0.15,\n    \"is_default\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/tax-rates/{{tax_rate_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tax-rates",
+								"{{tax_rate_id}}"
+							]
+						},
+						"description": "Actualiza una tasa de impuesto existente.\n\n## Request Body\n\nTodos los campos son opcionales:\n\n| Campo | Tipo | Descripción |\n|-------|------|-------------|\n| name | string | Nuevo nombre |\n| rate | decimal | Nueva tasa |\n| is_default | boolean | Marcar como default |\n\nRequiere permiso: `tax_rates:update`"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Tax Rate",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/tax-rates/{{tax_rate_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"tax-rates",
+								"{{tax_rate_id}}"
+							]
+						},
+						"description": "Elimina una tasa de impuesto.\n\nNo se puede eliminar la tasa por defecto.\n\nRequiere permiso: `tax_rates:delete`\n\n## Respuestas\n\n- **204 No Content**: Eliminada exitosamente\n- **400 Bad Request**: No se puede eliminar la tasa por defecto\n- **404 Not Found**: Tasa no encontrada"
+					},
+					"response": []
+				}
+			],
+			"description": "Gestión de tasas de impuesto configurables por tienda.\n\nSoporta ISV 15% (tasa general Honduras), ISV 18% (tasa especial), y exenciones.\n\nRequiere autenticación."
+		},
+		{
+			"name": "Invoices (Fiscal)",
+			"item": [
+				{
+					"name": "Generate Invoice",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('invoice_id', jsonData.id);",
+									"    pm.test('Invoice generated successfully', function() {",
+									"        pm.expect(jsonData.id).to.not.be.empty;",
+									"        pm.expect(jsonData.invoice_number).to.not.be.empty;",
+									"        pm.expect(jsonData.status).to.eql('emitted');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sale_id\": \"{{sale_id}}\",\n    \"store_id\": \"{{store_id}}\",\n    \"terminal_id\": \"{{terminal_id}}\",\n    \"customer_name\": \"Consumidor Final\",\n    \"customer_rtn\": null,\n    \"customer_address\": null,\n    \"invoice_type\": \"standard\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices"
+							]
+						},
+						"description": "Genera una factura electrónica a partir de una venta completada.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| sale_id | UUID | Sí | ID de la venta completada |\n| store_id | UUID | Sí | ID de la tienda |\n| terminal_id | UUID | Sí | ID del terminal (para secuencia fiscal) |\n| customer_name | string | Sí | Nombre del cliente en la factura |\n| customer_rtn | string | No | RTN del cliente (Registro Tributario Nacional) |\n| customer_address | string | No | Dirección del cliente |\n| invoice_type | string | Sí | \"standard\", \"credit_note\", \"debit_note\", \"proforma\" |\n\n## Respuestas\n\n- **201 Created**: Factura generada exitosamente con número correlativo fiscal\n- **400 Bad Request**: Venta no completada, CAI expirado, secuencia agotada\n- **404 Not Found**: Venta no encontrada\n- **409 Conflict**: Ya existe factura para esta venta\n\nRequiere permiso: `invoices:create`"
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Invoice (with RTN)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sale_id\": \"{{sale_id}}\",\n    \"store_id\": \"{{store_id}}\",\n    \"terminal_id\": \"{{terminal_id}}\",\n    \"customer_name\": \"Empresa Honduras S.A.\",\n    \"customer_rtn\": \"0801-1990-12345\",\n    \"customer_address\": \"Col. Palmira, Tegucigalpa, Honduras\",\n    \"invoice_type\": \"standard\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices"
+							]
+						},
+						"description": "Genera una factura con RTN del cliente para deducciones fiscales."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Credit Note",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sale_id\": \"{{sale_id}}\",\n    \"store_id\": \"{{store_id}}\",\n    \"terminal_id\": \"{{terminal_id}}\",\n    \"customer_name\": \"Consumidor Final\",\n    \"customer_rtn\": null,\n    \"customer_address\": null,\n    \"invoice_type\": \"credit_note\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices"
+							]
+						},
+						"description": "Genera una nota de crédito fiscal vinculada a una venta."
+					},
+					"response": []
+				},
+				{
+					"name": "List Invoices",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices?page=1&page_size=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "store_id",
+									"value": "{{store_id}}",
+									"disabled": true
+								},
+								{
+									"key": "terminal_id",
+									"value": "{{terminal_id}}",
+									"disabled": true
+								},
+								{
+									"key": "invoice_type",
+									"value": "standard",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "emitted",
+									"disabled": true
+								},
+								{
+									"key": "customer_rtn",
+									"value": "0801-1990-12345",
+									"disabled": true
+								},
+								{
+									"key": "date_from",
+									"value": "2025-01-01",
+									"disabled": true
+								},
+								{
+									"key": "date_to",
+									"value": "2025-12-31",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Lista facturas con paginación y filtros opcionales.\n\n## Query Parameters\n\n| Parámetro | Tipo | Descripción |\n|-----------|------|-------------|\n| page | number | Página (default: 1) |\n| page_size | number | Items por página (default: 20) |\n| store_id | UUID | Filtrar por tienda |\n| terminal_id | UUID | Filtrar por terminal |\n| invoice_type | string | \"standard\", \"credit_note\", \"debit_note\", \"proforma\" |\n| status | string | \"draft\", \"emitted\", \"voided\", \"cancelled\" |\n| customer_rtn | string | Filtrar por RTN del cliente |\n| date_from | string | Fecha inicio (YYYY-MM-DD) |\n| date_to | string | Fecha fin (YYYY-MM-DD) |\n| search | string | Búsqueda por número de factura o nombre de cliente |\n\nRequiere permiso: `invoices:read`"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Invoice",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/{{invoice_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices",
+								"{{invoice_id}}"
+							]
+						},
+						"description": "Obtiene el detalle completo de una factura incluyendo sus líneas de detalle.\n\nRequiere permiso: `invoices:read`"
+					},
+					"response": []
+				},
+				{
+					"name": "Void Invoice",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Error en los datos del cliente\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/{{invoice_id}}/void",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices",
+								"{{invoice_id}}",
+								"void"
+							]
+						},
+						"description": "Anula una factura emitida.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| reason | string | Sí | Motivo de la anulación |\n\n## Reglas de Negocio\n\n- Solo se pueden anular facturas en estado \"emitted\"\n- Existe una ventana máxima de 72 horas para anular\n- La anulación queda registrada con el usuario que la realizó\n\nRequiere permiso: `invoices:void`\n\n## Respuestas\n\n- **200 OK**: Factura anulada exitosamente\n- **400 Bad Request**: Ventana de anulación expirada\n- **404 Not Found**: Factura no encontrada\n- **409 Conflict**: Factura ya anulada"
+					},
+					"response": []
+				},
+				{
+					"name": "Calculate Tax",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"items\": [\n        {\n            \"product_id\": \"{{product_id}}\",\n            \"category_id\": null,\n            \"unit_price\": 100.0,\n            \"quantity\": 2,\n            \"is_exempt\": false\n        },\n        {\n            \"product_id\": \"{{product_id}}\",\n            \"category_id\": null,\n            \"unit_price\": 50.0,\n            \"quantity\": 1,\n            \"is_exempt\": true\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices/calculate-tax",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices",
+								"calculate-tax"
+							]
+						},
+						"description": "Calcula los impuestos para un conjunto de items sin generar factura.\n\nÚtil para preview en el checkout o POS antes de completar la venta.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| store_id | UUID | Sí | ID de la tienda |\n| items | array | Sí | Lista de items a calcular |\n| items[].product_id | UUID | Sí | ID del producto |\n| items[].category_id | UUID | No | ID de categoría (para tasas por categoría) |\n| items[].unit_price | decimal | Sí | Precio unitario |\n| items[].quantity | decimal | Sí | Cantidad |\n| items[].is_exempt | boolean | Sí | Si el producto es exento de impuesto |\n\n## Respuesta\n\nRetorna el desglose completo de impuestos: subtotal, montos gravados al 15% y 18%, impuestos calculados, total exento y total general.\n\nRequiere permiso: `invoices:read`"
+					},
+					"response": []
+				}
+			],
+			"description": "Facturación electrónica y cumplimiento fiscal.\n\nCumple con los requisitos del SAR (Servicio de Administración de Rentas) de Honduras.\n\nSoporta facturas estándar, notas de crédito, notas de débito y proformas.\n\nCada factura se genera con un número correlativo fiscal vinculado al CAI del terminal.\n\nRequiere autenticación."
 		}
 	]
 }

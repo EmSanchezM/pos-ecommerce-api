@@ -8,6 +8,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use fiscal::FiscalError;
 use identity::{AuthError, ErrorResponse, IdentityError};
 use inventory::InventoryError;
 use pos_core::CoreError;
@@ -1279,6 +1280,174 @@ impl From<SalesError> for AppError {
             SalesError::InvalidPromotionStatus => (
                 StatusCode::BAD_REQUEST,
                 ErrorResponse::new("INVALID_PROMOTION_STATUS", "Invalid promotion status"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<FiscalError> Implementation
+// =============================================================================
+
+impl From<FiscalError> for AppError {
+    fn from(err: FiscalError) -> Self {
+        let (status, response) = match &err {
+            // -----------------------------------------------------------------
+            // 404 Not Found
+            // -----------------------------------------------------------------
+            FiscalError::InvoiceNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("INVOICE_NOT_FOUND", format!("Invoice not found: {}", id)),
+            ),
+            FiscalError::TaxRateNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("TAX_RATE_NOT_FOUND", format!("Tax rate not found: {}", id)),
+            ),
+            FiscalError::SaleNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("SALE_NOT_FOUND", format!("Sale not found: {}", id)),
+            ),
+
+            // -----------------------------------------------------------------
+            // 409 Conflict
+            // -----------------------------------------------------------------
+            FiscalError::DuplicateInvoiceNumber(number) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_INVOICE_NUMBER",
+                    format!("Invoice number '{}' already exists", number),
+                ),
+            ),
+            FiscalError::DuplicateTaxRateName(name) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_TAX_RATE_NAME",
+                    format!("Tax rate name '{}' already exists", name),
+                ),
+            ),
+            FiscalError::InvoiceAlreadyExistsForSale(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "INVOICE_ALREADY_EXISTS_FOR_SALE",
+                    format!("Invoice already exists for sale: {}", id),
+                ),
+            ),
+            FiscalError::InvoiceAlreadyVoided => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVOICE_ALREADY_VOIDED", "Invoice has already been voided"),
+            ),
+            FiscalError::InvoiceCannotBeVoided => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "INVOICE_CANNOT_BE_VOIDED",
+                    "Invoice cannot be voided in its current status",
+                ),
+            ),
+
+            // -----------------------------------------------------------------
+            // 400 Bad Request
+            // -----------------------------------------------------------------
+            FiscalError::VoidWindowExpired => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "VOID_WINDOW_EXPIRED",
+                    "Cannot void emitted invoice older than 72 hours",
+                ),
+            ),
+            FiscalError::CannotDeleteDefaultTaxRate => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "CANNOT_DELETE_DEFAULT_TAX_RATE",
+                    "Cannot delete default tax rate",
+                ),
+            ),
+            FiscalError::FiscalSequenceNotFound => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "FISCAL_SEQUENCE_NOT_FOUND",
+                    "No fiscal sequence found for terminal",
+                ),
+            ),
+            FiscalError::FiscalSequenceExhausted(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "FISCAL_SEQUENCE_EXHAUSTED",
+                    format!("Fiscal sequence exhausted for terminal: {}", id),
+                ),
+            ),
+            FiscalError::SequenceExhausted => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "SEQUENCE_EXHAUSTED",
+                    "Fiscal sequence range has been fully exhausted",
+                ),
+            ),
+            FiscalError::NoActiveCai(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "NO_ACTIVE_CAI",
+                    format!("No active CAI for terminal: {}", id),
+                ),
+            ),
+            FiscalError::CaiExpired(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("CAI_EXPIRED", format!("CAI expired for terminal: {}", id)),
+            ),
+            FiscalError::SaleNotCompleted(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("SALE_NOT_COMPLETED", format!("Sale not completed: {}", id)),
+            ),
+            FiscalError::InvalidInvoiceType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid invoice type"),
+            ),
+            FiscalError::InvalidInvoiceStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid invoice status"),
+            ),
+            FiscalError::InvalidTaxType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid tax type"),
+            ),
+            FiscalError::InvalidTaxRate => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid tax rate: must be between 0 and 1"),
+            ),
+            FiscalError::InvalidTaxAppliesTo => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid tax applies to value"),
+            ),
+            FiscalError::OriginalInvoiceRequired => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "ORIGINAL_INVOICE_REQUIRED",
+                    "Original invoice required for credit/debit note",
+                ),
+            ),
+            FiscalError::CreditNoteExceedsOriginal => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "CREDIT_NOTE_EXCEEDS_ORIGINAL",
+                    "Credit note exceeds original invoice total",
+                ),
+            ),
+
+            // -----------------------------------------------------------------
+            // 500 Internal Server Error
+            // -----------------------------------------------------------------
+            FiscalError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
+            FiscalError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+            FiscalError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
             ),
         };
 

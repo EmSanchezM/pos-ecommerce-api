@@ -3,6 +3,7 @@ use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
+use chrono::NaiveDate;
 use sqlx::postgres::PgPoolOptions;
 use tracing::{Level, info};
 use tracing_subscriber::FmtSubscriber;
@@ -57,6 +58,22 @@ async fn main() -> Result<()> {
     // Assign super admin to main store with super_admin role
     info!("Assigning super admin to main store...");
     seed_super_admin_store_assignment(&mut tx, super_admin_id, store_id, &role_ids).await?;
+
+    // Seed terminal for the main store
+    info!("Seeding terminal...");
+    let terminal_id = seed_terminal(&mut tx, store_id).await?;
+
+    // Seed CAI range for the terminal
+    info!("Seeding CAI range...");
+    let cai_range_id = seed_cai_range(&mut tx, terminal_id).await?;
+
+    // Seed tax rates for the main store
+    info!("Seeding tax rates...");
+    seed_tax_rates(&mut tx, store_id).await?;
+
+    // Seed fiscal sequence for the terminal
+    info!("Seeding fiscal sequence...");
+    seed_fiscal_sequence(&mut tx, store_id, terminal_id, cai_range_id).await?;
 
     tx.commit().await?;
 
@@ -279,5 +296,142 @@ async fn seed_super_admin_store_assignment(
 
     info!("  Assigned super_admin role to user in store");
 
+    Ok(())
+}
+
+async fn seed_terminal(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<Uuid> {
+    let id = Uuid::now_v7();
+
+    sqlx::query(
+        r#"
+        INSERT INTO terminals (id, store_id, code, name, is_active)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT DO NOTHING
+        "#,
+    )
+    .bind(id)
+    .bind(store_id)
+    .bind("CAJA-001")
+    .bind("Caja Principal")
+    .bind(true)
+    .execute(&mut **tx)
+    .await?;
+
+    // Get actual ID
+    let row: (Uuid,) = sqlx::query_as("SELECT id FROM terminals WHERE store_id = $1 AND code = $2")
+        .bind(store_id)
+        .bind("CAJA-001")
+        .fetch_one(&mut **tx)
+        .await?;
+
+    info!("  Terminal: CAJA-001 (Caja Principal)");
+    Ok(row.0)
+}
+
+async fn seed_cai_range(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    terminal_id: Uuid,
+) -> Result<Uuid> {
+    let id = Uuid::now_v7();
+    let expiry = NaiveDate::from_ymd_opt(2027, 12, 31).unwrap();
+
+    sqlx::query(
+        r#"
+        INSERT INTO cai_ranges (id, terminal_id, cai_number, range_start, range_end, current_number, expiration_date, is_exhausted)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT DO NOTHING
+        "#,
+    )
+    .bind(id)
+    .bind(terminal_id)
+    .bind("A1B2C3-D4E5F6-G7H8I9-J0K1L2-M3N4O5-P6")
+    .bind(1_i64)
+    .bind(50000_i64)
+    .bind(1_i64)
+    .bind(expiry)
+    .bind(false)
+    .execute(&mut **tx)
+    .await?;
+
+    // Get actual ID
+    let row: (Uuid,) = sqlx::query_as(
+        "SELECT id FROM cai_ranges WHERE terminal_id = $1 ORDER BY created_at DESC LIMIT 1",
+    )
+    .bind(terminal_id)
+    .fetch_one(&mut **tx)
+    .await?;
+
+    info!("  CAI: A1B2C3-...P6 (rango 1-50000, expira 2027-12-31)");
+    Ok(row.0)
+}
+
+async fn seed_tax_rates(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    let tax_rates = [
+        ("ISV 15%", "isv_15", "0.1500", true, "all"),
+        ("ISV 18%", "isv_18", "0.1800", false, "categories"),
+        ("Exento", "exempt", "0.0000", false, "categories"),
+    ];
+
+    for (name, tax_type, rate, is_default, applies_to) in &tax_rates {
+        let id = Uuid::now_v7();
+        let rate_decimal: rust_decimal::Decimal = rate.parse().unwrap();
+
+        sqlx::query(
+            r#"
+            INSERT INTO tax_rates (id, store_id, name, tax_type, rate, is_default, is_active, applies_to, category_ids)
+            VALUES ($1, $2, $3, $4, $5, $6, true, $7, '{}')
+            ON CONFLICT (store_id, name) DO NOTHING
+            "#,
+        )
+        .bind(id)
+        .bind(store_id)
+        .bind(name)
+        .bind(tax_type)
+        .bind(rate_decimal)
+        .bind(is_default)
+        .bind(applies_to)
+        .execute(&mut **tx)
+        .await?;
+
+        info!("  Tax Rate: {} ({} = {})", name, tax_type, rate);
+    }
+
+    Ok(())
+}
+
+async fn seed_fiscal_sequence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+    terminal_id: Uuid,
+    cai_range_id: Uuid,
+) -> Result<()> {
+    let id = Uuid::now_v7();
+
+    sqlx::query(
+        r#"
+        INSERT INTO fiscal_sequences (id, store_id, terminal_id, cai_range_id, prefix, current_number, range_start, range_end, is_active)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (terminal_id, cai_range_id) DO NOTHING
+        "#,
+    )
+    .bind(id)
+    .bind(store_id)
+    .bind(terminal_id)
+    .bind(cai_range_id)
+    .bind("000-001-01-")
+    .bind(0_i64)
+    .bind(1_i64)
+    .bind(50000_i64)
+    .bind(true)
+    .execute(&mut **tx)
+    .await?;
+
+    info!("  Fiscal Sequence: 000-001-01- (rango 1-50000)");
     Ok(())
 }
