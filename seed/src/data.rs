@@ -126,6 +126,15 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     ("goods_receipts:read", "View goods receipt details"),
     ("goods_receipts:confirm", "Confirm goods receipts"),
     ("goods_receipts:cancel", "Cancel goods receipts"),
+    // Fiscal module permissions
+    ("invoices:create", "Generate fiscal invoices"),
+    ("invoices:read", "View fiscal invoices"),
+    ("invoices:void", "Void fiscal invoices"),
+    ("invoices:report", "Generate fiscal reports"),
+    ("tax_rates:create", "Create tax rates"),
+    ("tax_rates:read", "View tax rates"),
+    ("tax_rates:update", "Update tax rates"),
+    ("tax_rates:delete", "Delete tax rates"),
     // Reports permissions
     ("reports:sales", "Access sales reports"),
     ("reports:inventory", "Access inventory reports"),
@@ -309,6 +318,15 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "goods_receipts:read",
             "goods_receipts:confirm",
             "goods_receipts:cancel",
+            // Fiscal
+            "invoices:create",
+            "invoices:read",
+            "invoices:void",
+            "invoices:report",
+            "tax_rates:create",
+            "tax_rates:read",
+            "tax_rates:update",
+            "tax_rates:delete",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -429,6 +447,15 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "goods_receipts:read",
             "goods_receipts:confirm",
             "goods_receipts:cancel",
+            // Fiscal
+            "invoices:create",
+            "invoices:read",
+            "invoices:void",
+            "invoices:report",
+            "tax_rates:create",
+            "tax_rates:read",
+            "tax_rates:update",
+            "tax_rates:delete",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -520,6 +547,12 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "purchase_orders:submit",
             "goods_receipts:create",
             "goods_receipts:read",
+            // Fiscal
+            "invoices:create",
+            "invoices:read",
+            "invoices:void",
+            "invoices:report",
+            "tax_rates:read",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -564,6 +597,10 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             // Promotions (read + apply at checkout)
             "promotions:read",
             "promotions:apply",
+            // Fiscal (generate invoices at POS)
+            "invoices:create",
+            "invoices:read",
+            "tax_rates:read",
         ],
     ),
     // Inventory clerk
@@ -653,6 +690,9 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "goods_receipts:read",
             // Promotions
             "promotions:read",
+            // Fiscal
+            "invoices:read",
+            "tax_rates:read",
         ],
     ),
     // Customer - e-commerce user

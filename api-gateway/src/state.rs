@@ -5,6 +5,7 @@
 
 use std::sync::Arc;
 
+use fiscal::{PgFiscalSequenceRepository, PgInvoiceRepository, PgTaxRateRepository};
 use identity::{JwtTokenService, PgAuditRepository, PgStoreRepository, PgUserRepository};
 use inventory::{
     PgAdjustmentRepository, PgCategoryRepository, PgInventoryMovementRepository,
@@ -86,6 +87,15 @@ pub struct AppState {
     credit_note_repo: Arc<PgCreditNoteRepository>,
     /// Promotion repository for discount/coupon management
     promotion_repo: Arc<PgPromotionRepository>,
+    // -------------------------------------------------------------------------
+    // Fiscal repositories
+    // -------------------------------------------------------------------------
+    /// Invoice repository for fiscal invoice operations
+    invoice_repo: Arc<PgInvoiceRepository>,
+    /// Tax rate repository for tax rate management
+    tax_rate_repo: Arc<PgTaxRateRepository>,
+    /// Fiscal sequence repository for invoice numbering
+    fiscal_sequence_repo: Arc<PgFiscalSequenceRepository>,
 }
 
 impl AppState {
@@ -134,6 +144,9 @@ impl AppState {
         cart_repo: Arc<PgCartRepository>,
         credit_note_repo: Arc<PgCreditNoteRepository>,
         promotion_repo: Arc<PgPromotionRepository>,
+        invoice_repo: Arc<PgInvoiceRepository>,
+        tax_rate_repo: Arc<PgTaxRateRepository>,
+        fiscal_sequence_repo: Arc<PgFiscalSequenceRepository>,
     ) -> Self {
         Self {
             pool,
@@ -159,6 +172,9 @@ impl AppState {
             cart_repo,
             credit_note_repo,
             promotion_repo,
+            invoice_repo,
+            tax_rate_repo,
+            fiscal_sequence_repo,
         }
     }
 
@@ -205,6 +221,11 @@ impl AppState {
         let credit_note_repo = Arc::new(PgCreditNoteRepository::new((*pool_arc).clone()));
         let promotion_repo = Arc::new(PgPromotionRepository::new((*pool_arc).clone()));
 
+        // Fiscal repositories
+        let invoice_repo = Arc::new(PgInvoiceRepository::new((*pool_arc).clone()));
+        let tax_rate_repo = Arc::new(PgTaxRateRepository::new((*pool_arc).clone()));
+        let fiscal_sequence_repo = Arc::new(PgFiscalSequenceRepository::new((*pool_arc).clone()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -232,6 +253,9 @@ impl AppState {
             cart_repo,
             credit_note_repo,
             promotion_repo,
+            invoice_repo,
+            tax_rate_repo,
+            fiscal_sequence_repo,
         }
     }
 
@@ -360,5 +384,24 @@ impl AppState {
     /// Returns a reference to the promotion repository.
     pub fn promotion_repo(&self) -> Arc<PgPromotionRepository> {
         self.promotion_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Fiscal repository accessors
+    // -------------------------------------------------------------------------
+
+    /// Returns a reference to the invoice repository.
+    pub fn invoice_repo(&self) -> Arc<PgInvoiceRepository> {
+        self.invoice_repo.clone()
+    }
+
+    /// Returns a reference to the tax rate repository.
+    pub fn tax_rate_repo(&self) -> Arc<PgTaxRateRepository> {
+        self.tax_rate_repo.clone()
+    }
+
+    /// Returns a reference to the fiscal sequence repository.
+    pub fn fiscal_sequence_repo(&self) -> Arc<PgFiscalSequenceRepository> {
+        self.fiscal_sequence_repo.clone()
     }
 }

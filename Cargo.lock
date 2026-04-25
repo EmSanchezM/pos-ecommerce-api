@@ -43,6 +43,7 @@ dependencies = [
  "chrono",
  "common",
  "dotenvy",
+ "fiscal",
  "governor",
  "identity",
  "inventory",
@@ -540,6 +541,27 @@ name = "find-msvc-tools"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f449e6c6c08c865631d4890cfacf252b3d396c9bcc83adb6623cdb02a8336c41"
+
+[[package]]
+name = "fiscal"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "common",
+ "identity",
+ "inventory",
+ "pos_core",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "sales",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.17",
+ "tokio",
+ "uuid",
+]
 
 [[package]]
 name = "flume"
@@ -1941,6 +1963,7 @@ dependencies = [
  "argon2",
  "chrono",
  "dotenvy",
+ "rust_decimal",
  "sqlx",
  "tokio",
  "tracing",

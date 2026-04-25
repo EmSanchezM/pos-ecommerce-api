@@ -1,6 +1,7 @@
 // HTTP routes for the API Gateway
 
 pub mod auth_routes;
+pub mod fiscal_routes;
 pub mod inventory_routes;
 pub mod purchasing_routes;
 pub mod sales_routes;
@@ -8,6 +9,7 @@ pub mod store_routes;
 pub mod terminal_routes;
 
 pub use auth_routes::auth_router;
+pub use fiscal_routes::{invoices_router, tax_rates_router};
 pub use inventory_routes::{
     categories_router, inventory_router, products_router, recipes_router, reports_router,
     transfers_router,
