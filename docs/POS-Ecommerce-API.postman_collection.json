@@ -5568,7 +5568,7 @@
 								"invoices"
 							]
 						},
-						"description": "Genera una factura electrónica a partir de una venta completada.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| sale_id | UUID | Sí | ID de la venta completada |\n| store_id | UUID | Sí | ID de la tienda |\n| terminal_id | UUID | Sí | ID del terminal (para secuencia fiscal) |\n| customer_name | string | Sí | Nombre del cliente en la factura |\n| customer_rtn | string | No | RTN del cliente (Registro Tributario Nacional) |\n| customer_address | string | No | Dirección del cliente |\n| invoice_type | string | Sí | \"standard\", \"credit_note\", \"debit_note\", \"proforma\" |\n\n## Respuestas\n\n- **201 Created**: Factura generada exitosamente con número correlativo fiscal\n- **400 Bad Request**: Venta no completada, CAI expirado, secuencia agotada\n- **404 Not Found**: Venta no encontrada\n- **409 Conflict**: Ya existe factura para esta venta\n\nRequiere permiso: `invoices:create`"
+						"description": "Genera una factura electrónica a partir de una venta.\n\n## Soporta POS y eCommerce\n\n**POS**: La venta debe estar en status `completed`. `terminal_id` es requerido.\n**eCommerce**: La orden debe estar en status `paid`, `processing`, `shipped` o `delivered`. `terminal_id` es opcional — el sistema selecciona automáticamente el primer terminal activo con CAI válido.\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| sale_id | UUID | Sí | ID de la venta |\n| store_id | UUID | Sí | ID de la tienda |\n| terminal_id | UUID | POS: Sí, eCommerce: No | Terminal fiscal (auto-resuelto para eCommerce) |\n| customer_name | string | Sí | Nombre del cliente en la factura |\n| customer_rtn | string | No | RTN del cliente |\n| customer_address | string | No | Dirección del cliente |\n| invoice_type | string | Sí | \"standard\", \"credit_note\", \"debit_note\", \"proforma\" |\n\nRequiere permiso: `invoices:create`"
 					},
 					"response": []
 				},
@@ -5601,7 +5601,7 @@
 								"invoices"
 							]
 						},
-						"description": "Genera una factura con RTN del cliente para deducciones fiscales."
+						"description": "Genera una factura POS con RTN del cliente para deducciones fiscales."
 					},
 					"response": []
 				},
@@ -5635,6 +5635,39 @@
 							]
 						},
 						"description": "Genera una nota de crédito fiscal vinculada a una venta."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Invoice (eCommerce - no terminal)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"sale_id\": \"{{order_id}}\",\n    \"store_id\": \"{{store_id}}\",\n    \"customer_name\": \"Cliente Online\",\n    \"customer_rtn\": \"0801-2000-99999\",\n    \"customer_address\": \"Entrega a domicilio, San Pedro Sula\",\n    \"invoice_type\": \"standard\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/invoices",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices"
+							]
+						},
+						"description": "Genera una factura para una orden eCommerce.\n\n`terminal_id` no se envía — el sistema selecciona automáticamente el primer terminal activo con CAI válido en la tienda.\n\nLa orden debe estar en status `paid` o posterior."
 					},
 					"response": []
 				},
