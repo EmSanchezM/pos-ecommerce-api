@@ -261,6 +261,11 @@ impl Invoice {
         self.invoice_type.is_credit_note()
     }
 
+    /// Sets the invoice ID (used when pre-computing ID for line consistency)
+    pub fn set_id(&mut self, id: InvoiceId) {
+        self.id = id;
+    }
+
     // =========================================================================
     // Getters
     // =========================================================================

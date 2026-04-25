@@ -28,6 +28,8 @@ pub async fn generate_invoice_handler(
         state.invoice_repo(),
         state.fiscal_sequence_repo(),
         state.tax_rate_repo(),
+        state.sale_repo(),
+        state.terminal_repo(),
     );
 
     let response = use_case
