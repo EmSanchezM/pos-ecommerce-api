@@ -2,6 +2,7 @@
 
 pub mod auth_handlers;
 pub mod cai_handlers;
+pub mod catalog;
 pub mod fiscal;
 pub mod inventory;
 pub mod payments;

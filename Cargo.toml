@@ -10,6 +10,7 @@ members = [
     "modules/fiscal",
     "modules/payments",
     "modules/shipping",
+    "modules/catalog",
     "api-gateway",
     "seed",
 ]
@@ -38,5 +39,5 @@ uuid = { version = "1.19.0", features = ["v7", "serde"] }
 dotenvy = "0.15"
 governor = "0.10"
 tower = "0.5"
-tower-http = { version = "0.6", features = ["cors"] }
+tower-http = { version = "0.6", features = ["cors", "fs"] }
 tower_governor = "0.8"
