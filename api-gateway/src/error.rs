@@ -15,6 +15,7 @@ use payments::PaymentsError;
 use pos_core::CoreError;
 use purchasing::PurchasingError;
 use sales::SalesError;
+use shipping::ShippingError;
 
 // =============================================================================
 // AppError - Unified API Gateway Error Type
@@ -1626,6 +1627,240 @@ impl From<PaymentsError> for AppError {
                 ErrorResponse::internal_error(),
             ),
             PaymentsError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<ShippingError> Implementation
+// =============================================================================
+
+impl From<ShippingError> for AppError {
+    fn from(err: ShippingError) -> Self {
+        let (status, response) = match &err {
+            ShippingError::ShippingMethodNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SHIPPING_METHOD_NOT_FOUND",
+                    format!("Shipping method not found: {}", id),
+                ),
+            ),
+            ShippingError::ShippingZoneNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SHIPPING_ZONE_NOT_FOUND",
+                    format!("Shipping zone not found: {}", id),
+                ),
+            ),
+            ShippingError::ShippingRateNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SHIPPING_RATE_NOT_FOUND",
+                    format!("Shipping rate not found: {}", id),
+                ),
+            ),
+            ShippingError::DriverNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("DRIVER_NOT_FOUND", format!("Driver not found: {}", id)),
+            ),
+            ShippingError::DeliveryProviderNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "DELIVERY_PROVIDER_NOT_FOUND",
+                    format!("Delivery provider not found: {}", id),
+                ),
+            ),
+            ShippingError::ShipmentNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("SHIPMENT_NOT_FOUND", format!("Shipment not found: {}", id)),
+            ),
+            ShippingError::SaleNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("SALE_NOT_FOUND", format!("Sale not found: {}", id)),
+            ),
+            ShippingError::DuplicateMethodCode(code) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_METHOD_CODE",
+                    format!(
+                        "Shipping method code '{}' already exists for this store",
+                        code
+                    ),
+                ),
+            ),
+            ShippingError::DuplicateDriverPhone(phone) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_DRIVER_PHONE",
+                    format!("Driver phone '{}' already exists for this store", phone),
+                ),
+            ),
+            ShippingError::DuplicateProviderName(name) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_PROVIDER_NAME",
+                    format!("Delivery provider name '{}' already exists", name),
+                ),
+            ),
+            ShippingError::ShipmentAlreadyExistsForSale(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "SHIPMENT_ALREADY_EXISTS_FOR_SALE",
+                    format!("Shipment already exists for sale: {}", id),
+                ),
+            ),
+            ShippingError::ShipmentAlreadyDelivered => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SHIPMENT_ALREADY_DELIVERED", "Shipment already delivered"),
+            ),
+            ShippingError::ShipmentAlreadyCancelled => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SHIPMENT_ALREADY_CANCELLED", "Shipment already cancelled"),
+            ),
+            ShippingError::DriverBusy => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DRIVER_BUSY", "Driver is busy with another shipment"),
+            ),
+            ShippingError::NoMatchingZone => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "NO_MATCHING_ZONE",
+                    "No shipping zone matches the destination",
+                ),
+            ),
+            ShippingError::NoRatesAvailable => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "NO_RATES_AVAILABLE",
+                    "No shipping rates available for this zone/method",
+                ),
+            ),
+            ShippingError::ExceedsMaxWeight => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("EXCEEDS_MAX_WEIGHT", "Order exceeds maximum weight"),
+            ),
+            ShippingError::BelowMinimumAmount => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "BELOW_MINIMUM_AMOUNT",
+                    "Order below minimum amount for this shipping method",
+                ),
+            ),
+            ShippingError::MethodOutsideAvailability => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "METHOD_OUTSIDE_AVAILABILITY",
+                    "Method not available right now (off-hours / closed day)",
+                ),
+            ),
+            ShippingError::InvalidStatusTransition { from, to } => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "INVALID_STATUS_TRANSITION",
+                    format!("Invalid status transition: {} -> {}", from, to),
+                ),
+            ),
+            ShippingError::DriverNotActive => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("DRIVER_NOT_ACTIVE", "Driver is not active"),
+            ),
+            ShippingError::DriverAssignmentNotAllowed => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "DRIVER_ASSIGNMENT_NOT_ALLOWED",
+                    "This shipment method does not allow driver assignment",
+                ),
+            ),
+            ShippingError::ProviderAssignmentNotAllowed => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "PROVIDER_ASSIGNMENT_NOT_ALLOWED",
+                    "This shipment method does not allow external provider",
+                ),
+            ),
+            ShippingError::InvalidPickupCode => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_PICKUP_CODE", "Pickup code is invalid"),
+            ),
+            ShippingError::PickupExpired => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("PICKUP_EXPIRED", "Pickup window has expired"),
+            ),
+            ShippingError::ProviderNotActive(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "PROVIDER_NOT_ACTIVE",
+                    format!("Delivery provider not active: {}", id),
+                ),
+            ),
+            ShippingError::ProviderZoneNotCovered => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "PROVIDER_ZONE_NOT_COVERED",
+                    "Provider does not cover this zone",
+                ),
+            ),
+            ShippingError::ProviderError(msg) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DELIVERY_PROVIDER_ERROR", msg.clone()),
+            ),
+            ShippingError::InvalidWebhookSignature => (
+                StatusCode::UNAUTHORIZED,
+                ErrorResponse::new(
+                    "INVALID_WEBHOOK_SIGNATURE",
+                    "Invalid delivery webhook signature",
+                ),
+            ),
+            ShippingError::InvalidMethodType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid shipping method type"),
+            ),
+            ShippingError::InvalidRateType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid shipping rate type"),
+            ),
+            ShippingError::InvalidShipmentStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid shipment status"),
+            ),
+            ShippingError::InvalidVehicleType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid driver vehicle type"),
+            ),
+            ShippingError::InvalidDriverStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid driver status"),
+            ),
+            ShippingError::InvalidProviderType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid delivery provider type"),
+            ),
+            ShippingError::InvalidTrackingSource => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid tracking event source"),
+            ),
+            ShippingError::InvalidAmount => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid amount: must be non-negative"),
+            ),
+            ShippingError::PaymentConfirmationFailed(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("PAYMENT_CONFIRMATION_FAILED", msg.clone()),
+            ),
+            ShippingError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
+            ShippingError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+            ShippingError::NotImplemented => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
             ),

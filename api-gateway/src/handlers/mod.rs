@@ -7,6 +7,7 @@ pub mod inventory;
 pub mod payments;
 pub mod purchasing;
 pub mod sales;
+pub mod shipping;
 pub mod store_handlers;
 pub mod terminal_handlers;
 

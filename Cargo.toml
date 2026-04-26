@@ -9,6 +9,7 @@ members = [
     "modules/sales",
     "modules/fiscal",
     "modules/payments",
+    "modules/shipping",
     "api-gateway",
     "seed",
 ]

@@ -22,6 +22,11 @@ use sales::{
     PgCartRepository, PgCreditNoteRepository, PgCustomerRepository, PgPromotionRepository,
     PgSaleRepository, PgShiftRepository,
 };
+use shipping::{
+    DefaultDeliveryProviderRegistry, DeliveryProviderRegistry, PgDeliveryProviderRepository,
+    PgDriverRepository, PgShipmentRepository, PgShipmentTrackingEventRepository,
+    PgShippingMethodRepository, PgShippingRateRepository, PgShippingZoneRepository, ShipmentDeps,
+};
 use sqlx::PgPool;
 
 /// Application state shared across all HTTP handlers.
@@ -112,6 +117,19 @@ pub struct AppState {
     /// Registry that resolves a `GatewayType` to its adapter (Manual today,
     /// stubs for Stripe/PayPal/BAC/Ficohsa).
     gateway_registry: Arc<dyn GatewayAdapterRegistry>,
+    // -------------------------------------------------------------------------
+    // Shipping repositories + adapters
+    // -------------------------------------------------------------------------
+    shipping_method_repo: Arc<PgShippingMethodRepository>,
+    shipping_zone_repo: Arc<PgShippingZoneRepository>,
+    shipping_rate_repo: Arc<PgShippingRateRepository>,
+    driver_repo: Arc<PgDriverRepository>,
+    delivery_provider_repo: Arc<PgDeliveryProviderRepository>,
+    shipment_repo: Arc<PgShipmentRepository>,
+    shipment_event_repo: Arc<PgShipmentTrackingEventRepository>,
+    delivery_registry: Arc<dyn DeliveryProviderRegistry>,
+    /// Pre-built ShipmentDeps to avoid rewiring on every handler invocation.
+    shipment_deps: Arc<ShipmentDeps>,
 }
 
 impl AppState {
@@ -167,6 +185,15 @@ impl AppState {
         transaction_repo: Arc<PgTransactionRepository>,
         payout_repo: Arc<PgPayoutRepository>,
         gateway_registry: Arc<dyn GatewayAdapterRegistry>,
+        shipping_method_repo: Arc<PgShippingMethodRepository>,
+        shipping_zone_repo: Arc<PgShippingZoneRepository>,
+        shipping_rate_repo: Arc<PgShippingRateRepository>,
+        driver_repo: Arc<PgDriverRepository>,
+        delivery_provider_repo: Arc<PgDeliveryProviderRepository>,
+        shipment_repo: Arc<PgShipmentRepository>,
+        shipment_event_repo: Arc<PgShipmentTrackingEventRepository>,
+        delivery_registry: Arc<dyn DeliveryProviderRegistry>,
+        shipment_deps: Arc<ShipmentDeps>,
     ) -> Self {
         Self {
             pool,
@@ -199,6 +226,15 @@ impl AppState {
             transaction_repo,
             payout_repo,
             gateway_registry,
+            shipping_method_repo,
+            shipping_zone_repo,
+            shipping_rate_repo,
+            driver_repo,
+            delivery_provider_repo,
+            shipment_repo,
+            shipment_event_repo,
+            delivery_registry,
+            shipment_deps,
         }
     }
 
@@ -259,6 +295,28 @@ impl AppState {
         let gateway_registry: Arc<dyn GatewayAdapterRegistry> =
             Arc::new(DefaultGatewayAdapterRegistry::new());
 
+        // Shipping repositories + adapters
+        let shipping_method_repo = Arc::new(PgShippingMethodRepository::new((*pool_arc).clone()));
+        let shipping_zone_repo = Arc::new(PgShippingZoneRepository::new((*pool_arc).clone()));
+        let shipping_rate_repo = Arc::new(PgShippingRateRepository::new((*pool_arc).clone()));
+        let driver_repo = Arc::new(PgDriverRepository::new((*pool_arc).clone()));
+        let delivery_provider_repo =
+            Arc::new(PgDeliveryProviderRepository::new((*pool_arc).clone()));
+        let shipment_repo = Arc::new(PgShipmentRepository::new((*pool_arc).clone()));
+        let shipment_event_repo =
+            Arc::new(PgShipmentTrackingEventRepository::new((*pool_arc).clone()));
+        let delivery_registry: Arc<dyn DeliveryProviderRegistry> =
+            Arc::new(DefaultDeliveryProviderRegistry::new());
+        let shipment_deps = Arc::new(ShipmentDeps {
+            method_repo: shipping_method_repo.clone(),
+            driver_repo: driver_repo.clone(),
+            provider_repo: delivery_provider_repo.clone(),
+            shipment_repo: shipment_repo.clone(),
+            event_repo: shipment_event_repo.clone(),
+            provider_registry: delivery_registry.clone(),
+            transaction_repo: transaction_repo.clone(),
+        });
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -293,6 +351,15 @@ impl AppState {
             transaction_repo,
             payout_repo,
             gateway_registry,
+            shipping_method_repo,
+            shipping_zone_repo,
+            shipping_rate_repo,
+            driver_repo,
+            delivery_provider_repo,
+            shipment_repo,
+            shipment_event_repo,
+            delivery_registry,
+            shipment_deps,
         }
     }
 
@@ -464,5 +531,37 @@ impl AppState {
     /// Returns the configured default gateway adapter.
     pub fn gateway_registry(&self) -> Arc<dyn GatewayAdapterRegistry> {
         self.gateway_registry.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Shipping accessors
+    // -------------------------------------------------------------------------
+
+    pub fn shipping_method_repo(&self) -> Arc<PgShippingMethodRepository> {
+        self.shipping_method_repo.clone()
+    }
+    pub fn shipping_zone_repo(&self) -> Arc<PgShippingZoneRepository> {
+        self.shipping_zone_repo.clone()
+    }
+    pub fn shipping_rate_repo(&self) -> Arc<PgShippingRateRepository> {
+        self.shipping_rate_repo.clone()
+    }
+    pub fn driver_repo(&self) -> Arc<PgDriverRepository> {
+        self.driver_repo.clone()
+    }
+    pub fn delivery_provider_repo(&self) -> Arc<PgDeliveryProviderRepository> {
+        self.delivery_provider_repo.clone()
+    }
+    pub fn shipment_repo(&self) -> Arc<PgShipmentRepository> {
+        self.shipment_repo.clone()
+    }
+    pub fn shipment_event_repo(&self) -> Arc<PgShipmentTrackingEventRepository> {
+        self.shipment_event_repo.clone()
+    }
+    pub fn delivery_registry(&self) -> Arc<dyn DeliveryProviderRegistry> {
+        self.delivery_registry.clone()
+    }
+    pub fn shipment_deps(&self) -> Arc<ShipmentDeps> {
+        self.shipment_deps.clone()
     }
 }
