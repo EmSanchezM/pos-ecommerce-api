@@ -84,6 +84,10 @@ async fn main() -> Result<()> {
     info!("Seeding shipping defaults...");
     seed_shipping_defaults(&mut tx, store_id).await?;
 
+    // Seed default LocalServer image storage provider for the main store.
+    info!("Seeding catalog defaults...");
+    seed_catalog_defaults(&mut tx, store_id).await?;
+
     tx.commit().await?;
 
     info!("Seed completed successfully!");
@@ -582,5 +586,28 @@ async fn seed_shipping_defaults(
     .await?;
     info!("  Shipping rates: Pickup gratis, OwnDelivery L 50 (gratis sobre L 1000)");
 
+    Ok(())
+}
+
+async fn seed_catalog_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    // Default LocalServer image storage provider. The adapter ignores the
+    // credentials — they're placeholders to satisfy the NOT NULL constraints.
+    sqlx::query(
+        r#"INSERT INTO image_storage_providers
+          (id, store_id, name, provider_type, is_active, is_default,
+           api_key_encrypted, secret_key_encrypted, config_json)
+          VALUES ($1, $2, 'Almacenamiento local', 'local_server', true, true,
+                  'local-not-applicable', 'local-not-applicable', NULL)
+          ON CONFLICT (store_id, name) DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(store_id)
+    .execute(&mut **tx)
+    .await?;
+
+    info!("  Image storage provider: Almacenamiento local (LocalServer, default)");
     Ok(())
 }

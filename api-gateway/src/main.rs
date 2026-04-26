@@ -16,7 +16,9 @@ mod routes;
 mod state;
 
 use routes::{
-    auth_router, cart_router, categories_router, credit_notes_router, customers_router,
+    auth_router, cart_router, catalog_images_router, catalog_listings_router,
+    catalog_public_router, catalog_reviews_router, catalog_storage_providers_router,
+    catalog_wishlist_router, categories_router, credit_notes_router, customers_router,
     delivery_providers_router, delivery_webhooks_router, drivers_router, goods_receipts_router,
     inventory_router, invoices_router, orders_router, payment_gateways_router, payouts_router,
     pos_sales_router, products_router, promotions_router, public_tracking_router,
@@ -133,6 +135,36 @@ async fn main() {
         .nest("/api/v1/shipments", shipments_router(app_state.clone()))
         .nest("/api/v1/track", public_tracking_router())
         .nest("/api/v1/webhooks/delivery", delivery_webhooks_router())
+        // Catalog
+        .nest(
+            "/api/v1/catalog/listings",
+            catalog_listings_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/catalog/images",
+            catalog_images_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/catalog/reviews",
+            catalog_reviews_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/catalog/wishlist",
+            catalog_wishlist_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/catalog/storage-providers",
+            catalog_storage_providers_router(app_state.clone()),
+        )
+        .nest("/api/v1/catalog/public", catalog_public_router())
+        // Static file serving for the LocalServer image storage adapter.
+        // The mount path matches IMAGE_STORAGE_PUBLIC_URL (default `/uploads`).
+        .nest_service(
+            &std::env::var("IMAGE_STORAGE_PUBLIC_URL").unwrap_or_else(|_| "/uploads".to_string()),
+            tower_http::services::ServeDir::new(
+                std::env::var("IMAGE_STORAGE_ROOT").unwrap_or_else(|_| "./uploads".to_string()),
+            ),
+        )
         .layer(cors_layer)
         .with_state(app_state.clone());
 

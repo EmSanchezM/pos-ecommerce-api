@@ -13,8 +13,9 @@ sales = { path = "../modules/sales" }
 fiscal = { path = "../modules/fiscal" }
 payments = { path = "../modules/payments" }
 shipping = { path = "../modules/shipping" }
+catalog = { path = "../modules/catalog" }
 
-axum = { workspace = true, features = ["json"] }
+axum = { workspace = true, features = ["json", "multipart"] }
 async-trait = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }

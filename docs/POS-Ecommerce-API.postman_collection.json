@@ -215,6 +215,26 @@
       "key": "pickup_code",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "listing_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "image_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "review_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "image_storage_provider_id",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -7897,6 +7917,964 @@
                   ]
                 },
                 "description": "El adapter Manual acepta cualquier payload. Para Hugo/PedidosYa/Uber/Servientrega devolverá `401 INVALID_WEBHOOK_SIGNATURE` hasta que el adapter real esté implementado."
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Catalog",
+      "description": "Endpoints del módulo catalog. Capa pública/eCommerce sobre `inventory.products` con slug + SEO + galería + reviews moderadas + wishlist.\n\nGestión de imágenes vía adapter (igual que payments/shipping):\n- LocalServer (functional): guarda en disk, sirve por /uploads/...\n- S3, GCS, Cloudinary, Azure: stubs retornan 502 not yet wired\n\nFlujo recomendado:\n1. Auth → Login (Super Admin)\n2. List Products (inventory) — escoge un product_id\n3. Create Listing — guarda `listing_id`\n4. Upload Image (multipart) — guarda `image_id`\n5. Publish Listing\n6. Public Search — sin auth, navegable por buscadores\n7. Submit Review (customer) → Approve Review (manager)",
+      "item": [
+        {
+          "name": "1. Listings — CRUD",
+          "item": [
+            {
+              "name": "Create Listing",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) pm.collectionVariables.set('listing_id', pm.response.json().id);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"store_id\": \"{{store_id}}\",\n  \"product_id\": \"{{product_id}}\",\n  \"slug\": \"camiseta-negra-xl\",\n  \"title\": \"Camiseta negra talla XL — algodón premium\",\n  \"short_description\": \"Camiseta básica de algodón orgánico, color negro\",\n  \"long_description\": \"<p>Material 100% algodón peinado, costuras reforzadas. Lavable a máquina.</p>\",\n  \"seo_title\": \"Camiseta Negra XL | TiendaPrincipal\",\n  \"seo_description\": \"Camiseta de algodón premium en color negro, talla XL\",\n  \"seo_keywords\": [\"camiseta\", \"negra\", \"algodón\", \"unisex\"],\n  \"sort_order\": 0\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/listings",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "listings"
+                  ]
+                },
+                "description": "Crea un listing público para un product de inventory. Requiere `catalog:create`. Slug debe ser único per store, lowercase + hyphens."
+              },
+              "response": []
+            },
+            {
+              "name": "List Listings (manager view, todos)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/listings?store_id={{store_id}}&page=1&page_size=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "listings"
+                  ],
+                  "query": [
+                    {
+                      "key": "store_id",
+                      "value": "{{store_id}}"
+                    },
+                    {
+                      "key": "is_published",
+                      "value": "true",
+                      "disabled": true
+                    },
+                    {
+                      "key": "search",
+                      "value": "camiseta",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort_by",
+                      "value": "newest",
+                      "description": "price_asc | price_desc | newest | popular",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Listing Detail (con images + rating)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/listings/{{listing_id}}/detail",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "listings",
+                    "{{listing_id}}",
+                    "detail"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Listing",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Camiseta negra XL — edición especial\",\n  \"is_featured\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/listings/{{listing_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "listings",
+                    "{{listing_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Publish Listing",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/listings/{{listing_id}}/publish",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "listings",
+                    "{{listing_id}}",
+                    "publish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Unpublish Listing",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/listings/{{listing_id}}/unpublish",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "listings",
+                    "{{listing_id}}",
+                    "unpublish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Listing",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/listings/{{listing_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "listings",
+                    "{{listing_id}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "2. Images (multipart upload)",
+          "item": [
+            {
+              "name": "Upload Image",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) pm.collectionVariables.set('image_id', pm.response.json().id);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [],
+                      "description": "Selecciona una imagen JPEG/PNG/WebP/GIF/AVIF (max 10 MiB)"
+                    },
+                    {
+                      "key": "alt_text",
+                      "value": "Vista frontal de la camiseta",
+                      "type": "text"
+                    },
+                    {
+                      "key": "is_primary",
+                      "value": "true",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/listings/{{listing_id}}/images",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "listings",
+                    "{{listing_id}}",
+                    "images"
+                  ]
+                },
+                "description": "Sube una imagen al listing. Requiere `catalog:update`. El backend usa el adapter del default `image_storage_provider` (LocalServer por defecto). Devuelve la URL pública.\n\nValidaciones:\n- content_type: image/jpeg|png|webp|gif|avif\n- size: max 10 MiB\n- count: max 20 imágenes por listing"
+              },
+              "response": []
+            },
+            {
+              "name": "List Images of a Listing",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/listings/{{listing_id}}/images",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "listings",
+                    "{{listing_id}}",
+                    "images"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Image (alt_text / is_primary)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"alt_text\": \"Vista frontal — versión actualizada\",\n  \"is_primary\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/images/{{image_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "images",
+                    "{{image_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reorder Images",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"image_ids\": [\"{{image_id}}\"]\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/listings/{{listing_id}}/images/reorder",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "listings",
+                    "{{listing_id}}",
+                    "images",
+                    "reorder"
+                  ]
+                },
+                "description": "El orden del array determina sort_order (0..n-1)."
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Image",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/images/{{image_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "images",
+                    "{{image_id}}"
+                  ]
+                },
+                "description": "Borra el row + best-effort delete del archivo en el storage."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "3. Reviews (customer + moderator)",
+          "item": [
+            {
+              "name": "Submit Review (customer)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) pm.collectionVariables.set('review_id', pm.response.json().id);"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"customer_id\": \"{{customer_id}}\",\n  \"rating\": 5,\n  \"title\": \"Excelente calidad\",\n  \"comment\": \"La tela se siente premium, muy buen acabado. Volveré a comprar.\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/listings/{{listing_id}}/reviews",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "listings",
+                    "{{listing_id}}",
+                    "reviews"
+                  ]
+                },
+                "description": "Una review por (customer, listing). `is_verified_purchase` se setea automáticamente si el customer tiene una venta `completed` que contiene el product_id del listing. Status inicial: `is_approved=false` (pending moderation)."
+              },
+              "response": []
+            },
+            {
+              "name": "List Pending Reviews (moderator)",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/reviews/pending?page=1&page_size=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "reviews",
+                    "pending"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Approve Review (moderator)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/reviews/{{review_id}}/approve",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "reviews",
+                    "{{review_id}}",
+                    "approve"
+                  ]
+                },
+                "description": "Permiso `catalog:moderate`. `approved_by_id` y `approved_at` se llenan."
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Review (moderator)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/reviews/{{review_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "reviews",
+                    "{{review_id}}"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "4. Wishlist (customer)",
+          "item": [
+            {
+              "name": "Get Wishlist",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/wishlist?customer_id={{customer_id}}&store_id={{store_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "wishlist"
+                  ],
+                  "query": [
+                    {
+                      "key": "customer_id",
+                      "value": "{{customer_id}}"
+                    },
+                    {
+                      "key": "store_id",
+                      "value": "{{store_id}}"
+                    }
+                  ]
+                },
+                "description": "Find or create — si el customer no tiene wishlist en este store, se crea vacía."
+              },
+              "response": []
+            },
+            {
+              "name": "Add Item to Wishlist",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"customer_id\": \"{{customer_id}}\",\n  \"store_id\": \"{{store_id}}\",\n  \"listing_id\": \"{{listing_id}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/wishlist/items",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "wishlist",
+                    "items"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Remove Item from Wishlist",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"customer_id\": \"{{customer_id}}\",\n  \"store_id\": \"{{store_id}}\",\n  \"listing_id\": \"{{listing_id}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/wishlist/items/remove",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "wishlist",
+                    "items",
+                    "remove"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "5. Image Storage Providers (super_admin)",
+          "item": [
+            {
+              "name": "List Providers",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/storage-providers?store_id={{store_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "storage-providers"
+                  ],
+                  "query": [
+                    {
+                      "key": "store_id",
+                      "value": "{{store_id}}"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Configure S3 Provider (stub)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"store_id\": \"{{store_id}}\",\n  \"name\": \"S3 Production\",\n  \"provider_type\": \"s3\",\n  \"api_key\": \"AKIAREPLACEME\",\n  \"secret_key\": \"REPLACEME\",\n  \"is_default\": false,\n  \"config_json\": \"{\\\"bucket\\\":\\\"my-store-images\\\",\\\"region\\\":\\\"us-east-1\\\"}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/storage-providers",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "storage-providers"
+                  ]
+                },
+                "description": "El adapter S3 es stub. Al subir imagen devolverá `502 STORAGE_PROVIDER_ERROR: S3 adapter is not yet wired...`. La fila se persiste igual.\n\n`provider_type` válidos: `local_server`, `s3`, `gcs`, `cloudinary`, `azure_blob`."
+              },
+              "response": []
+            },
+            {
+              "name": "Configure Cloudinary Provider (stub)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"store_id\": \"{{store_id}}\",\n  \"name\": \"Cloudinary\",\n  \"provider_type\": \"cloudinary\",\n  \"api_key\": \"123456789012345\",\n  \"secret_key\": \"REPLACE_ME\",\n  \"is_default\": false,\n  \"config_json\": \"{\\\"cloud_name\\\":\\\"mystore\\\"}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/storage-providers",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "storage-providers"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "6. Public — sin auth",
+          "item": [
+            {
+              "name": "Public Search Listings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/public/listings?store_id={{store_id}}&page=1&page_size=24",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "public",
+                    "listings"
+                  ],
+                  "query": [
+                    {
+                      "key": "store_id",
+                      "value": "{{store_id}}"
+                    },
+                    {
+                      "key": "search",
+                      "value": "camiseta",
+                      "disabled": true
+                    },
+                    {
+                      "key": "is_featured",
+                      "value": "true",
+                      "disabled": true
+                    },
+                    {
+                      "key": "min_price",
+                      "value": "100",
+                      "disabled": true
+                    },
+                    {
+                      "key": "max_price",
+                      "value": "1000",
+                      "disabled": true
+                    },
+                    {
+                      "key": "sort_by",
+                      "value": "price_asc",
+                      "disabled": true
+                    },
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "24"
+                    }
+                  ]
+                },
+                "description": "Endpoint **público** — solo retorna listings con `is_published=true`. Apto para SEO y navegación anónima."
+              },
+              "response": []
+            },
+            {
+              "name": "Public Featured",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/public/listings/featured?store_id={{store_id}}&limit=12",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "public",
+                    "listings",
+                    "featured"
+                  ],
+                  "query": [
+                    {
+                      "key": "store_id",
+                      "value": "{{store_id}}"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "12"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Public Get By Slug (incrementa view_count)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/public/listings/by-slug/camiseta-negra-xl?store_id={{store_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "public",
+                    "listings",
+                    "by-slug",
+                    "camiseta-negra-xl"
+                  ],
+                  "query": [
+                    {
+                      "key": "store_id",
+                      "value": "{{store_id}}"
+                    }
+                  ]
+                },
+                "description": "Devuelve detail (con images + average_rating). Cada GET incrementa view_count. Si el listing está unpublished devuelve 400 LISTING_UNPUBLISHED."
+              },
+              "response": []
+            },
+            {
+              "name": "Public List Reviews (only approved)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/catalog/public/listings/{{listing_id}}/reviews?page=1&page_size=20",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "catalog",
+                    "public",
+                    "listings",
+                    "{{listing_id}}",
+                    "reviews"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "page_size",
+                      "value": "20"
+                    }
+                  ]
+                }
               },
               "response": []
             }

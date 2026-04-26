@@ -8,6 +8,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use catalog::CatalogError;
 use fiscal::FiscalError;
 use identity::{AuthError, ErrorResponse, IdentityError};
 use inventory::InventoryError;
@@ -1861,6 +1862,157 @@ impl From<ShippingError> for AppError {
                 ErrorResponse::internal_error(),
             ),
             ShippingError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<CatalogError> Implementation
+// =============================================================================
+
+impl From<CatalogError> for AppError {
+    fn from(err: CatalogError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            CatalogError::ListingNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("LISTING_NOT_FOUND", format!("Listing not found: {}", id)),
+            ),
+            CatalogError::ImageNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("IMAGE_NOT_FOUND", format!("Image not found: {}", id)),
+            ),
+            CatalogError::ReviewNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("REVIEW_NOT_FOUND", format!("Review not found: {}", id)),
+            ),
+            CatalogError::WishlistNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("WISHLIST_NOT_FOUND", format!("Wishlist not found: {}", id)),
+            ),
+            CatalogError::WishlistItemNotFound => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("WISHLIST_ITEM_NOT_FOUND", "Wishlist item not found"),
+            ),
+            CatalogError::CustomerNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CUSTOMER_NOT_FOUND", format!("Customer not found: {}", id)),
+            ),
+            CatalogError::ProductNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PRODUCT_NOT_FOUND", format!("Product not found: {}", id)),
+            ),
+            CatalogError::StorageProviderNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "STORAGE_PROVIDER_NOT_FOUND",
+                    format!("Image storage provider not found: {}", id),
+                ),
+            ),
+
+            // 409 Conflict
+            CatalogError::DuplicateSlug(s) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_SLUG", format!("Slug '{}' already in use", s)),
+            ),
+            CatalogError::DuplicateProductListing(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_PRODUCT_LISTING",
+                    format!("Listing already exists for product: {}", id),
+                ),
+            ),
+            CatalogError::DuplicateReview => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_REVIEW", "Customer already reviewed this listing"),
+            ),
+            CatalogError::DuplicateProviderName(n) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_STORAGE_PROVIDER_NAME",
+                    format!("Storage provider name '{}' already exists", n),
+                ),
+            ),
+            CatalogError::ReviewAlreadyApproved => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("REVIEW_ALREADY_APPROVED", "Review already approved"),
+            ),
+
+            // 400 Bad Request
+            CatalogError::InvalidSlug => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(
+                    "Invalid slug: must be lowercase letters/digits/hyphens only",
+                ),
+            ),
+            CatalogError::InvalidRating => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Rating must be between 1 and 5"),
+            ),
+            CatalogError::ListingUnpublished => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("LISTING_UNPUBLISHED", "Listing is unpublished"),
+            ),
+            CatalogError::ImageUploadFailed(msg) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("IMAGE_UPLOAD_FAILED", msg.clone()),
+            ),
+            CatalogError::MaxImagesExceeded(max) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "MAX_IMAGES_EXCEEDED",
+                    format!("Maximum images exceeded ({})", max),
+                ),
+            ),
+            CatalogError::UnsupportedContentType(ct) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "UNSUPPORTED_CONTENT_TYPE",
+                    format!("Unsupported image content type: {}", ct),
+                ),
+            ),
+            CatalogError::ImageTooLarge(bytes) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "IMAGE_TOO_LARGE",
+                    format!("Image too large: {} bytes", bytes),
+                ),
+            ),
+            CatalogError::NoDefaultStorageProvider(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "NO_DEFAULT_STORAGE_PROVIDER",
+                    format!("No default image storage provider for store: {}", id),
+                ),
+            ),
+            CatalogError::InvalidStorageProviderType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid storage provider type"),
+            ),
+            CatalogError::StorageProviderError(msg) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("STORAGE_PROVIDER_ERROR", msg.clone()),
+            ),
+
+            // 500 Internal
+            CatalogError::Io(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("IO_ERROR", msg.clone()),
+            ),
+            CatalogError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
+            CatalogError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+            CatalogError::NotImplemented => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
             ),

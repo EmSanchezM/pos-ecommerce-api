@@ -5,6 +5,11 @@
 
 use std::sync::Arc;
 
+use catalog::{
+    DefaultImageStorageRegistry, ImageStorageRegistry, PgImageStorageProviderRepository,
+    PgProductImageRepository, PgProductListingRepository, PgProductReviewRepository,
+    PgWishlistRepository,
+};
 use fiscal::{PgFiscalSequenceRepository, PgInvoiceRepository, PgTaxRateRepository};
 use identity::{JwtTokenService, PgAuditRepository, PgStoreRepository, PgUserRepository};
 use inventory::{
@@ -130,6 +135,15 @@ pub struct AppState {
     delivery_registry: Arc<dyn DeliveryProviderRegistry>,
     /// Pre-built ShipmentDeps to avoid rewiring on every handler invocation.
     shipment_deps: Arc<ShipmentDeps>,
+    // -------------------------------------------------------------------------
+    // Catalog repositories + image adapter registry
+    // -------------------------------------------------------------------------
+    listing_repo: Arc<PgProductListingRepository>,
+    image_repo: Arc<PgProductImageRepository>,
+    review_repo: Arc<PgProductReviewRepository>,
+    wishlist_repo: Arc<PgWishlistRepository>,
+    image_storage_provider_repo: Arc<PgImageStorageProviderRepository>,
+    image_storage_registry: Arc<dyn ImageStorageRegistry>,
 }
 
 impl AppState {
@@ -194,6 +208,12 @@ impl AppState {
         shipment_event_repo: Arc<PgShipmentTrackingEventRepository>,
         delivery_registry: Arc<dyn DeliveryProviderRegistry>,
         shipment_deps: Arc<ShipmentDeps>,
+        listing_repo: Arc<PgProductListingRepository>,
+        image_repo: Arc<PgProductImageRepository>,
+        review_repo: Arc<PgProductReviewRepository>,
+        wishlist_repo: Arc<PgWishlistRepository>,
+        image_storage_provider_repo: Arc<PgImageStorageProviderRepository>,
+        image_storage_registry: Arc<dyn ImageStorageRegistry>,
     ) -> Self {
         Self {
             pool,
@@ -235,6 +255,12 @@ impl AppState {
             shipment_event_repo,
             delivery_registry,
             shipment_deps,
+            listing_repo,
+            image_repo,
+            review_repo,
+            wishlist_repo,
+            image_storage_provider_repo,
+            image_storage_registry,
         }
     }
 
@@ -317,6 +343,16 @@ impl AppState {
             transaction_repo: transaction_repo.clone(),
         });
 
+        // Catalog repositories + image storage registry
+        let listing_repo = Arc::new(PgProductListingRepository::new((*pool_arc).clone()));
+        let image_repo = Arc::new(PgProductImageRepository::new((*pool_arc).clone()));
+        let review_repo = Arc::new(PgProductReviewRepository::new((*pool_arc).clone()));
+        let wishlist_repo = Arc::new(PgWishlistRepository::new((*pool_arc).clone()));
+        let image_storage_provider_repo =
+            Arc::new(PgImageStorageProviderRepository::new((*pool_arc).clone()));
+        let image_storage_registry: Arc<dyn ImageStorageRegistry> =
+            Arc::new(DefaultImageStorageRegistry::new());
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -360,6 +396,12 @@ impl AppState {
             shipment_event_repo,
             delivery_registry,
             shipment_deps,
+            listing_repo,
+            image_repo,
+            review_repo,
+            wishlist_repo,
+            image_storage_provider_repo,
+            image_storage_registry,
         }
     }
 
@@ -563,5 +605,28 @@ impl AppState {
     }
     pub fn shipment_deps(&self) -> Arc<ShipmentDeps> {
         self.shipment_deps.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Catalog accessors
+    // -------------------------------------------------------------------------
+
+    pub fn listing_repo(&self) -> Arc<PgProductListingRepository> {
+        self.listing_repo.clone()
+    }
+    pub fn catalog_image_repo(&self) -> Arc<PgProductImageRepository> {
+        self.image_repo.clone()
+    }
+    pub fn review_repo(&self) -> Arc<PgProductReviewRepository> {
+        self.review_repo.clone()
+    }
+    pub fn wishlist_repo(&self) -> Arc<PgWishlistRepository> {
+        self.wishlist_repo.clone()
+    }
+    pub fn image_storage_provider_repo(&self) -> Arc<PgImageStorageProviderRepository> {
+        self.image_storage_provider_repo.clone()
+    }
+    pub fn image_storage_registry(&self) -> Arc<dyn ImageStorageRegistry> {
+        self.image_storage_registry.clone()
     }
 }

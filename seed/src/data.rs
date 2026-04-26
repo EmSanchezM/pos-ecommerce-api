@@ -200,6 +200,35 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
         "delivery_providers:delete",
         "Delete delivery provider (super_admin only)",
     ),
+    // Catalog module permissions
+    (
+        "catalog:read",
+        "Read product listings, images, approved reviews, wishlist",
+    ),
+    ("catalog:create", "Create product listings"),
+    (
+        "catalog:update",
+        "Update listings, manage images, publish/unpublish",
+    ),
+    ("catalog:delete", "Delete listings"),
+    ("catalog:review", "Submit product reviews (customer)"),
+    ("catalog:moderate", "Approve / delete reviews (manager+)"),
+    (
+        "image_storage_providers:read",
+        "Read image storage configuration",
+    ),
+    (
+        "image_storage_providers:create",
+        "Create image storage provider (super_admin only)",
+    ),
+    (
+        "image_storage_providers:update",
+        "Update image storage provider (super_admin only)",
+    ),
+    (
+        "image_storage_providers:delete",
+        "Delete image storage provider (super_admin only)",
+    ),
     // Reports permissions
     ("reports:sales", "Access sales reports"),
     ("reports:inventory", "Access inventory reports"),
@@ -421,6 +450,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "delivery_providers:create",
             "delivery_providers:update",
             "delivery_providers:delete",
+            // Catalog
+            "catalog:read",
+            "catalog:create",
+            "catalog:update",
+            "catalog:delete",
+            "catalog:review",
+            "catalog:moderate",
+            "image_storage_providers:read",
+            "image_storage_providers:create",
+            "image_storage_providers:update",
+            "image_storage_providers:delete",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -576,6 +616,14 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "drivers:update",
             "drivers:delete",
             "delivery_providers:read",
+            // Catalog (store_admin can fully manage listings + moderate reviews;
+            // image_storage_providers CUD stays super_admin-only)
+            "catalog:read",
+            "catalog:create",
+            "catalog:update",
+            "catalog:delete",
+            "catalog:moderate",
+            "image_storage_providers:read",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -692,6 +740,12 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "drivers:create",
             "drivers:update",
             "delivery_providers:read",
+            // Catalog (manager updates listings + moderates reviews; no delete)
+            "catalog:read",
+            "catalog:create",
+            "catalog:update",
+            "catalog:moderate",
+            "image_storage_providers:read",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -751,6 +805,8 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "shipments:create",
             "shipments:update",
             "drivers:read",
+            // Catalog (read-only; cashier needs it to look up products by slug)
+            "catalog:read",
         ],
     ),
     // Inventory clerk
@@ -852,6 +908,8 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "shipments:read",
             "drivers:read",
             "delivery_providers:read",
+            // Catalog read-only
+            "catalog:read",
         ],
     ),
     // Customer - e-commerce user
@@ -883,6 +941,9 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "wishlist:manage",
             "reviews:create",
             "reviews:view",
+            // Catalog browsing + reviews + wishlist
+            "catalog:read",
+            "catalog:review",
         ],
     ),
 ];
