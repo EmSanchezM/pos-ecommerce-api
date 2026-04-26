@@ -80,6 +80,10 @@ async fn main() -> Result<()> {
     info!("Seeding payment gateway (Manual)...");
     seed_payment_gateway(&mut tx, store_id).await?;
 
+    // Seed shipping defaults: StorePickup + OwnDelivery + Tegucigalpa zone + rates.
+    info!("Seeding shipping defaults...");
+    seed_shipping_defaults(&mut tx, store_id).await?;
+
     tx.commit().await?;
 
     info!("Seed completed successfully!");
@@ -480,5 +484,103 @@ async fn seed_payment_gateway(
     .await?;
 
     info!("  Payment Gateway: Caja Manual (HN) — manual, default");
+    Ok(())
+}
+
+async fn seed_shipping_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    // Two methods covering the most common HN scenarios out of the box.
+    sqlx::query(
+        r#"INSERT INTO shipping_methods
+           (id, store_id, name, code, method_type, description, sort_order)
+           VALUES ($1, $2, $3, $4, 'store_pickup', $5, 0)
+           ON CONFLICT (store_id, code) DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(store_id)
+    .bind("Retiro en tienda")
+    .bind("pickup")
+    .bind("El cliente recoge el pedido directamente en la tienda")
+    .execute(&mut **tx)
+    .await?;
+
+    sqlx::query(
+        r#"INSERT INTO shipping_methods
+           (id, store_id, name, code, method_type, description,
+            estimated_days_min, estimated_days_max, sort_order)
+           VALUES ($1, $2, $3, $4, 'own_delivery', $5, 0, 1, 1)
+           ON CONFLICT (store_id, code) DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(store_id)
+    .bind("Envío con motorista propio")
+    .bind("own_delivery")
+    .bind("Repartido por un conductor de la tienda dentro de Tegucigalpa")
+    .execute(&mut **tx)
+    .await?;
+    info!("  Shipping methods: Retiro en tienda + Envío con motorista propio");
+
+    sqlx::query(
+        r#"INSERT INTO shipping_zones
+           (id, store_id, name, countries, states, zip_codes)
+           VALUES ($1, $2, 'Tegucigalpa', $3, $4, '{}')
+           ON CONFLICT DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(store_id)
+    .bind(vec!["HN".to_string()])
+    .bind(vec!["FM".to_string()])
+    .execute(&mut **tx)
+    .await?;
+    info!("  Shipping zone: Tegucigalpa (HN/FM)");
+
+    // Resolve real ids for the rates.
+    let pickup_id: (Uuid,) = sqlx::query_as(
+        "SELECT id FROM shipping_methods WHERE store_id = $1 AND code = 'pickup' LIMIT 1",
+    )
+    .bind(store_id)
+    .fetch_one(&mut **tx)
+    .await?;
+    let own_id: (Uuid,) = sqlx::query_as(
+        "SELECT id FROM shipping_methods WHERE store_id = $1 AND code = 'own_delivery' LIMIT 1",
+    )
+    .bind(store_id)
+    .fetch_one(&mut **tx)
+    .await?;
+    let zone_id: (Uuid,) = sqlx::query_as(
+        "SELECT id FROM shipping_zones WHERE store_id = $1 AND name = 'Tegucigalpa' LIMIT 1",
+    )
+    .bind(store_id)
+    .fetch_one(&mut **tx)
+    .await?;
+
+    sqlx::query(
+        r#"INSERT INTO shipping_rates
+           (id, shipping_method_id, shipping_zone_id, rate_type,
+            base_rate, per_kg_rate, free_shipping_threshold, currency)
+           VALUES ($1, $2, $3, 'flat', 0, 0, NULL, 'HNL')
+           ON CONFLICT DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(pickup_id.0)
+    .bind(zone_id.0)
+    .execute(&mut **tx)
+    .await?;
+    sqlx::query(
+        r#"INSERT INTO shipping_rates
+           (id, shipping_method_id, shipping_zone_id, rate_type,
+            base_rate, per_kg_rate, free_shipping_threshold, currency)
+           VALUES ($1, $2, $3, 'order_based', 50.00, 0, 1000.00, 'HNL')
+           ON CONFLICT DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(own_id.0)
+    .bind(zone_id.0)
+    .execute(&mut **tx)
+    .await?;
+    info!("  Shipping rates: Pickup gratis, OwnDelivery L 50 (gratis sobre L 1000)");
+
     Ok(())
 }

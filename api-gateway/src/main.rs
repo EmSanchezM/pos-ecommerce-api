@@ -17,11 +17,13 @@ mod state;
 
 use routes::{
     auth_router, cart_router, categories_router, credit_notes_router, customers_router,
-    goods_receipts_router, inventory_router, invoices_router, orders_router,
-    payment_gateways_router, payouts_router, pos_sales_router, products_router, promotions_router,
-    purchase_orders_router, recipes_router, reports_router, shifts_router, store_router,
-    store_terminals_router, tax_rates_router, terminals_router, transactions_router,
-    transfers_router, vendors_router, webhooks_router,
+    delivery_providers_router, delivery_webhooks_router, drivers_router, goods_receipts_router,
+    inventory_router, invoices_router, orders_router, payment_gateways_router, payouts_router,
+    pos_sales_router, products_router, promotions_router, public_tracking_router,
+    purchase_orders_router, recipes_router, reports_router, shifts_router, shipments_router,
+    shipping_calculate_router, shipping_methods_router, shipping_rates_router,
+    shipping_zones_router, store_router, store_terminals_router, tax_rates_router,
+    terminals_router, transactions_router, transfers_router, vendors_router, webhooks_router,
 };
 use state::AppState;
 
@@ -106,6 +108,31 @@ async fn main() {
         )
         .nest("/api/v1/payouts", payouts_router(app_state.clone()))
         .nest("/api/v1/webhooks", webhooks_router())
+        // Shipping
+        .nest(
+            "/api/v1/shipping-methods",
+            shipping_methods_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/shipping-zones",
+            shipping_zones_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/shipping-rates",
+            shipping_rates_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/shipping/calculate",
+            shipping_calculate_router(app_state.clone()),
+        )
+        .nest("/api/v1/drivers", drivers_router(app_state.clone()))
+        .nest(
+            "/api/v1/delivery-providers",
+            delivery_providers_router(app_state.clone()),
+        )
+        .nest("/api/v1/shipments", shipments_router(app_state.clone()))
+        .nest("/api/v1/track", public_tracking_router())
+        .nest("/api/v1/webhooks/delivery", delivery_webhooks_router())
         .layer(cors_layer)
         .with_state(app_state.clone());
 

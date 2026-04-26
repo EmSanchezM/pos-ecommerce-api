@@ -1,0 +1,789 @@
+{
+  "name": "Shipping",
+  "description": "Endpoints del módulo de shipping. Cubre tres flujos:\n\n1. **Retiro en tienda (StorePickup)** — el cliente recoge con un código de 6 dígitos\n2. **Envío con conductor propio (OwnDelivery)** — driver del store entrega\n3. **Envío externo (ExternalDelivery)** — Hugo / PedidosYa / Uber Eats / Servientrega (stubs) o Manual (offline)\n\nIncluye COD bridge: si el shipment tiene `requires_cash_collection=true` y se marca delivered, la transacción de payments en `pending` se confirma automáticamente.\n\nFlujo recomendado:\n1. Auth → Login (Super Admin)\n2. List Shipping Methods → guarda `shipping_method_id`\n3. Calculate Shipping → ve los costos disponibles\n4. Create Shipment (Pickup o Own o External) → guarda `shipment_id`\n5. (Pickup) Mark Ready → Confirm Pickup\n6. (Own) Create Driver → Assign Driver → Mark Delivered\n7. (External Manual) Configure Provider → Dispatch → Mark Delivered\n8. Public tracking sin auth: GET /api/v1/track/{tracking_number}",
+  "item": [
+    {
+      "name": "1. Configuration — Shipping Methods",
+      "item": [
+        {
+          "name": "List Methods",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  var arr = pm.response.json();",
+                  "  var pickup = arr.find(function(m){return m.code==='pickup';});",
+                  "  var own = arr.find(function(m){return m.code==='own_delivery';});",
+                  "  if (pickup) pm.collectionVariables.set('shipping_pickup_method_id', pickup.id);",
+                  "  if (own) pm.collectionVariables.set('shipping_own_method_id', own.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipping-methods?store_id={{store_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipping-methods"],
+              "query": [{ "key": "store_id", "value": "{{store_id}}" }]
+            },
+            "description": "Lista los métodos de envío configurados. El seed incluye `pickup` (StorePickup) y `own_delivery` (OwnDelivery)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Method (External Delivery)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  pm.collectionVariables.set('shipping_external_method_id', pm.response.json().id);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"store_id\": \"{{store_id}}\",\n  \"name\": \"Envío Hugo\",\n  \"code\": \"hugo_delivery\",\n  \"method_type\": \"external_delivery\",\n  \"description\": \"Repartido por Hugo dentro de Tegucigalpa\",\n  \"estimated_days_min\": 0,\n  \"estimated_days_max\": 1,\n  \"sort_order\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipping-methods",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipping-methods"]
+            },
+            "description": "`method_type` válidos: `store_pickup`, `own_delivery`, `external_delivery`, `standard`, `express`, `same_day`, `free_shipping`. Permiso: `shipping:create`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Method",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Envío Hugo (actualizado)\",\n  \"sort_order\": 3,\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipping-methods/{{shipping_external_method_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipping-methods", "{{shipping_external_method_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Method",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipping-methods/{{shipping_external_method_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipping-methods", "{{shipping_external_method_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Configuration — Zones & Rates",
+      "item": [
+        {
+          "name": "List Zones",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  var arr = pm.response.json();",
+                "  if (arr.length) pm.collectionVariables.set('shipping_zone_id', arr[0].id);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipping-zones?store_id={{store_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipping-zones"],
+              "query": [{ "key": "store_id", "value": "{{store_id}}" }]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Zone (San Pedro Sula)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"store_id\": \"{{store_id}}\",\n  \"name\": \"San Pedro Sula\",\n  \"countries\": [\"HN\"],\n  \"states\": [\"CR\"],\n  \"zip_codes\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipping-zones",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipping-zones"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Rate (flat con horario 8am-10pm, sin domingos)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"shipping_method_id\": \"{{shipping_own_method_id}}\",\n  \"shipping_zone_id\": \"{{shipping_zone_id}}\",\n  \"rate_type\": \"flat\",\n  \"base_rate\": \"75.00\",\n  \"per_kg_rate\": \"0\",\n  \"free_shipping_threshold\": null,\n  \"min_order_amount\": null,\n  \"max_weight_kg\": null,\n  \"currency\": \"HNL\",\n  \"available_days\": [1, 2, 3, 4, 5, 6],\n  \"available_hour_start\": 8,\n  \"available_hour_end\": 22\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipping-rates",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipping-rates"]
+            },
+            "description": "`available_days`: 0=Dom..6=Sáb. `available_hour_start/end`: 0..23 (puede envolver medianoche, e.g. 22..6 = 10pm-6am).\n\nTipos de rate:\n- `flat` — base_rate fijo\n- `weight_based` — base_rate + per_kg_rate × peso\n- `order_based` — flat con free_shipping sobre threshold"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Calculate Shipping",
+      "item": [
+        {
+          "name": "Calculate (HN/FM/Tegucigalpa)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"store_id\": \"{{store_id}}\",\n  \"country\": \"HN\",\n  \"state\": \"FM\",\n  \"postal_code\": null,\n  \"total_weight_kg\": \"2.5\",\n  \"order_total\": \"800.00\",\n  \"currency\": \"HNL\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipping/calculate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipping", "calculate"]
+            },
+            "description": "Devuelve todas las opciones (method × zone × rate) elegibles para la dirección + carrito. Ordenado de menor a mayor costo. Honra ventanas horarias y limites de peso/monto.\n\nErrores:\n- 400 NO_MATCHING_ZONE — no hay zona que cubra la dirección\n- 400 NO_RATES_AVAILABLE — hay zona pero ningún rate elegible (peso/monto/horario)"
+          },
+          "response": []
+        },
+        {
+          "name": "Calculate (sale grande, free_shipping kicks in)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"store_id\": \"{{store_id}}\",\n  \"country\": \"HN\",\n  \"state\": \"FM\",\n  \"total_weight_kg\": \"1\",\n  \"order_total\": \"1500.00\",\n  \"currency\": \"HNL\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipping/calculate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipping", "calculate"]
+            },
+            "description": "Con order_total > 1000 (threshold del seed), el OwnDelivery aparece con `is_free=true`."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Drivers",
+      "item": [
+        {
+          "name": "Create Driver",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) pm.collectionVariables.set('driver_id', pm.response.json().id);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"store_id\": \"{{store_id}}\",\n  \"user_id\": null,\n  \"name\": \"Carlos Mendoza\",\n  \"phone\": \"+504 9999-0001\",\n  \"vehicle_type\": \"motorcycle\",\n  \"license_plate\": \"AAB-1234\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/drivers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "drivers"]
+            },
+            "description": "`vehicle_type`: motorcycle, car, bicycle, pickup, foot. `user_id` es opcional — los conductores subcontratados no necesitan cuenta del sistema."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Driver Available",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_status\": \"available\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/drivers/{{driver_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "drivers", "{{driver_id}}"]
+            },
+            "description": "`current_status`: offline (default), available, busy. Solo los `available` pueden recibir asignaciones."
+          },
+          "response": []
+        },
+        {
+          "name": "List Available Drivers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/drivers?store_id={{store_id}}&only_available=true",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "drivers"],
+              "query": [
+                { "key": "store_id", "value": "{{store_id}}" },
+                { "key": "only_available", "value": "true" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Delivery Providers (super_admin)",
+      "item": [
+        {
+          "name": "Configure Manual Provider (HN-friendly)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) pm.collectionVariables.set('delivery_provider_id', pm.response.json().id);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"store_id\": \"{{store_id}}\",\n  \"name\": \"Manual (WhatsApp courier)\",\n  \"provider_type\": \"manual\",\n  \"api_key\": \"manual-not-applicable\",\n  \"secret_key\": \"manual-not-applicable\",\n  \"merchant_id\": null,\n  \"is_sandbox\": false,\n  \"is_default\": true,\n  \"coverage_zone_ids\": [],\n  \"webhook_secret\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/delivery-providers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "delivery-providers"]
+            },
+            "description": "El proveedor `manual` es el caso normal en HN: el comercio coordina por WhatsApp con un courier y registra el tracking ID a mano. **Solo super_admin** puede configurar proveedores. Las credenciales nunca se serializan en respuestas."
+          },
+          "response": []
+        },
+        {
+          "name": "Configure Hugo (stub)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"store_id\": \"{{store_id}}\",\n  \"name\": \"Hugo Production\",\n  \"provider_type\": \"hugo\",\n  \"api_key\": \"hugo_REPLACE_ME\",\n  \"secret_key\": \"hugo_secret_REPLACE_ME\",\n  \"merchant_id\": \"hn_merchant_REPLACE_ME\",\n  \"is_sandbox\": false,\n  \"is_default\": false,\n  \"coverage_zone_ids\": [\"{{shipping_zone_id}}\"],\n  \"webhook_secret\": \"whsec_REPLACE_ME\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/delivery-providers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "delivery-providers"]
+            },
+            "description": "El adapter Hugo es un **stub** — al despachar devolverá `502 DELIVERY_PROVIDER_ERROR: Hugo adapter is not yet wired...`. La fila se persiste igual.\n\n`provider_type` válidos: `hugo`, `pedidos_ya`, `uber_eats`, `servientrega`, `manual`."
+          },
+          "response": []
+        },
+        {
+          "name": "List Providers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/delivery-providers?store_id={{store_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "delivery-providers"],
+              "query": [{ "key": "store_id", "value": "{{store_id}}" }]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Shipments — StorePickup flow",
+      "item": [
+        {
+          "name": "Create Shipment (Pickup)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) {",
+                "  pm.collectionVariables.set('shipment_pickup_id', pm.response.json().id);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sale_id\": \"{{sale_id}}\",\n  \"store_id\": \"{{store_id}}\",\n  \"shipping_method_id\": \"{{shipping_pickup_method_id}}\",\n  \"shipping_cost\": \"0\",\n  \"currency\": \"HNL\",\n  \"weight_kg\": \"1\",\n  \"recipient_name\": \"Juan Pérez\",\n  \"recipient_phone\": \"+504 9999-1111\",\n  \"address_line1\": \"Tienda Principal (recoger en mostrador)\",\n  \"city\": \"Tegucigalpa\",\n  \"state\": \"FM\",\n  \"country\": \"HN\",\n  \"requires_cash_collection\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments"]
+            },
+            "description": "Crea un shipment para retiro en tienda. Status inicial: `pending`."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Ready For Pickup (genera código de 6 dígitos)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "  pm.collectionVariables.set('pickup_code', pm.response.json().pickup_code);",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_pickup_id}}/ready-for-pickup",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_pickup_id}}", "ready-for-pickup"]
+            },
+            "description": "Cambia status a `ready_for_pickup`, genera `pickup_code` (6 dígitos) y `pickup_expires_at` (72 horas por default)."
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Pickup",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickup_code\": \"{{pickup_code}}\",\n  \"picked_up_by_name\": \"Juan Pérez\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_pickup_id}}/confirm-pickup",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_pickup_id}}", "confirm-pickup"]
+            },
+            "description": "Confirma que el cliente recogió. Status → `picked_up`. Si el shipment carga COD, cierra la transacción de payments también."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Shipments — OwnDelivery flow (con COD bridge)",
+      "item": [
+        {
+          "name": "Create Shipment (Own delivery con COD)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) pm.collectionVariables.set('shipment_own_id', pm.response.json().id);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sale_id\": \"{{sale_id}}\",\n  \"store_id\": \"{{store_id}}\",\n  \"shipping_method_id\": \"{{shipping_own_method_id}}\",\n  \"shipping_cost\": \"50.00\",\n  \"currency\": \"HNL\",\n  \"weight_kg\": \"3.5\",\n  \"recipient_name\": \"María González\",\n  \"recipient_phone\": \"+504 9999-2222\",\n  \"address_line1\": \"Col. Palmira, Casa 245\",\n  \"address_line2\": \"Frente al parque\",\n  \"city\": \"Tegucigalpa\",\n  \"state\": \"FM\",\n  \"country\": \"HN\",\n  \"notes\": \"Tocar timbre dos veces\",\n  \"requires_cash_collection\": true,\n  \"cash_amount\": \"850.00\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments"]
+            },
+            "description": "Shipment con COD: el motorista cobra L 850 al entregar. Cuando se marca `delivered`, la transacción de payments en `pending` para esta sale se confirma automáticamente."
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"driver_id\": \"{{driver_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_own_id}}/assign-driver",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_own_id}}", "assign-driver"]
+            },
+            "description": "Status: pending → assigned. El driver pasa a `busy`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Status → in_transit",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_transit\",\n  \"notes\": \"Salió del local\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_own_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_own_id}}", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Status → out_for_delivery (con GPS)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"out_for_delivery\",\n  \"notes\": \"A 5 minutos\",\n  \"location_lat\": \"14.0723\",\n  \"location_lng\": \"-87.1921\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_own_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_own_id}}", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Delivered (cierra COD payment automáticamente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Entregado y firmado\",\n  \"location_lat\": \"14.0780\",\n  \"location_lng\": \"-87.1850\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_own_id}}/delivered",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_own_id}}", "delivered"]
+            },
+            "description": "Si `requires_cash_collection=true`, busca la transacción de payments pendiente para esta sale y la confirma con el motorista como `confirmed_by_id`. El driver vuelve a `available`."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Failed (intento sin éxito)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Cliente no se encontraba en la dirección\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_own_id}}/failed",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_own_id}}", "failed"]
+            },
+            "description": "Marca como `failed`. Driver vuelve a `available`. Bumpea `attempt_count`. Reschedule debería seguir."
+          },
+          "response": []
+        },
+        {
+          "name": "Reschedule (Failed → Assigned con nuevo driver)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"new_driver_id\": \"{{driver_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_own_id}}/reschedule",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_own_id}}", "reschedule"]
+            },
+            "description": "Solo válido desde `failed`. Limpia `failure_reason`, mantiene `attempt_count`, asigna nuevo driver."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Shipments — ExternalDelivery flow",
+      "item": [
+        {
+          "name": "Create Shipment (External)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 201) pm.collectionVariables.set('shipment_external_id', pm.response.json().id);"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sale_id\": \"{{sale_id}}\",\n  \"store_id\": \"{{store_id}}\",\n  \"shipping_method_id\": \"{{shipping_external_method_id}}\",\n  \"shipping_cost\": \"95.00\",\n  \"currency\": \"HNL\",\n  \"weight_kg\": \"2\",\n  \"recipient_name\": \"Pedro Cárcamo\",\n  \"recipient_phone\": \"+504 9999-3333\",\n  \"address_line1\": \"Col. Lomas del Guijarro, Edif. Tres Caminos, Apt 502\",\n  \"city\": \"Tegucigalpa\",\n  \"state\": \"FM\",\n  \"country\": \"HN\",\n  \"requires_cash_collection\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Dispatch via Manual Provider (con tracking manual)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"delivery_provider_id\": \"{{delivery_provider_id}}\",\n  \"manual_tracking_number\": \"HUGO-2025-09182\",\n  \"manual_carrier_name\": \"Hugo Express\",\n  \"estimated_delivery\": \"2026-04-28T18:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_external_id}}/dispatch-provider",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_external_id}}", "dispatch-provider"]
+            },
+            "description": "Despacha al proveedor. Para Manual el `manual_tracking_number` es obligatorio (lo que el courier pegó por WhatsApp). Para Hugo/PedidosYa/Uber/Servientrega (stubs) este endpoint devolverá `502 DELIVERY_PROVIDER_ERROR`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Tracking",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tracking_number\": \"HUGO-2025-09182-V2\",\n  \"carrier_name\": \"Hugo Express\",\n  \"estimated_delivery\": \"2026-04-29T18:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_external_id}}/tracking",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_external_id}}", "tracking"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. Read & Cancel",
+      "item": [
+        {
+          "name": "Get Shipment",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_own_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_own_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Shipments (filtros)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments?store_id={{store_id}}&status=delivered&page=1&page_size=20",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments"],
+              "query": [
+                { "key": "store_id", "value": "{{store_id}}" },
+                { "key": "status", "value": "delivered" },
+                { "key": "method_type", "value": "own_delivery", "disabled": true },
+                { "key": "driver_id", "value": "{{driver_id}}", "disabled": true },
+                { "key": "sale_id", "value": "{{sale_id}}", "disabled": true },
+                { "key": "search", "value": "Juan", "disabled": true, "description": "matches tracking_number, recipient_name, pickup_code" },
+                { "key": "page", "value": "1" },
+                { "key": "page_size", "value": "20" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Shipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Cliente canceló la orden\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/shipments/{{shipment_external_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "shipments", "{{shipment_external_id}}", "cancel"]
+            },
+            "description": "Cancelar libera al driver si estaba asignado. Permitido desde cualquier estado no terminal."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10. Public tracking & webhooks",
+      "item": [
+        {
+          "name": "Public Tracking (NO auth)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/track/HUGO-2025-09182-V2",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "track", "HUGO-2025-09182-V2"]
+            },
+            "description": "Endpoint **público** sin autenticación — solo el `tracking_number`. Devuelve estado actual + lista de eventos. Excluye PII más allá de city/state."
+          },
+          "response": []
+        },
+        {
+          "name": "Delivery Webhook — Manual (NO auth)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Signature", "value": "ignored-by-manual-adapter" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"manual.update\",\n  \"tracking_id\": \"HUGO-2025-09182\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/webhooks/delivery/manual",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "webhooks", "delivery", "manual"]
+            },
+            "description": "El adapter Manual acepta cualquier payload. Para Hugo/PedidosYa/Uber/Servientrega devolverá `401 INVALID_WEBHOOK_SIGNATURE` hasta que el adapter real esté implementado."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
