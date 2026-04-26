@@ -135,6 +135,35 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     ("tax_rates:read", "View tax rates"),
     ("tax_rates:update", "Update tax rates"),
     ("tax_rates:delete", "Delete tax rates"),
+    // Payments module permissions
+    (
+        "payment_gateways:read",
+        "View payment gateway configuration",
+    ),
+    (
+        "payment_gateways:create",
+        "Create payment gateway (super_admin only)",
+    ),
+    (
+        "payment_gateways:update",
+        "Update payment gateway (super_admin only)",
+    ),
+    (
+        "payment_gateways:delete",
+        "Delete payment gateway (super_admin only)",
+    ),
+    ("transactions:create", "Process online payment transactions"),
+    ("transactions:read", "View payment transactions"),
+    ("transactions:refund", "Refund payment transactions"),
+    (
+        "transactions:confirm",
+        "Manually confirm/reject pending payment transactions",
+    ),
+    (
+        "transactions:reconcile",
+        "Reconcile payment transactions against gateway",
+    ),
+    ("payouts:read", "View gateway payouts/settlements"),
     // Reports permissions
     ("reports:sales", "Access sales reports"),
     ("reports:inventory", "Access inventory reports"),
@@ -327,6 +356,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "tax_rates:read",
             "tax_rates:update",
             "tax_rates:delete",
+            // Payments
+            "payment_gateways:read",
+            "payment_gateways:create",
+            "payment_gateways:update",
+            "payment_gateways:delete",
+            "transactions:create",
+            "transactions:read",
+            "transactions:refund",
+            "transactions:confirm",
+            "transactions:reconcile",
+            "payouts:read",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -456,6 +496,16 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "tax_rates:read",
             "tax_rates:update",
             "tax_rates:delete",
+            // Payments — store_admin can view gateways and operate transactions
+            // (gateway create/update/delete is reserved to super_admin at the
+            // handler layer)
+            "payment_gateways:read",
+            "transactions:create",
+            "transactions:read",
+            "transactions:refund",
+            "transactions:confirm",
+            "transactions:reconcile",
+            "payouts:read",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -553,6 +603,14 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "invoices:void",
             "invoices:report",
             "tax_rates:read",
+            // Payments — managers process and confirm transactions but don't
+            // have reconcile-by-bank-statement (super_admin / store_admin)
+            "payment_gateways:read",
+            "transactions:create",
+            "transactions:read",
+            "transactions:refund",
+            "transactions:confirm",
+            "payouts:read",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -601,6 +659,11 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "invoices:create",
             "invoices:read",
             "tax_rates:read",
+            // Payments — cashier records charges (manual flow leaves them
+            // pending for a manager to confirm)
+            "payment_gateways:read",
+            "transactions:create",
+            "transactions:read",
         ],
     ),
     // Inventory clerk
@@ -693,6 +756,10 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             // Fiscal
             "invoices:read",
             "tax_rates:read",
+            // Payments — read-only
+            "payment_gateways:read",
+            "transactions:read",
+            "payouts:read",
         ],
     ),
     // Customer - e-commerce user

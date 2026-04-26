@@ -1,0 +1,452 @@
+{
+  "name": "Payments",
+  "description": "Endpoints del módulo de pagos: configuración de gateways (super-admin), procesamiento de transacciones, confirmación manual (transferencias / contra-entrega / depósitos en agencia), refunds, conciliación contra estado de cuenta y webhooks.\n\nPara probar el flujo manual completo:\n1. Login (Super Admin) en la carpeta Auth\n2. Configure Manual Gateway — guarda `payment_gateway_id`\n3. Process Online Payment (Bank Transfer) — crea una transacción `pending`, guarda `transaction_id`\n4. Confirm Transaction — manager verifica el depósito y la marca `succeeded`\n   O: Reconcile Bank Statement — confirmación masiva por archivo bancario",
+  "item": [
+    {
+      "name": "Configure Manual Gateway",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('payment_gateway_id', jsonData.id);",
+              "    pm.test('Gateway created', function() {",
+              "        pm.expect(jsonData.id).to.not.be.empty;",
+              "        pm.expect(jsonData.gateway_type).to.eql('manual');",
+              "        pm.expect(jsonData.is_default).to.eql(true);",
+              "    });",
+              "    pm.test('Credentials are NOT exposed in response', function() {",
+              "        pm.expect(jsonData).to.not.have.property('api_key');",
+              "        pm.expect(jsonData).to.not.have.property('secret_key');",
+              "        pm.expect(jsonData).to.not.have.property('api_key_encrypted');",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"name\": \"Caja Manual (HN) - Postman\",\n    \"gateway_type\": \"manual\",\n    \"api_key\": \"manual-not-applicable\",\n    \"secret_key\": \"manual-not-applicable\",\n    \"merchant_id\": null,\n    \"is_sandbox\": false,\n    \"is_default\": true,\n    \"supported_methods\": [\"cash\", \"bank_transfer\", \"cash_on_delivery\", \"agency_deposit\"],\n    \"supported_currencies\": [\"HNL\", \"USD\"],\n    \"webhook_secret\": null\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/payment-gateways",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payment-gateways"]
+        },
+        "description": "Crea un payment gateway. **Solo super_admin** puede crear/modificar/eliminar gateways (regla del negocio).\n\nEl tipo `manual` es el caso normal en Honduras: cobros por transferencia, depósito en agencia o contra entrega — no hay llamada a un proveedor externo, las credenciales son placeholders.\n\nLos `api_key` y `secret_key` se guardan tal cual en este momento (deberían encriptarse en producción) y **NUNCA** se serializan en las respuestas."
+      },
+      "response": []
+    },
+    {
+      "name": "Configure Stripe Gateway (stub)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"name\": \"Stripe Production\",\n    \"gateway_type\": \"stripe\",\n    \"api_key\": \"sk_live_REPLACE_ME\",\n    \"secret_key\": \"sk_secret_REPLACE_ME\",\n    \"merchant_id\": \"acct_REPLACE_ME\",\n    \"is_sandbox\": false,\n    \"is_default\": false,\n    \"supported_methods\": [\"credit_card\", \"debit_card\"],\n    \"supported_currencies\": [\"USD\", \"HNL\"],\n    \"webhook_secret\": \"whsec_REPLACE_ME\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/payment-gateways",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payment-gateways"]
+        },
+        "description": "Configura un gateway Stripe. **El adapter es un stub** — al intentar cobrar devolverá `PAYMENT_PROCESSING_FAILED: Stripe adapter is not yet wired...`. La fila se persiste igual para cuando se implemente la integración real.\n\n`gateway_type` válidos: `stripe`, `paypal`, `bac_credomatic`, `ficohsa`, `manual`."
+      },
+      "response": []
+    },
+    {
+      "name": "List Gateways",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/payment-gateways?store_id={{store_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payment-gateways"],
+          "query": [
+            { "key": "store_id", "value": "{{store_id}}" }
+          ]
+        },
+        "description": "Lista todos los gateways de una tienda. Requiere `payment_gateways:read`."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Gateway",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/payment-gateways/{{payment_gateway_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payment-gateways", "{{payment_gateway_id}}"]
+        },
+        "description": "Obtiene un gateway por ID. Las credenciales jamás se exponen."
+      },
+      "response": []
+    },
+    {
+      "name": "Update Gateway (super_admin)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"Caja Manual (HN) - actualizada\",\n    \"is_active\": true,\n    \"supported_methods\": [\"cash\", \"bank_transfer\", \"cash_on_delivery\", \"agency_deposit\"]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/payment-gateways/{{payment_gateway_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payment-gateways", "{{payment_gateway_id}}"]
+        },
+        "description": "Actualiza un gateway. **Solo super_admin**. Todos los campos son opcionales — solo se modifican los enviados.\n\nUn usuario sin rol super_admin recibe `403 FORBIDDEN`."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Gateway (super_admin)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/payment-gateways/{{payment_gateway_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payment-gateways", "{{payment_gateway_id}}"]
+        },
+        "description": "Elimina un gateway. **Solo super_admin**. Devuelve `204 No Content`. Falla con FK violation si hay transacciones referenciándolo."
+      },
+      "response": []
+    },
+    {
+      "name": "Process Payment - Bank Transfer (Pending)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('transaction_id', jsonData.id);",
+              "    pm.test('Transaction created in pending', function() {",
+              "        pm.expect(jsonData.id).to.not.be.empty;",
+              "        pm.expect(jsonData.status).to.eql('pending');",
+              "        pm.expect(jsonData.reference_number).to.not.be.empty;",
+              "    });",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"sale_id\": \"{{sale_id}}\",\n    \"store_id\": \"{{store_id}}\",\n    \"gateway_id\": null,\n    \"amount\": \"1500.00\",\n    \"currency\": \"HNL\",\n    \"payment_method\": \"bank_transfer\",\n    \"card_token\": null,\n    \"return_url\": null,\n    \"idempotency_key\": \"{{$guid}}\",\n    \"reference_number\": \"BAC-2025-00891\",\n    \"manual_details\": {\n        \"kind\": \"bank_transfer\",\n        \"bank_name\": \"BAC Credomatic\",\n        \"bank_account_last_four\": \"1234\",\n        \"depositor_name\": \"Juan Pérez\",\n        \"deposit_date\": \"2025-04-26T15:30:00Z\",\n        \"notes\": \"Transferencia desde app móvil\"\n    }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/transactions/charge",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "transactions", "charge"]
+        },
+        "description": "Crea una transacción de transferencia bancaria. Como el gateway por defecto es `manual`, la transacción queda en `pending` — un manager debe verificar el depósito y luego llamar **Confirm Transaction**.\n\n- `gateway_id: null` → usa el gateway default de la tienda\n- `idempotency_key` se autogenera con `{{$guid}}`; reenviar el mismo cuerpo devuelve la misma transacción (no duplica)\n- `manual_details` se serializa a JSON en `metadata` para preservar el contexto bancario\n- `reference_number` (boleta del banco) es lo que la conciliación usa para hacer match"
+      },
+      "response": []
+    },
+    {
+      "name": "Process Payment - Cash on Delivery",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    pm.collectionVariables.set('transaction_id', jsonData.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"sale_id\": \"{{sale_id}}\",\n    \"store_id\": \"{{store_id}}\",\n    \"gateway_id\": null,\n    \"amount\": \"850.00\",\n    \"currency\": \"HNL\",\n    \"payment_method\": \"cash_on_delivery\",\n    \"idempotency_key\": \"{{$guid}}\",\n    \"manual_details\": {\n        \"kind\": \"cash_on_delivery\",\n        \"delivery_address\": \"Col. Palmira, Casa 245, Tegucigalpa\",\n        \"delivery_recipient_name\": \"María González\",\n        \"delivery_phone\": \"+504 9999-0000\",\n        \"expected_delivery_date\": \"2025-04-28T14:00:00Z\",\n        \"notes\": \"Tocar timbre dos veces\"\n    }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/transactions/charge",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "transactions", "charge"]
+        },
+        "description": "Cobra contra entrega (eCommerce). Queda `pending` hasta que el repartidor reporta el cobro y un manager confirma."
+      },
+      "response": []
+    },
+    {
+      "name": "Process Payment - Agency Deposit",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"sale_id\": \"{{sale_id}}\",\n    \"store_id\": \"{{store_id}}\",\n    \"amount\": \"3200.00\",\n    \"currency\": \"HNL\",\n    \"payment_method\": \"agency_deposit\",\n    \"idempotency_key\": \"{{$guid}}\",\n    \"reference_number\": \"FICOHSA-87623\",\n    \"manual_details\": {\n        \"kind\": \"agency_deposit\",\n        \"bank_name\": \"Ficohsa\",\n        \"depositor_name\": \"Carlos Mendoza\",\n        \"deposit_date\": \"2025-04-26T11:15:00Z\"\n    }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/transactions/charge",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "transactions", "charge"]
+        },
+        "description": "Depósito en agencia bancaria con efectivo. Mismo flujo que transferencia (queda `pending`)."
+      },
+      "response": []
+    },
+    {
+      "name": "Process Payment - Stripe (will fail: stub)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"sale_id\": \"{{sale_id}}\",\n    \"store_id\": \"{{store_id}}\",\n    \"gateway_id\": \"{{payment_gateway_id}}\",\n    \"amount\": \"100.00\",\n    \"currency\": \"USD\",\n    \"payment_method\": \"credit_card\",\n    \"card_token\": \"tok_visa\",\n    \"idempotency_key\": \"{{$guid}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/transactions/charge",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "transactions", "charge"]
+        },
+        "description": "Si `payment_gateway_id` apunta a un gateway de tipo `stripe`, esto fallará con `400 PAYMENT_PROCESSING_FAILED: Stripe adapter is not yet wired...`. La transacción se persiste como `failed` con el mensaje del adapter en `failure_message`.\n\nMismo comportamiento para PayPal, BAC Credomatic y Ficohsa hasta que cada adapter se implemente."
+      },
+      "response": []
+    },
+    {
+      "name": "Confirm Transaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"reference_number\": \"BAC-2025-00891\",\n    \"notes\": \"Verificado en estado de cuenta BAC online\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/transactions/{{transaction_id}}/confirm",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "transactions", "{{transaction_id}}", "confirm"]
+        },
+        "description": "Confirma manualmente una transacción `pending` después de verificar el depósito en el banco. Status pasa a `succeeded`. `confirmed_by_id` y `confirmed_at` quedan en el registro.\n\nRequiere permiso `transactions:confirm` (super_admin / store_admin / store_manager)."
+      },
+      "response": []
+    },
+    {
+      "name": "Reject Transaction",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"reason\": \"Depósito no aparece en estado de cuenta después de 48h\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/transactions/{{transaction_id}}/reject",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "transactions", "{{transaction_id}}", "reject"]
+        },
+        "description": "Rechaza una transacción `pending` (depósito nunca llegó / contra-entrega rechazada). Status pasa a `failed` con `rejection_reason`.\n\nRequiere permiso `transactions:confirm`."
+      },
+      "response": []
+    },
+    {
+      "name": "Reconcile Bank Statement",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"store_id\": \"{{store_id}}\",\n    \"entries\": [\n        {\n            \"reference_number\": \"BAC-2025-00891\",\n            \"amount\": \"1500.00\",\n            \"deposit_date\": \"2025-04-26T15:30:00Z\",\n            \"depositor_name\": \"Juan Pérez\"\n        },\n        {\n            \"reference_number\": \"FICOHSA-87623\",\n            \"amount\": \"3200.00\",\n            \"deposit_date\": \"2025-04-26T11:15:00Z\",\n            \"depositor_name\": \"Carlos Mendoza\"\n        }\n    ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/transactions/reconcile",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "transactions", "reconcile"]
+        },
+        "description": "Conciliación masiva: para cada entry del estado de cuenta busca una transacción `pending` con la misma `reference_number` (case-insensitive) + mismo `amount`. Auto-confirma los matches y devuelve `unmatched_references` para investigación.\n\nRequiere permiso `transactions:reconcile` (super_admin / store_admin)."
+      },
+      "response": []
+    },
+    {
+      "name": "List Transactions",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/transactions?store_id={{store_id}}&status=pending&page=1&page_size=20",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "transactions"],
+          "query": [
+            { "key": "store_id", "value": "{{store_id}}" },
+            { "key": "status", "value": "pending", "description": "pending | processing | succeeded | failed | cancelled | refunded | partially_refunded" },
+            { "key": "transaction_type", "value": "charge", "disabled": true, "description": "charge | refund | partial_refund | void" },
+            { "key": "gateway_id", "value": "{{payment_gateway_id}}", "disabled": true },
+            { "key": "sale_id", "value": "{{sale_id}}", "disabled": true },
+            { "key": "date_from", "value": "2025-01-01T00:00:00Z", "disabled": true },
+            { "key": "date_to", "value": "2025-12-31T23:59:59Z", "disabled": true },
+            { "key": "search", "value": "BAC-2025", "disabled": true, "description": "matches gateway_transaction_id, idempotency_key, reference_number" },
+            { "key": "page", "value": "1" },
+            { "key": "page_size", "value": "20" }
+          ]
+        },
+        "description": "Lista paginada con filtros. `status=pending` es útil para ver lo que falta confirmar."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Transaction",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/transactions/{{transaction_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "transactions", "{{transaction_id}}"]
+        },
+        "description": "Obtiene una transacción por ID con todos los campos (incluye `confirmed_by_id`, `confirmed_at`, `rejection_reason`, etc.)."
+      },
+      "response": []
+    },
+    {
+      "name": "Refund Transaction (full)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"amount\": null,\n    \"reason\": \"Cliente devolvió el producto - solicitó reembolso completo\",\n    \"idempotency_key\": \"{{$guid}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/transactions/{{transaction_id}}/refund",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "transactions", "{{transaction_id}}", "refund"]
+        },
+        "description": "Reembolso total (`amount: null`). Crea una nueva transacción tipo `refund` y marca la original como `refunded`.\n\nEl refund se rutea por el mismo gateway de la transacción original (Stripe → Stripe, Manual → Manual, etc.)."
+      },
+      "response": []
+    },
+    {
+      "name": "Refund Transaction (partial)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"amount\": \"500.00\",\n    \"reason\": \"Devolución parcial - 1 de 3 productos\",\n    \"idempotency_key\": \"{{$guid}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/transactions/{{transaction_id}}/refund",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "transactions", "{{transaction_id}}", "refund"]
+        },
+        "description": "Reembolso parcial (`amount` < monto original). Marca la original como `partially_refunded`."
+      },
+      "response": []
+    },
+    {
+      "name": "List Payouts",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/payouts?store_id={{store_id}}&page=1&page_size=20",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "payouts"],
+          "query": [
+            { "key": "store_id", "value": "{{store_id}}" },
+            { "key": "page", "value": "1" },
+            { "key": "page_size", "value": "20" }
+          ]
+        },
+        "description": "Lista las liquidaciones (settlements) recibidas del gateway. Para Manual normalmente está vacío — los pagos no se agrupan en payouts ya que cada cobro va directo a la cuenta de la tienda."
+      },
+      "response": []
+    },
+    {
+      "name": "Webhook (no auth, gateway signature)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Signature", "value": "ignored-by-manual-adapter", "description": "Para Stripe/PayPal aquí va su header específico (Stripe-Signature, PayPal-Transmission-Sig)" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"event\": \"manual.test\",\n    \"transaction_id\": \"{{transaction_id}}\",\n    \"status\": \"succeeded\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/webhooks/manual",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "webhooks", "manual"]
+        },
+        "description": "**Sin autenticación**: cada gateway valida su propia firma. El path segment `manual` selecciona el adapter — usar `stripe`, `paypal`, `bac_credomatic`, `ficohsa` para los demás (todos los stubs devuelven `INVALID_WEBHOOK_SIGNATURE` por ahora)."
+      },
+      "response": []
+    }
+  ]
+}

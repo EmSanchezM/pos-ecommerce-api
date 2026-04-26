@@ -11,6 +11,7 @@ use axum::{
 use fiscal::FiscalError;
 use identity::{AuthError, ErrorResponse, IdentityError};
 use inventory::InventoryError;
+use payments::PaymentsError;
 use pos_core::CoreError;
 use purchasing::PurchasingError;
 use sales::SalesError;
@@ -1446,6 +1447,185 @@ impl From<FiscalError> for AppError {
                 ErrorResponse::internal_error(),
             ),
             FiscalError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<PaymentsError> Implementation
+// =============================================================================
+
+impl From<PaymentsError> for AppError {
+    fn from(err: PaymentsError) -> Self {
+        let (status, response) = match &err {
+            // 404 Not Found
+            PaymentsError::GatewayNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "PAYMENT_GATEWAY_NOT_FOUND",
+                    format!("Payment gateway not found: {}", id),
+                ),
+            ),
+            PaymentsError::TransactionNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "PAYMENT_TRANSACTION_NOT_FOUND",
+                    format!("Transaction not found: {}", id),
+                ),
+            ),
+            PaymentsError::PayoutNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PAYOUT_NOT_FOUND", format!("Payout not found: {}", id)),
+            ),
+            PaymentsError::SaleNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("SALE_NOT_FOUND", format!("Sale not found: {}", id)),
+            ),
+
+            // 409 Conflict
+            PaymentsError::DuplicateGatewayName(name) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_GATEWAY_NAME",
+                    format!("Gateway name '{}' already exists for this store", name),
+                ),
+            ),
+            PaymentsError::DuplicateIdempotencyKey(key) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_IDEMPOTENCY_KEY",
+                    format!("Idempotency key already used: {}", key),
+                ),
+            ),
+            PaymentsError::TransactionAlreadyProcessed(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "TRANSACTION_ALREADY_PROCESSED",
+                    format!("Transaction already processed: {}", id),
+                ),
+            ),
+
+            // 400 Bad Request
+            PaymentsError::NoDefaultGateway(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "NO_DEFAULT_GATEWAY",
+                    format!("No default payment gateway configured for store: {}", id),
+                ),
+            ),
+            PaymentsError::GatewayNotActive(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "GATEWAY_NOT_ACTIVE",
+                    format!("Gateway is not active: {}", id),
+                ),
+            ),
+            PaymentsError::RefundExceedsOriginal => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "REFUND_EXCEEDS_ORIGINAL",
+                    "Refund amount exceeds original transaction amount",
+                ),
+            ),
+            PaymentsError::CannotRefundTransaction => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "CANNOT_REFUND_TRANSACTION",
+                    "Transaction cannot be refunded in its current status",
+                ),
+            ),
+            PaymentsError::ProcessingFailed(msg) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("PAYMENT_PROCESSING_FAILED", msg.clone()),
+            ),
+            PaymentsError::InvalidAmount => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Amount must be positive"),
+            ),
+            PaymentsError::InvalidGatewayType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid gateway type"),
+            ),
+            PaymentsError::InvalidTransactionType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid transaction type"),
+            ),
+            PaymentsError::InvalidTransactionStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid transaction status"),
+            ),
+            PaymentsError::InvalidManualPaymentKind => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid manual payment kind"),
+            ),
+            PaymentsError::TransactionNotPending(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "TRANSACTION_NOT_PENDING",
+                    format!(
+                        "Transaction is not pending and cannot be confirmed/rejected: {}",
+                        id
+                    ),
+                ),
+            ),
+            PaymentsError::TransactionAlreadyConfirmed(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "TRANSACTION_ALREADY_CONFIRMED",
+                    format!("Transaction has already been confirmed: {}", id),
+                ),
+            ),
+            PaymentsError::TransactionAlreadyRejected(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "TRANSACTION_ALREADY_REJECTED",
+                    format!("Transaction has already been rejected: {}", id),
+                ),
+            ),
+            PaymentsError::InvalidPayoutStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid payout status"),
+            ),
+            PaymentsError::UnsupportedPaymentMethod => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "UNSUPPORTED_PAYMENT_METHOD",
+                    "Payment method not supported by the selected gateway",
+                ),
+            ),
+            PaymentsError::UnsupportedCurrency => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "UNSUPPORTED_CURRENCY",
+                    "Currency not supported by the selected gateway",
+                ),
+            ),
+
+            // 401 Unauthorized
+            PaymentsError::InvalidWebhookSignature => (
+                StatusCode::UNAUTHORIZED,
+                ErrorResponse::new("INVALID_WEBHOOK_SIGNATURE", "Invalid webhook signature"),
+            ),
+
+            // 502 / 500
+            PaymentsError::GatewayError(msg) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("GATEWAY_ERROR", msg.clone()),
+            ),
+            PaymentsError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
+            PaymentsError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+            PaymentsError::NotImplemented => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
             ),

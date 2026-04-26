@@ -12,6 +12,10 @@ use inventory::{
     PgInventoryStockRepository, PgProductRepository, PgRecipeRepository, PgReservationRepository,
     PgTransferRepository,
 };
+use payments::{
+    DefaultGatewayAdapterRegistry, GatewayAdapterRegistry, PgPaymentGatewayRepository,
+    PgPayoutRepository, PgTransactionRepository,
+};
 use pos_core::PgTerminalRepository;
 use purchasing::{PgGoodsReceiptRepository, PgPurchaseOrderRepository, PgVendorRepository};
 use sales::{
@@ -96,6 +100,18 @@ pub struct AppState {
     tax_rate_repo: Arc<PgTaxRateRepository>,
     /// Fiscal sequence repository for invoice numbering
     fiscal_sequence_repo: Arc<PgFiscalSequenceRepository>,
+    // -------------------------------------------------------------------------
+    // Payments repositories + adapter
+    // -------------------------------------------------------------------------
+    /// Payment gateway repository (super-admin managed)
+    payment_gateway_repo: Arc<PgPaymentGatewayRepository>,
+    /// Payment transaction repository
+    transaction_repo: Arc<PgTransactionRepository>,
+    /// Gateway payout repository
+    payout_repo: Arc<PgPayoutRepository>,
+    /// Registry that resolves a `GatewayType` to its adapter (Manual today,
+    /// stubs for Stripe/PayPal/BAC/Ficohsa).
+    gateway_registry: Arc<dyn GatewayAdapterRegistry>,
 }
 
 impl AppState {
@@ -147,6 +163,10 @@ impl AppState {
         invoice_repo: Arc<PgInvoiceRepository>,
         tax_rate_repo: Arc<PgTaxRateRepository>,
         fiscal_sequence_repo: Arc<PgFiscalSequenceRepository>,
+        payment_gateway_repo: Arc<PgPaymentGatewayRepository>,
+        transaction_repo: Arc<PgTransactionRepository>,
+        payout_repo: Arc<PgPayoutRepository>,
+        gateway_registry: Arc<dyn GatewayAdapterRegistry>,
     ) -> Self {
         Self {
             pool,
@@ -175,6 +195,10 @@ impl AppState {
             invoice_repo,
             tax_rate_repo,
             fiscal_sequence_repo,
+            payment_gateway_repo,
+            transaction_repo,
+            payout_repo,
+            gateway_registry,
         }
     }
 
@@ -226,6 +250,15 @@ impl AppState {
         let tax_rate_repo = Arc::new(PgTaxRateRepository::new((*pool_arc).clone()));
         let fiscal_sequence_repo = Arc::new(PgFiscalSequenceRepository::new((*pool_arc).clone()));
 
+        // Payments repositories
+        let payment_gateway_repo = Arc::new(PgPaymentGatewayRepository::new((*pool_arc).clone()));
+        let transaction_repo = Arc::new(PgTransactionRepository::new((*pool_arc).clone()));
+        let payout_repo = Arc::new(PgPayoutRepository::new((*pool_arc).clone()));
+        // Default registry: Manual is fully wired today; Stripe/PayPal/BAC/
+        // Ficohsa are stubs that fail loudly until their adapters are filled in.
+        let gateway_registry: Arc<dyn GatewayAdapterRegistry> =
+            Arc::new(DefaultGatewayAdapterRegistry::new());
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -256,6 +289,10 @@ impl AppState {
             invoice_repo,
             tax_rate_repo,
             fiscal_sequence_repo,
+            payment_gateway_repo,
+            transaction_repo,
+            payout_repo,
+            gateway_registry,
         }
     }
 
@@ -403,5 +440,29 @@ impl AppState {
     /// Returns a reference to the fiscal sequence repository.
     pub fn fiscal_sequence_repo(&self) -> Arc<PgFiscalSequenceRepository> {
         self.fiscal_sequence_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Payments accessors
+    // -------------------------------------------------------------------------
+
+    /// Returns a reference to the payment gateway repository.
+    pub fn payment_gateway_repo(&self) -> Arc<PgPaymentGatewayRepository> {
+        self.payment_gateway_repo.clone()
+    }
+
+    /// Returns a reference to the payment transaction repository.
+    pub fn transaction_repo(&self) -> Arc<PgTransactionRepository> {
+        self.transaction_repo.clone()
+    }
+
+    /// Returns a reference to the payout repository.
+    pub fn payout_repo(&self) -> Arc<PgPayoutRepository> {
+        self.payout_repo.clone()
+    }
+
+    /// Returns the configured default gateway adapter.
+    pub fn gateway_registry(&self) -> Arc<dyn GatewayAdapterRegistry> {
+        self.gateway_registry.clone()
     }
 }
