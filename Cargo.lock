@@ -47,6 +47,7 @@ dependencies = [
  "governor",
  "identity",
  "inventory",
+ "payments",
  "pos_core",
  "purchasing",
  "rust_decimal",
@@ -1401,6 +1402,26 @@ dependencies = [
  "base64ct",
  "rand_core 0.6.4",
  "subtle",
+]
+
+[[package]]
+name = "payments"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "common",
+ "identity",
+ "inventory",
+ "pos_core",
+ "rust_decimal",
+ "sales",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.17",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]

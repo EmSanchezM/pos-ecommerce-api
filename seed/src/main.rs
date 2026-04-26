@@ -75,6 +75,11 @@ async fn main() -> Result<()> {
     info!("Seeding fiscal sequence...");
     seed_fiscal_sequence(&mut tx, store_id, terminal_id, cai_range_id).await?;
 
+    // Seed default Manual payment gateway for the main store. Honduras-friendly
+    // out of the box: charges go in `pending` until a manager confirms.
+    info!("Seeding payment gateway (Manual)...");
+    seed_payment_gateway(&mut tx, store_id).await?;
+
     tx.commit().await?;
 
     info!("Seed completed successfully!");
@@ -433,5 +438,47 @@ async fn seed_fiscal_sequence(
     .await?;
 
     info!("  Fiscal Sequence: 000-001-01- (rango 1-50000)");
+    Ok(())
+}
+
+async fn seed_payment_gateway(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    let id = Uuid::now_v7();
+
+    // The Manual adapter ignores credentials — these placeholder values just
+    // satisfy the NOT NULL constraints. Real adapters (Stripe, BAC, …) will
+    // need encrypted secrets here.
+    let supported_methods: Vec<String> = vec![
+        "cash".to_string(),
+        "bank_transfer".to_string(),
+        "cash_on_delivery".to_string(),
+        "agency_deposit".to_string(),
+    ];
+    let supported_currencies: Vec<String> = vec!["HNL".to_string(), "USD".to_string()];
+
+    sqlx::query(
+        r#"
+        INSERT INTO payment_gateways (
+            id, store_id, name, gateway_type, is_active, is_default,
+            api_key_encrypted, secret_key_encrypted, merchant_id, is_sandbox,
+            supported_methods, supported_currencies, webhook_secret
+        )
+        VALUES ($1, $2, $3, 'manual', true, true, $4, $5, NULL, false, $6, $7, NULL)
+        ON CONFLICT (store_id, name) DO NOTHING
+        "#,
+    )
+    .bind(id)
+    .bind(store_id)
+    .bind("Caja Manual (HN)")
+    .bind("manual-not-applicable")
+    .bind("manual-not-applicable")
+    .bind(&supported_methods)
+    .bind(&supported_currencies)
+    .execute(&mut **tx)
+    .await?;
+
+    info!("  Payment Gateway: Caja Manual (HN) — manual, default");
     Ok(())
 }

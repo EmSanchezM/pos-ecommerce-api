@@ -17,10 +17,11 @@ mod state;
 
 use routes::{
     auth_router, cart_router, categories_router, credit_notes_router, customers_router,
-    goods_receipts_router, inventory_router, invoices_router, orders_router, pos_sales_router,
-    products_router, promotions_router, purchase_orders_router, recipes_router, reports_router,
-    shifts_router, store_router, store_terminals_router, tax_rates_router, terminals_router,
-    transfers_router, vendors_router,
+    goods_receipts_router, inventory_router, invoices_router, orders_router,
+    payment_gateways_router, payouts_router, pos_sales_router, products_router, promotions_router,
+    purchase_orders_router, recipes_router, reports_router, shifts_router, store_router,
+    store_terminals_router, tax_rates_router, terminals_router, transactions_router,
+    transfers_router, vendors_router, webhooks_router,
 };
 use state::AppState;
 
@@ -95,6 +96,16 @@ async fn main() {
         )
         .nest("/api/v1/invoices", invoices_router(app_state.clone()))
         .nest("/api/v1/tax-rates", tax_rates_router(app_state.clone()))
+        .nest(
+            "/api/v1/payment-gateways",
+            payment_gateways_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/transactions",
+            transactions_router(app_state.clone()),
+        )
+        .nest("/api/v1/payouts", payouts_router(app_state.clone()))
+        .nest("/api/v1/webhooks", webhooks_router())
         .layer(cors_layer)
         .with_state(app_state.clone());
 

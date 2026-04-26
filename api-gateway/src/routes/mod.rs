@@ -3,6 +3,7 @@
 pub mod auth_routes;
 pub mod fiscal_routes;
 pub mod inventory_routes;
+pub mod payments_routes;
 pub mod purchasing_routes;
 pub mod sales_routes;
 pub mod store_routes;
@@ -13,6 +14,9 @@ pub use fiscal_routes::{invoices_router, tax_rates_router};
 pub use inventory_routes::{
     categories_router, inventory_router, products_router, recipes_router, reports_router,
     transfers_router,
+};
+pub use payments_routes::{
+    payment_gateways_router, payouts_router, transactions_router, webhooks_router,
 };
 pub use purchasing_routes::{goods_receipts_router, purchase_orders_router, vendors_router};
 pub use sales_routes::{

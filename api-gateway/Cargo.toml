@@ -11,6 +11,7 @@ inventory = { path = "../modules/inventory" }
 purchasing = { path = "../modules/purchasing" }
 sales = { path = "../modules/sales" }
 fiscal = { path = "../modules/fiscal" }
+payments = { path = "../modules/payments" }
 
 axum = { workspace = true, features = ["json"] }
 async-trait = { workspace = true }
