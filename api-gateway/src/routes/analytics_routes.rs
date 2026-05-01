@@ -2,7 +2,7 @@
 //
 // Mounted at /api/v1/analytics. All endpoints require authentication.
 // Read endpoints additionally require `reports:analytics`; write endpoints
-// require `analytics:dashboards:write`. Permission enforcement happens
+// require `analytics:write`. Permission enforcement happens
 // inside each handler via `require_permission`.
 
 use axum::{

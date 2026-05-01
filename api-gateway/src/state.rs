@@ -5,6 +5,11 @@
 
 use std::sync::Arc;
 
+use accounting::{
+    AccountRepository, AccountingEventSubscriber, AccountingPeriodRepository,
+    AccountingReportRepository, JournalEntryRepository, PgAccountRepository,
+    PgAccountingPeriodRepository, PgAccountingReportRepository, PgJournalEntryRepository,
+};
 use analytics::{
     AnalyticsEventSubscriber, AnalyticsQueryRepository, DashboardRepository, KpiSnapshotRepository,
     PgAnalyticsQueryRepository, PgDashboardRepository, PgKpiSnapshotRepository, PgWidgetRepository,
@@ -170,6 +175,13 @@ pub struct AppState {
     dashboard_repo: Arc<dyn DashboardRepository>,
     widget_repo: Arc<dyn WidgetRepository>,
     analytics_query_repo: Arc<dyn AnalyticsQueryRepository>,
+    // -------------------------------------------------------------------------
+    // Accounting (chart of accounts, journal entries, reports)
+    // -------------------------------------------------------------------------
+    account_repo: Arc<dyn AccountRepository>,
+    accounting_period_repo: Arc<dyn AccountingPeriodRepository>,
+    journal_entry_repo: Arc<dyn JournalEntryRepository>,
+    accounting_report_repo: Arc<dyn AccountingReportRepository>,
 }
 
 impl AppState {
@@ -248,6 +260,10 @@ impl AppState {
         dashboard_repo: Arc<dyn DashboardRepository>,
         widget_repo: Arc<dyn WidgetRepository>,
         analytics_query_repo: Arc<dyn AnalyticsQueryRepository>,
+        account_repo: Arc<dyn AccountRepository>,
+        accounting_period_repo: Arc<dyn AccountingPeriodRepository>,
+        journal_entry_repo: Arc<dyn JournalEntryRepository>,
+        accounting_report_repo: Arc<dyn AccountingReportRepository>,
     ) -> Self {
         Self {
             pool,
@@ -303,6 +319,10 @@ impl AppState {
             dashboard_repo,
             widget_repo,
             analytics_query_repo,
+            account_repo,
+            accounting_period_repo,
+            journal_entry_repo,
+            accounting_report_repo,
         }
     }
 
@@ -418,6 +438,17 @@ impl AppState {
             Arc::new(PgAnalyticsQueryRepository::new((*pool_arc).clone()));
         subscriber_registry.register(Arc::new(AnalyticsEventSubscriber::new()));
 
+        // Accounting repositories + register its outbox subscriber.
+        let account_repo: Arc<dyn AccountRepository> =
+            Arc::new(PgAccountRepository::new((*pool_arc).clone()));
+        let accounting_period_repo: Arc<dyn AccountingPeriodRepository> =
+            Arc::new(PgAccountingPeriodRepository::new((*pool_arc).clone()));
+        let journal_entry_repo: Arc<dyn JournalEntryRepository> =
+            Arc::new(PgJournalEntryRepository::new((*pool_arc).clone()));
+        let accounting_report_repo: Arc<dyn AccountingReportRepository> =
+            Arc::new(PgAccountingReportRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(AccountingEventSubscriber::new()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -475,6 +506,10 @@ impl AppState {
             dashboard_repo,
             widget_repo,
             analytics_query_repo,
+            account_repo,
+            accounting_period_repo,
+            journal_entry_repo,
+            accounting_report_repo,
         }
     }
 
@@ -740,5 +775,22 @@ impl AppState {
     }
     pub fn analytics_query_repo(&self) -> Arc<dyn AnalyticsQueryRepository> {
         self.analytics_query_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Accounting accessors
+    // -------------------------------------------------------------------------
+
+    pub fn account_repo(&self) -> Arc<dyn AccountRepository> {
+        self.account_repo.clone()
+    }
+    pub fn accounting_period_repo(&self) -> Arc<dyn AccountingPeriodRepository> {
+        self.accounting_period_repo.clone()
+    }
+    pub fn journal_entry_repo(&self) -> Arc<dyn JournalEntryRepository> {
+        self.journal_entry_repo.clone()
+    }
+    pub fn accounting_report_repo(&self) -> Arc<dyn AccountingReportRepository> {
+        self.accounting_report_repo.clone()
     }
 }

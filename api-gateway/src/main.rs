@@ -16,14 +16,14 @@ mod routes;
 mod state;
 
 use routes::{
-    analytics_router, auth_router, cart_router, catalog_images_router, catalog_listings_router,
-    catalog_public_router, catalog_reviews_router, catalog_storage_providers_router,
-    catalog_wishlist_router, categories_router, credit_notes_router, customers_router,
-    delivery_providers_router, delivery_webhooks_router, drivers_router, goods_receipts_router,
-    inventory_router, invoices_router, orders_router, payment_gateways_router, payouts_router,
-    pos_sales_router, products_router, promotions_router, public_tracking_router,
-    purchase_orders_router, recipes_router, reports_router, shifts_router, shipments_router,
-    shipping_calculate_router, shipping_methods_router, shipping_rates_router,
+    accounting_router, analytics_router, auth_router, cart_router, catalog_images_router,
+    catalog_listings_router, catalog_public_router, catalog_reviews_router,
+    catalog_storage_providers_router, catalog_wishlist_router, categories_router,
+    credit_notes_router, customers_router, delivery_providers_router, delivery_webhooks_router,
+    drivers_router, goods_receipts_router, inventory_router, invoices_router, orders_router,
+    payment_gateways_router, payouts_router, pos_sales_router, products_router, promotions_router,
+    public_tracking_router, purchase_orders_router, recipes_router, reports_router, shifts_router,
+    shipments_router, shipping_calculate_router, shipping_methods_router, shipping_rates_router,
     shipping_zones_router, store_router, store_terminals_router, tax_rates_router,
     terminals_router, transactions_router, transfers_router, vendors_router, webhooks_router,
 };
@@ -159,6 +159,8 @@ async fn main() {
         .nest("/api/v1/catalog/public", catalog_public_router())
         // Analytics
         .nest("/api/v1/analytics", analytics_router(app_state.clone()))
+        // Accounting
+        .nest("/api/v1/accounting", accounting_router(app_state.clone()))
         // Static file serving for the LocalServer image storage adapter.
         // The mount path matches IMAGE_STORAGE_PUBLIC_URL (default `/uploads`).
         .nest_service(

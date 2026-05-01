@@ -3,6 +3,7 @@
 // This module provides a unified error type for the API Gateway that maps
 // domain errors to appropriate HTTP responses.
 
+use accounting::AccountingError;
 use analytics::AnalyticsError;
 use axum::{
     Json,
@@ -2064,6 +2065,80 @@ impl From<AnalyticsError> for AppError {
             AnalyticsError::Database(_)
             | AnalyticsError::Serialization(_)
             | AnalyticsError::Subscriber(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<AccountingError> Implementation
+// =============================================================================
+
+impl From<AccountingError> for AppError {
+    fn from(err: AccountingError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            AccountingError::AccountNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("ACCOUNT_NOT_FOUND", format!("Account not found: {}", id)),
+            ),
+            AccountingError::AccountCodeNotFound(code) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ACCOUNT_NOT_FOUND",
+                    format!("Account code not found: {}", code),
+                ),
+            ),
+            AccountingError::PeriodNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PERIOD_NOT_FOUND", format!("Period not found: {}", id)),
+            ),
+            AccountingError::JournalEntryNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "JOURNAL_ENTRY_NOT_FOUND",
+                    format!("Journal entry not found: {}", id),
+                ),
+            ),
+
+            // 409
+            AccountingError::DuplicateAccountCode(code) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_ACCOUNT_CODE",
+                    format!("Account code already in use: {}", code),
+                ),
+            ),
+            AccountingError::PeriodClosed(_) | AccountingError::PeriodNotOpen => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("PERIOD_NOT_OPEN", err.to_string()),
+            ),
+            AccountingError::InvalidStatusTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATUS_TRANSITION", err.to_string()),
+            ),
+
+            // 400 — validation
+            AccountingError::InvalidPeriodRange
+            | AccountingError::NotEnoughLines
+            | AccountingError::Unbalanced { .. }
+            | AccountingError::InvalidLineAmounts
+            | AccountingError::NegativeAmount
+            | AccountingError::InvalidAccountType(_)
+            | AccountingError::InvalidPeriodStatus(_)
+            | AccountingError::InvalidJournalEntryStatus(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 500
+            AccountingError::Database(_)
+            | AccountingError::Serialization(_)
+            | AccountingError::Subscriber(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
             ),
