@@ -240,6 +240,24 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     ("reports:inventory_low_stock", "Access low stock reports"),
     ("reports:purchases", "Access purchasing reports"),
     ("reports:financial", "Access financial reports"),
+    (
+        "reports:analytics",
+        "Read analytics dashboards, KPIs and reports",
+    ),
+    // Analytics module
+    (
+        "analytics:write",
+        "Create dashboards and add/remove widgets",
+    ),
+    // Accounting module
+    (
+        "accounting:read",
+        "Read chart of accounts, periods, journal entries, and reports",
+    ),
+    (
+        "accounting:write",
+        "Create accounts, open/close periods, post journal entries",
+    ),
     // System permissions
     (
         "system:admin",
@@ -469,6 +487,12 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "reports:inventory_low_stock",
             "reports:purchases",
             "reports:financial",
+            "reports:analytics",
+            // Analytics
+            "analytics:write",
+            // Accounting
+            "accounting:read",
+            "accounting:write",
             // System
             "system:admin",
             "system:settings",
@@ -631,6 +655,12 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "reports:inventory_valuation",
             "reports:inventory_low_stock",
             "reports:purchases",
+            "reports:analytics",
+            // Analytics — dashboards owned by the store admin
+            "analytics:write",
+            // Accounting — chart of accounts, periods, JEs, P&L
+            "accounting:read",
+            "accounting:write",
         ],
     ),
     // Store manager
@@ -965,3 +995,33 @@ pub const SUPER_ADMIN_USER: (&str, &str, &str, &str, &str) = (
     "Admin",
     "SuperAdmin123!",
 );
+
+/// Default chart of accounts aligned with a basic Honduran SME plan.
+/// Format: (code, name, account_type)
+///
+/// account_type values match the `chart_of_accounts.account_type` CHECK
+/// constraint: asset, liability, equity, revenue, expense.
+pub const CHART_OF_ACCOUNTS: &[(&str, &str, &str)] = &[
+    // Activos (1xxx)
+    ("1010", "Caja", "asset"),
+    ("1020", "Bancos", "asset"),
+    ("1100", "Cuentas por Cobrar", "asset"),
+    ("1200", "Inventario", "asset"),
+    ("1500", "Activos Fijos", "asset"),
+    // Pasivos (2xxx)
+    ("2010", "Cuentas por Pagar", "liability"),
+    ("2100", "ISV por Pagar", "liability"),
+    ("2200", "Sueldos por Pagar", "liability"),
+    // Patrimonio (3xxx)
+    ("3010", "Capital Social", "equity"),
+    ("3020", "Utilidades Retenidas", "equity"),
+    // Ingresos (4xxx)
+    ("4010", "Ingresos por Ventas", "revenue"),
+    ("4020", "Ingresos por Servicios", "revenue"),
+    ("4030", "Otros Ingresos", "revenue"),
+    // Gastos (5xxx)
+    ("5010", "Costo de Ventas", "expense"),
+    ("5020", "Gastos de Operación", "expense"),
+    ("5030", "Gastos de Personal", "expense"),
+    ("5040", "Gastos Financieros", "expense"),
+];

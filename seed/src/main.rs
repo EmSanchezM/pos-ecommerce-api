@@ -3,11 +3,11 @@ use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate, TimeZone, Utc};
 use sqlx::postgres::PgPoolOptions;
 use tracing::{Level, info};
 use tracing_subscriber::FmtSubscriber;
-use uuid::Uuid;
+use uuid::{NoContext, Timestamp, Uuid};
 
 mod data;
 
@@ -87,6 +87,11 @@ async fn main() -> Result<()> {
     // Seed default LocalServer image storage provider for the main store.
     info!("Seeding catalog defaults...");
     seed_catalog_defaults(&mut tx, store_id).await?;
+
+    // Seed accounting defaults: HN-aligned chart of accounts + an initial
+    // open period for the current month.
+    info!("Seeding accounting defaults...");
+    seed_accounting_defaults(&mut tx).await?;
 
     tx.commit().await?;
 
@@ -609,5 +614,100 @@ async fn seed_catalog_defaults(
     .await?;
 
     info!("  Image storage provider: Almacenamiento local (LocalServer, default)");
+    Ok(())
+}
+
+/// Seeds the default chart of accounts (HN-aligned SME plan) and opens an
+/// initial accounting period for the current month. Idempotent — running
+/// the seed twice does not create duplicates.
+async fn seed_accounting_defaults(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<()> {
+    // Chart of accounts.
+    for (code, name, account_type) in data::CHART_OF_ACCOUNTS {
+        sqlx::query(
+            r#"
+            INSERT INTO chart_of_accounts (id, code, name, account_type, parent_id, is_active)
+            VALUES ($1, $2, $3, $4, NULL, TRUE)
+            ON CONFLICT (code) DO NOTHING
+            "#,
+        )
+        .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+        .bind(*code)
+        .bind(*name)
+        .bind(*account_type)
+        .execute(&mut **tx)
+        .await?;
+    }
+    info!(
+        "  Chart of accounts seeded: {} accounts",
+        data::CHART_OF_ACCOUNTS.len()
+    );
+
+    // Initial open period covering the current calendar month.
+    let now = Utc::now();
+    let year = now.year();
+    let month = now.month();
+    let next_month = if month == 12 { 1 } else { month + 1 };
+    let next_year = if month == 12 { year + 1 } else { year };
+
+    let starts_at = Utc.with_ymd_and_hms(year, month, 1, 0, 0, 0).unwrap();
+    let ends_at = Utc
+        .with_ymd_and_hms(next_year, next_month, 1, 0, 0, 0)
+        .unwrap();
+
+    let month_name = match month {
+        1 => "Enero",
+        2 => "Febrero",
+        3 => "Marzo",
+        4 => "Abril",
+        5 => "Mayo",
+        6 => "Junio",
+        7 => "Julio",
+        8 => "Agosto",
+        9 => "Septiembre",
+        10 => "Octubre",
+        11 => "Noviembre",
+        _ => "Diciembre",
+    };
+    let period_name = format!("{} {}", month_name, year);
+
+    // Skip if a period already covers `now`.
+    let exists: Option<(Uuid,)> = sqlx::query_as(
+        r#"
+        SELECT id FROM accounting_periods
+        WHERE starts_at <= $1 AND ends_at > $1
+        LIMIT 1
+        "#,
+    )
+    .bind(now)
+    .fetch_optional(&mut **tx)
+    .await?;
+
+    if exists.is_some() {
+        info!("  Accounting period for current month already exists — skipping");
+    } else {
+        sqlx::query(
+            r#"
+            INSERT INTO accounting_periods (
+                id, name, fiscal_year, starts_at, ends_at, status
+            )
+            VALUES ($1, $2, $3, $4, $5, 'open')
+            "#,
+        )
+        .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+        .bind(&period_name)
+        .bind(year)
+        .bind(starts_at)
+        .bind(ends_at)
+        .execute(&mut **tx)
+        .await?;
+        info!(
+            "  Accounting period: {} (fiscal year {}, {} → {})",
+            period_name,
+            year,
+            starts_at.format("%Y-%m-%d"),
+            ends_at.format("%Y-%m-%d")
+        );
+    }
+
     Ok(())
 }

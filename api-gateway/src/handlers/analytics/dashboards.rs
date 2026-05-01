@@ -1,7 +1,7 @@
 //! Dashboard CRUD + widget endpoints.
 //!
 //! Read endpoints require `reports:analytics`; write endpoints require
-//! `analytics:dashboards:write`. Dashboards are scoped to their owner — the
+//! `analytics:write`. Dashboards are scoped to their owner — the
 //! list endpoint always filters by `CurrentUser.user_id()`, so users only
 //! see what they created.
 
@@ -65,7 +65,7 @@ pub async fn create_dashboard_handler(
     CurrentUser(ctx): CurrentUser,
     Json(body): Json<CreateDashboardBody>,
 ) -> Result<Json<DashboardResponse>, Response> {
-    require_permission(&ctx, "analytics:dashboards:write")?;
+    require_permission(&ctx, "analytics:write")?;
 
     let use_case = CreateDashboardUseCase::new(state.dashboard_repo());
     let dashboard = use_case
@@ -115,7 +115,7 @@ pub async fn add_widget_handler(
     Path(id): Path<Uuid>,
     Json(cmd): Json<AddWidgetCommand>,
 ) -> Result<Json<WidgetResponse>, Response> {
-    require_permission(&ctx, "analytics:dashboards:write")?;
+    require_permission(&ctx, "analytics:write")?;
 
     let use_case = AddWidgetUseCase::new(state.dashboard_repo(), state.widget_repo());
     let widget = use_case
@@ -135,7 +135,7 @@ pub async fn remove_widget_handler(
     CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, Response> {
-    require_permission(&ctx, "analytics:dashboards:write")?;
+    require_permission(&ctx, "analytics:write")?;
 
     let use_case = RemoveWidgetUseCase::new(state.widget_repo());
     use_case
