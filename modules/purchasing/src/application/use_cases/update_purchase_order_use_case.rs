@@ -148,7 +148,6 @@ where
 mod tests {
     use super::*;
     use async_trait::async_trait;
-    use rust_decimal::Decimal;
     use std::collections::HashMap;
     use std::sync::Mutex;
 
