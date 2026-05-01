@@ -1,6 +1,4 @@
 // Authentication use cases - Application layer business logic for authentication
-//
-// Requirements: 1.1, 1.3, 1.4, 1.5, 1.6, 1.7, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 6.1, 6.4
 
 use std::sync::Arc;
 

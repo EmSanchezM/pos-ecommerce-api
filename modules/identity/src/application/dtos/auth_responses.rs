@@ -14,8 +14,6 @@ use uuid::Uuid;
 /// Response returned after successful user registration.
 ///
 /// Contains the created user's public information (no password hash).
-///
-/// Requirements: 7.1
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RegisterResponse {
     /// The unique identifier of the created user
@@ -61,8 +59,6 @@ impl RegisterResponse {
 /// Response returned after successful login.
 ///
 /// Contains the JWT tokens for authenticated requests.
-///
-/// Requirements: 7.2
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct LoginResponse {
     /// JWT access token for API requests
@@ -94,8 +90,6 @@ impl LoginResponse {
 /// Response returned when an error occurs.
 ///
 /// Provides a consistent error format for all API errors.
-///
-/// Requirements: 7.3
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ErrorResponse {
     /// Machine-readable error code (e.g., "INVALID_CREDENTIALS")

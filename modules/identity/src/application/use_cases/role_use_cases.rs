@@ -1,6 +1,4 @@
 // Role use cases - Application layer business logic for role management
-//
-// Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
 
 use std::sync::Arc;
 
@@ -19,8 +17,6 @@ use crate::error::IdentityError;
 ///
 /// Validates the role name uniqueness, saves to repository,
 /// and creates an audit entry.
-///
-/// Requirements: 2.1, 2.2
 pub struct CreateRoleUseCase<R, A>
 where
     R: RoleRepository,
@@ -61,12 +57,12 @@ where
         description: Option<String>,
         actor_id: UserId,
     ) -> Result<Role, IdentityError> {
-        // Check for uniqueness (Requirement 2.1)
+        // Check for uniqueness
         if self.role_repo.find_by_name(name).await?.is_some() {
             return Err(IdentityError::DuplicateRole(name.to_string()));
         }
 
-        // Create and save the role (Requirement 2.2 - stored in database)
+        // Create and save the role
         let role = Role::create(name.to_string(), description);
         self.role_repo.save(&role).await?;
 
@@ -86,8 +82,6 @@ where
 ///
 /// Verifies the role is not system-protected, removes all user-role assignments,
 /// and creates an audit entry.
-///
-/// Requirements: 2.5, 2.6
 pub struct DeleteRoleUseCase<R, U, A>
 where
     R: RoleRepository,
@@ -131,12 +125,12 @@ where
             .await?
             .ok_or(IdentityError::RoleNotFound(role_id.into_uuid()))?;
 
-        // Check if role is system-protected (Requirement 2.6)
+        // Check if role is system-protected
         if role.is_system_protected() {
             return Err(IdentityError::ProtectedRoleCannotBeDeleted);
         }
 
-        // Remove role from all users first (Requirement 2.5)
+        // Remove role from all users first
         self.user_repo.remove_role_from_all_users(role_id).await?;
 
         // Delete the role
@@ -158,8 +152,6 @@ where
 ///
 /// Validates that both role and permission exist, then adds the permission
 /// to the role and creates an audit entry.
-///
-/// Requirements: 2.3
 pub struct AddPermissionToRoleUseCase<R, P, A>
 where
     R: RoleRepository,
@@ -216,7 +208,7 @@ where
             .await?
             .ok_or(IdentityError::PermissionNotFound(permission_id.into_uuid()))?;
 
-        // Add permission to role (Requirement 2.3)
+        // Add permission to role
         self.role_repo
             .add_permission(role_id, permission_id)
             .await?;
@@ -249,8 +241,6 @@ where
 ///
 /// Validates that the role exists, then removes the permission
 /// and creates an audit entry.
-///
-/// Requirements: 2.4
 pub struct RemovePermissionFromRoleUseCase<R, P, A>
 where
     R: RoleRepository,
@@ -306,7 +296,7 @@ where
             .await?
             .map(|p| p.code().as_str().to_string());
 
-        // Remove permission from role (Requirement 2.4)
+        // Remove permission from role
         self.role_repo
             .remove_permission(role_id, permission_id)
             .await?;

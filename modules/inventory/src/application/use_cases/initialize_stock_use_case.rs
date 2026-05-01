@@ -347,6 +347,7 @@ mod tests {
             products.insert(product.id(), product);
         }
 
+        #[allow(dead_code)]
         fn add_variant(&self, variant: ProductVariant) {
             let mut variants = self.variants.lock().unwrap();
             variants.insert(variant.id(), variant);

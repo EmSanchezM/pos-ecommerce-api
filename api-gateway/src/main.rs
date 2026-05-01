@@ -16,10 +16,16 @@ mod routes;
 mod state;
 
 use routes::{
-    auth_router, cart_router, categories_router, credit_notes_router, customers_router,
-    goods_receipts_router, inventory_router, orders_router, pos_sales_router, products_router,
-    promotions_router, purchase_orders_router, recipes_router, reports_router, shifts_router,
-    store_router, store_terminals_router, terminals_router, transfers_router, vendors_router,
+    analytics_router, auth_router, cart_router, catalog_images_router, catalog_listings_router,
+    catalog_public_router, catalog_reviews_router, catalog_storage_providers_router,
+    catalog_wishlist_router, categories_router, credit_notes_router, customers_router,
+    delivery_providers_router, delivery_webhooks_router, drivers_router, goods_receipts_router,
+    inventory_router, invoices_router, orders_router, payment_gateways_router, payouts_router,
+    pos_sales_router, products_router, promotions_router, public_tracking_router,
+    purchase_orders_router, recipes_router, reports_router, shifts_router, shipments_router,
+    shipping_calculate_router, shipping_methods_router, shipping_rates_router,
+    shipping_zones_router, store_router, store_terminals_router, tax_rates_router,
+    terminals_router, transactions_router, transfers_router, vendors_router, webhooks_router,
 };
 use state::AppState;
 
@@ -92,12 +98,86 @@ async fn main() {
             "/api/v1/credit-notes",
             credit_notes_router(app_state.clone()),
         )
+        .nest("/api/v1/invoices", invoices_router(app_state.clone()))
+        .nest("/api/v1/tax-rates", tax_rates_router(app_state.clone()))
+        .nest(
+            "/api/v1/payment-gateways",
+            payment_gateways_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/transactions",
+            transactions_router(app_state.clone()),
+        )
+        .nest("/api/v1/payouts", payouts_router(app_state.clone()))
+        .nest("/api/v1/webhooks", webhooks_router())
+        // Shipping
+        .nest(
+            "/api/v1/shipping-methods",
+            shipping_methods_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/shipping-zones",
+            shipping_zones_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/shipping-rates",
+            shipping_rates_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/shipping/calculate",
+            shipping_calculate_router(app_state.clone()),
+        )
+        .nest("/api/v1/drivers", drivers_router(app_state.clone()))
+        .nest(
+            "/api/v1/delivery-providers",
+            delivery_providers_router(app_state.clone()),
+        )
+        .nest("/api/v1/shipments", shipments_router(app_state.clone()))
+        .nest("/api/v1/track", public_tracking_router())
+        .nest("/api/v1/webhooks/delivery", delivery_webhooks_router())
+        // Catalog
+        .nest(
+            "/api/v1/catalog/listings",
+            catalog_listings_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/catalog/images",
+            catalog_images_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/catalog/reviews",
+            catalog_reviews_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/catalog/wishlist",
+            catalog_wishlist_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/catalog/storage-providers",
+            catalog_storage_providers_router(app_state.clone()),
+        )
+        .nest("/api/v1/catalog/public", catalog_public_router())
+        // Analytics
+        .nest("/api/v1/analytics", analytics_router(app_state.clone()))
+        // Static file serving for the LocalServer image storage adapter.
+        // The mount path matches IMAGE_STORAGE_PUBLIC_URL (default `/uploads`).
+        .nest_service(
+            &std::env::var("IMAGE_STORAGE_PUBLIC_URL").unwrap_or_else(|_| "/uploads".to_string()),
+            tower_http::services::ServeDir::new(
+                std::env::var("IMAGE_STORAGE_ROOT").unwrap_or_else(|_| "./uploads".to_string()),
+            ),
+        )
         .layer(cors_layer)
         .with_state(app_state.clone());
 
     // Start background jobs
     let reservation_expiry_interval = env_or::<u64>("RESERVATION_EXPIRY_INTERVAL_SECS", 300);
     let cart_cleanup_interval = env_or::<u64>("CART_CLEANUP_INTERVAL_SECS", 900);
+    let event_dispatch_interval = env_or::<u64>("EVENT_DISPATCH_INTERVAL_SECS", 5);
+    let event_dispatch_batch_size = env_or::<i64>("EVENT_DISPATCH_BATCH_SIZE", 100);
+    let notification_retry_interval = env_or::<u64>("NOTIFICATION_RETRY_INTERVAL_SECS", 60);
+    let notification_retry_batch_size = env_or::<i64>("NOTIFICATION_RETRY_BATCH_SIZE", 50);
+    let analytics_recompute_interval = env_or::<u64>("ANALYTICS_RECOMPUTE_INTERVAL_SECS", 1800);
 
     jobs::reservation_expiry::spawn(
         app_state.reservation_repo(),
@@ -105,6 +185,23 @@ async fn main() {
         reservation_expiry_interval,
     );
     jobs::cart_cleanup::spawn(app_state.cart_repo(), cart_cleanup_interval);
+    jobs::event_dispatcher::spawn(
+        app_state.outbox_repo(),
+        app_state.subscriber_registry(),
+        event_dispatch_interval,
+        event_dispatch_batch_size,
+    );
+    jobs::notification_dispatcher::spawn(
+        app_state.notification_repo(),
+        app_state.notification_registry(),
+        notification_retry_interval,
+        notification_retry_batch_size,
+    );
+    jobs::analytics_recompute::spawn(
+        app_state.analytics_query_repo(),
+        app_state.kpi_snapshot_repo(),
+        analytics_recompute_interval,
+    );
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
     println!("API Gateway running on http://0.0.0.0:8000");

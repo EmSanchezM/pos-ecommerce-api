@@ -3,16 +3,21 @@
 // This module provides a unified error type for the API Gateway that maps
 // domain errors to appropriate HTTP responses.
 
+use analytics::AnalyticsError;
 use axum::{
     Json,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use catalog::CatalogError;
+use fiscal::FiscalError;
 use identity::{AuthError, ErrorResponse, IdentityError};
 use inventory::InventoryError;
+use payments::PaymentsError;
 use pos_core::CoreError;
 use purchasing::PurchasingError;
 use sales::SalesError;
+use shipping::ShippingError;
 
 // =============================================================================
 // AppError - Unified API Gateway Error Type
@@ -1279,6 +1284,788 @@ impl From<SalesError> for AppError {
             SalesError::InvalidPromotionStatus => (
                 StatusCode::BAD_REQUEST,
                 ErrorResponse::new("INVALID_PROMOTION_STATUS", "Invalid promotion status"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<FiscalError> Implementation
+// =============================================================================
+
+impl From<FiscalError> for AppError {
+    fn from(err: FiscalError) -> Self {
+        let (status, response) = match &err {
+            // -----------------------------------------------------------------
+            // 404 Not Found
+            // -----------------------------------------------------------------
+            FiscalError::InvoiceNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("INVOICE_NOT_FOUND", format!("Invoice not found: {}", id)),
+            ),
+            FiscalError::TaxRateNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("TAX_RATE_NOT_FOUND", format!("Tax rate not found: {}", id)),
+            ),
+            FiscalError::SaleNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("SALE_NOT_FOUND", format!("Sale not found: {}", id)),
+            ),
+
+            // -----------------------------------------------------------------
+            // 409 Conflict
+            // -----------------------------------------------------------------
+            FiscalError::DuplicateInvoiceNumber(number) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_INVOICE_NUMBER",
+                    format!("Invoice number '{}' already exists", number),
+                ),
+            ),
+            FiscalError::DuplicateTaxRateName(name) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_TAX_RATE_NAME",
+                    format!("Tax rate name '{}' already exists", name),
+                ),
+            ),
+            FiscalError::InvoiceAlreadyExistsForSale(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "INVOICE_ALREADY_EXISTS_FOR_SALE",
+                    format!("Invoice already exists for sale: {}", id),
+                ),
+            ),
+            FiscalError::InvoiceAlreadyVoided => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVOICE_ALREADY_VOIDED", "Invoice has already been voided"),
+            ),
+            FiscalError::InvoiceCannotBeVoided => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "INVOICE_CANNOT_BE_VOIDED",
+                    "Invoice cannot be voided in its current status",
+                ),
+            ),
+
+            // -----------------------------------------------------------------
+            // 400 Bad Request
+            // -----------------------------------------------------------------
+            FiscalError::VoidWindowExpired => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "VOID_WINDOW_EXPIRED",
+                    "Cannot void emitted invoice older than 72 hours",
+                ),
+            ),
+            FiscalError::CannotDeleteDefaultTaxRate => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "CANNOT_DELETE_DEFAULT_TAX_RATE",
+                    "Cannot delete default tax rate",
+                ),
+            ),
+            FiscalError::FiscalSequenceNotFound => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "FISCAL_SEQUENCE_NOT_FOUND",
+                    "No fiscal sequence found for terminal",
+                ),
+            ),
+            FiscalError::FiscalSequenceExhausted(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "FISCAL_SEQUENCE_EXHAUSTED",
+                    format!("Fiscal sequence exhausted for terminal: {}", id),
+                ),
+            ),
+            FiscalError::SequenceExhausted => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "SEQUENCE_EXHAUSTED",
+                    "Fiscal sequence range has been fully exhausted",
+                ),
+            ),
+            FiscalError::NoActiveCai(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "NO_ACTIVE_CAI",
+                    format!("No active CAI for terminal: {}", id),
+                ),
+            ),
+            FiscalError::CaiExpired(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("CAI_EXPIRED", format!("CAI expired for terminal: {}", id)),
+            ),
+            FiscalError::SaleNotCompleted(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("SALE_NOT_COMPLETED", format!("Sale not completed: {}", id)),
+            ),
+            FiscalError::InvalidInvoiceType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid invoice type"),
+            ),
+            FiscalError::InvalidInvoiceStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid invoice status"),
+            ),
+            FiscalError::InvalidTaxType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid tax type"),
+            ),
+            FiscalError::InvalidTaxRate => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid tax rate: must be between 0 and 1"),
+            ),
+            FiscalError::InvalidTaxAppliesTo => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid tax applies to value"),
+            ),
+            FiscalError::OriginalInvoiceRequired => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "ORIGINAL_INVOICE_REQUIRED",
+                    "Original invoice required for credit/debit note",
+                ),
+            ),
+            FiscalError::CreditNoteExceedsOriginal => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "CREDIT_NOTE_EXCEEDS_ORIGINAL",
+                    "Credit note exceeds original invoice total",
+                ),
+            ),
+
+            // -----------------------------------------------------------------
+            // 500 Internal Server Error
+            // -----------------------------------------------------------------
+            FiscalError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
+            FiscalError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+            FiscalError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<PaymentsError> Implementation
+// =============================================================================
+
+impl From<PaymentsError> for AppError {
+    fn from(err: PaymentsError) -> Self {
+        let (status, response) = match &err {
+            // 404 Not Found
+            PaymentsError::GatewayNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "PAYMENT_GATEWAY_NOT_FOUND",
+                    format!("Payment gateway not found: {}", id),
+                ),
+            ),
+            PaymentsError::TransactionNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "PAYMENT_TRANSACTION_NOT_FOUND",
+                    format!("Transaction not found: {}", id),
+                ),
+            ),
+            PaymentsError::PayoutNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PAYOUT_NOT_FOUND", format!("Payout not found: {}", id)),
+            ),
+            PaymentsError::SaleNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("SALE_NOT_FOUND", format!("Sale not found: {}", id)),
+            ),
+
+            // 409 Conflict
+            PaymentsError::DuplicateGatewayName(name) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_GATEWAY_NAME",
+                    format!("Gateway name '{}' already exists for this store", name),
+                ),
+            ),
+            PaymentsError::DuplicateIdempotencyKey(key) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_IDEMPOTENCY_KEY",
+                    format!("Idempotency key already used: {}", key),
+                ),
+            ),
+            PaymentsError::TransactionAlreadyProcessed(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "TRANSACTION_ALREADY_PROCESSED",
+                    format!("Transaction already processed: {}", id),
+                ),
+            ),
+
+            // 400 Bad Request
+            PaymentsError::NoDefaultGateway(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "NO_DEFAULT_GATEWAY",
+                    format!("No default payment gateway configured for store: {}", id),
+                ),
+            ),
+            PaymentsError::GatewayNotActive(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "GATEWAY_NOT_ACTIVE",
+                    format!("Gateway is not active: {}", id),
+                ),
+            ),
+            PaymentsError::RefundExceedsOriginal => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "REFUND_EXCEEDS_ORIGINAL",
+                    "Refund amount exceeds original transaction amount",
+                ),
+            ),
+            PaymentsError::CannotRefundTransaction => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "CANNOT_REFUND_TRANSACTION",
+                    "Transaction cannot be refunded in its current status",
+                ),
+            ),
+            PaymentsError::ProcessingFailed(msg) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("PAYMENT_PROCESSING_FAILED", msg.clone()),
+            ),
+            PaymentsError::InvalidAmount => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Amount must be positive"),
+            ),
+            PaymentsError::InvalidGatewayType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid gateway type"),
+            ),
+            PaymentsError::InvalidTransactionType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid transaction type"),
+            ),
+            PaymentsError::InvalidTransactionStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid transaction status"),
+            ),
+            PaymentsError::InvalidManualPaymentKind => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid manual payment kind"),
+            ),
+            PaymentsError::TransactionNotPending(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "TRANSACTION_NOT_PENDING",
+                    format!(
+                        "Transaction is not pending and cannot be confirmed/rejected: {}",
+                        id
+                    ),
+                ),
+            ),
+            PaymentsError::TransactionAlreadyConfirmed(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "TRANSACTION_ALREADY_CONFIRMED",
+                    format!("Transaction has already been confirmed: {}", id),
+                ),
+            ),
+            PaymentsError::TransactionAlreadyRejected(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "TRANSACTION_ALREADY_REJECTED",
+                    format!("Transaction has already been rejected: {}", id),
+                ),
+            ),
+            PaymentsError::InvalidPayoutStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid payout status"),
+            ),
+            PaymentsError::UnsupportedPaymentMethod => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "UNSUPPORTED_PAYMENT_METHOD",
+                    "Payment method not supported by the selected gateway",
+                ),
+            ),
+            PaymentsError::UnsupportedCurrency => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "UNSUPPORTED_CURRENCY",
+                    "Currency not supported by the selected gateway",
+                ),
+            ),
+
+            // 401 Unauthorized
+            PaymentsError::InvalidWebhookSignature => (
+                StatusCode::UNAUTHORIZED,
+                ErrorResponse::new("INVALID_WEBHOOK_SIGNATURE", "Invalid webhook signature"),
+            ),
+
+            // 502 / 500
+            PaymentsError::GatewayError(msg) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("GATEWAY_ERROR", msg.clone()),
+            ),
+            PaymentsError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
+            PaymentsError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+            PaymentsError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<ShippingError> Implementation
+// =============================================================================
+
+impl From<ShippingError> for AppError {
+    fn from(err: ShippingError) -> Self {
+        let (status, response) = match &err {
+            ShippingError::ShippingMethodNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SHIPPING_METHOD_NOT_FOUND",
+                    format!("Shipping method not found: {}", id),
+                ),
+            ),
+            ShippingError::ShippingZoneNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SHIPPING_ZONE_NOT_FOUND",
+                    format!("Shipping zone not found: {}", id),
+                ),
+            ),
+            ShippingError::ShippingRateNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SHIPPING_RATE_NOT_FOUND",
+                    format!("Shipping rate not found: {}", id),
+                ),
+            ),
+            ShippingError::DriverNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("DRIVER_NOT_FOUND", format!("Driver not found: {}", id)),
+            ),
+            ShippingError::DeliveryProviderNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "DELIVERY_PROVIDER_NOT_FOUND",
+                    format!("Delivery provider not found: {}", id),
+                ),
+            ),
+            ShippingError::ShipmentNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("SHIPMENT_NOT_FOUND", format!("Shipment not found: {}", id)),
+            ),
+            ShippingError::SaleNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("SALE_NOT_FOUND", format!("Sale not found: {}", id)),
+            ),
+            ShippingError::DuplicateMethodCode(code) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_METHOD_CODE",
+                    format!(
+                        "Shipping method code '{}' already exists for this store",
+                        code
+                    ),
+                ),
+            ),
+            ShippingError::DuplicateDriverPhone(phone) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_DRIVER_PHONE",
+                    format!("Driver phone '{}' already exists for this store", phone),
+                ),
+            ),
+            ShippingError::DuplicateProviderName(name) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_PROVIDER_NAME",
+                    format!("Delivery provider name '{}' already exists", name),
+                ),
+            ),
+            ShippingError::ShipmentAlreadyExistsForSale(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "SHIPMENT_ALREADY_EXISTS_FOR_SALE",
+                    format!("Shipment already exists for sale: {}", id),
+                ),
+            ),
+            ShippingError::ShipmentAlreadyDelivered => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SHIPMENT_ALREADY_DELIVERED", "Shipment already delivered"),
+            ),
+            ShippingError::ShipmentAlreadyCancelled => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SHIPMENT_ALREADY_CANCELLED", "Shipment already cancelled"),
+            ),
+            ShippingError::DriverBusy => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DRIVER_BUSY", "Driver is busy with another shipment"),
+            ),
+            ShippingError::NoMatchingZone => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "NO_MATCHING_ZONE",
+                    "No shipping zone matches the destination",
+                ),
+            ),
+            ShippingError::NoRatesAvailable => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "NO_RATES_AVAILABLE",
+                    "No shipping rates available for this zone/method",
+                ),
+            ),
+            ShippingError::ExceedsMaxWeight => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("EXCEEDS_MAX_WEIGHT", "Order exceeds maximum weight"),
+            ),
+            ShippingError::BelowMinimumAmount => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "BELOW_MINIMUM_AMOUNT",
+                    "Order below minimum amount for this shipping method",
+                ),
+            ),
+            ShippingError::MethodOutsideAvailability => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "METHOD_OUTSIDE_AVAILABILITY",
+                    "Method not available right now (off-hours / closed day)",
+                ),
+            ),
+            ShippingError::InvalidStatusTransition { from, to } => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "INVALID_STATUS_TRANSITION",
+                    format!("Invalid status transition: {} -> {}", from, to),
+                ),
+            ),
+            ShippingError::DriverNotActive => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("DRIVER_NOT_ACTIVE", "Driver is not active"),
+            ),
+            ShippingError::DriverAssignmentNotAllowed => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "DRIVER_ASSIGNMENT_NOT_ALLOWED",
+                    "This shipment method does not allow driver assignment",
+                ),
+            ),
+            ShippingError::ProviderAssignmentNotAllowed => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "PROVIDER_ASSIGNMENT_NOT_ALLOWED",
+                    "This shipment method does not allow external provider",
+                ),
+            ),
+            ShippingError::InvalidPickupCode => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_PICKUP_CODE", "Pickup code is invalid"),
+            ),
+            ShippingError::PickupExpired => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("PICKUP_EXPIRED", "Pickup window has expired"),
+            ),
+            ShippingError::ProviderNotActive(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "PROVIDER_NOT_ACTIVE",
+                    format!("Delivery provider not active: {}", id),
+                ),
+            ),
+            ShippingError::ProviderZoneNotCovered => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "PROVIDER_ZONE_NOT_COVERED",
+                    "Provider does not cover this zone",
+                ),
+            ),
+            ShippingError::ProviderError(msg) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DELIVERY_PROVIDER_ERROR", msg.clone()),
+            ),
+            ShippingError::InvalidWebhookSignature => (
+                StatusCode::UNAUTHORIZED,
+                ErrorResponse::new(
+                    "INVALID_WEBHOOK_SIGNATURE",
+                    "Invalid delivery webhook signature",
+                ),
+            ),
+            ShippingError::InvalidMethodType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid shipping method type"),
+            ),
+            ShippingError::InvalidRateType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid shipping rate type"),
+            ),
+            ShippingError::InvalidShipmentStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid shipment status"),
+            ),
+            ShippingError::InvalidVehicleType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid driver vehicle type"),
+            ),
+            ShippingError::InvalidDriverStatus => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid driver status"),
+            ),
+            ShippingError::InvalidProviderType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid delivery provider type"),
+            ),
+            ShippingError::InvalidTrackingSource => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid tracking event source"),
+            ),
+            ShippingError::InvalidAmount => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid amount: must be non-negative"),
+            ),
+            ShippingError::PaymentConfirmationFailed(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("PAYMENT_CONFIRMATION_FAILED", msg.clone()),
+            ),
+            ShippingError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
+            ShippingError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+            ShippingError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<CatalogError> Implementation
+// =============================================================================
+
+impl From<CatalogError> for AppError {
+    fn from(err: CatalogError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            CatalogError::ListingNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("LISTING_NOT_FOUND", format!("Listing not found: {}", id)),
+            ),
+            CatalogError::ImageNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("IMAGE_NOT_FOUND", format!("Image not found: {}", id)),
+            ),
+            CatalogError::ReviewNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("REVIEW_NOT_FOUND", format!("Review not found: {}", id)),
+            ),
+            CatalogError::WishlistNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("WISHLIST_NOT_FOUND", format!("Wishlist not found: {}", id)),
+            ),
+            CatalogError::WishlistItemNotFound => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("WISHLIST_ITEM_NOT_FOUND", "Wishlist item not found"),
+            ),
+            CatalogError::CustomerNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CUSTOMER_NOT_FOUND", format!("Customer not found: {}", id)),
+            ),
+            CatalogError::ProductNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PRODUCT_NOT_FOUND", format!("Product not found: {}", id)),
+            ),
+            CatalogError::StorageProviderNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "STORAGE_PROVIDER_NOT_FOUND",
+                    format!("Image storage provider not found: {}", id),
+                ),
+            ),
+
+            // 409 Conflict
+            CatalogError::DuplicateSlug(s) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_SLUG", format!("Slug '{}' already in use", s)),
+            ),
+            CatalogError::DuplicateProductListing(id) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_PRODUCT_LISTING",
+                    format!("Listing already exists for product: {}", id),
+                ),
+            ),
+            CatalogError::DuplicateReview => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_REVIEW", "Customer already reviewed this listing"),
+            ),
+            CatalogError::DuplicateProviderName(n) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new(
+                    "DUPLICATE_STORAGE_PROVIDER_NAME",
+                    format!("Storage provider name '{}' already exists", n),
+                ),
+            ),
+            CatalogError::ReviewAlreadyApproved => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("REVIEW_ALREADY_APPROVED", "Review already approved"),
+            ),
+
+            // 400 Bad Request
+            CatalogError::InvalidSlug => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(
+                    "Invalid slug: must be lowercase letters/digits/hyphens only",
+                ),
+            ),
+            CatalogError::InvalidRating => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Rating must be between 1 and 5"),
+            ),
+            CatalogError::ListingUnpublished => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("LISTING_UNPUBLISHED", "Listing is unpublished"),
+            ),
+            CatalogError::ImageUploadFailed(msg) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("IMAGE_UPLOAD_FAILED", msg.clone()),
+            ),
+            CatalogError::MaxImagesExceeded(max) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "MAX_IMAGES_EXCEEDED",
+                    format!("Maximum images exceeded ({})", max),
+                ),
+            ),
+            CatalogError::UnsupportedContentType(ct) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "UNSUPPORTED_CONTENT_TYPE",
+                    format!("Unsupported image content type: {}", ct),
+                ),
+            ),
+            CatalogError::ImageTooLarge(bytes) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "IMAGE_TOO_LARGE",
+                    format!("Image too large: {} bytes", bytes),
+                ),
+            ),
+            CatalogError::NoDefaultStorageProvider(id) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new(
+                    "NO_DEFAULT_STORAGE_PROVIDER",
+                    format!("No default image storage provider for store: {}", id),
+                ),
+            ),
+            CatalogError::InvalidStorageProviderType => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error("Invalid storage provider type"),
+            ),
+            CatalogError::StorageProviderError(msg) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("STORAGE_PROVIDER_ERROR", msg.clone()),
+            ),
+
+            // 500 Internal
+            CatalogError::Io(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("IO_ERROR", msg.clone()),
+            ),
+            CatalogError::AuditError(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("AUDIT_ERROR", "Failed to record audit entry"),
+            ),
+            CatalogError::Database(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+            CatalogError::NotImplemented => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<AnalyticsError> Implementation
+// =============================================================================
+
+impl From<AnalyticsError> for AppError {
+    fn from(err: AnalyticsError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            AnalyticsError::DashboardNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "DASHBOARD_NOT_FOUND",
+                    format!("Dashboard not found: {}", id),
+                ),
+            ),
+            AnalyticsError::WidgetNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("WIDGET_NOT_FOUND", format!("Widget not found: {}", id)),
+            ),
+            AnalyticsError::SnapshotNotFound(key) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "KPI_SNAPSHOT_NOT_FOUND",
+                    format!("No snapshot for KPI '{}'", key),
+                ),
+            ),
+
+            // 400
+            AnalyticsError::UnknownKpiKey(_)
+            | AnalyticsError::UnknownReportKind(_)
+            | AnalyticsError::InvalidTimeWindow(_)
+            | AnalyticsError::InvalidWidgetKind(_)
+            | AnalyticsError::InvalidWidgetConfig(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 500
+            AnalyticsError::Database(_)
+            | AnalyticsError::Serialization(_)
+            | AnalyticsError::Subscriber(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
             ),
         };
 

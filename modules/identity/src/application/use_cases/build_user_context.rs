@@ -1,6 +1,5 @@
 // BuildUserContextUseCase - builds an immutable UserContext for a user session
 //
-// Requirements: 4.1, 4.2, 4.3, 4.4, 4.5
 // - Verify user is active
 // - Get roles for the user in the specified store
 // - Merge permissions from all roles (deduplicated)

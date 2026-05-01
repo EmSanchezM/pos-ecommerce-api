@@ -1,0 +1,21 @@
+[package]
+name = "payments"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+common = { path = "../common" }
+identity = { path = "../identity" }
+pos_core = { path = "../core" }
+inventory = { path = "../inventory" }
+sales = { path = "../sales" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+rust_decimal = { workspace = true }

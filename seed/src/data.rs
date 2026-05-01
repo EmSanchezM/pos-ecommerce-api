@@ -126,6 +126,109 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     ("goods_receipts:read", "View goods receipt details"),
     ("goods_receipts:confirm", "Confirm goods receipts"),
     ("goods_receipts:cancel", "Cancel goods receipts"),
+    // Fiscal module permissions
+    ("invoices:create", "Generate fiscal invoices"),
+    ("invoices:read", "View fiscal invoices"),
+    ("invoices:void", "Void fiscal invoices"),
+    ("invoices:report", "Generate fiscal reports"),
+    ("tax_rates:create", "Create tax rates"),
+    ("tax_rates:read", "View tax rates"),
+    ("tax_rates:update", "Update tax rates"),
+    ("tax_rates:delete", "Delete tax rates"),
+    // Payments module permissions
+    (
+        "payment_gateways:read",
+        "View payment gateway configuration",
+    ),
+    (
+        "payment_gateways:create",
+        "Create payment gateway (super_admin only)",
+    ),
+    (
+        "payment_gateways:update",
+        "Update payment gateway (super_admin only)",
+    ),
+    (
+        "payment_gateways:delete",
+        "Delete payment gateway (super_admin only)",
+    ),
+    ("transactions:create", "Process online payment transactions"),
+    ("transactions:read", "View payment transactions"),
+    ("transactions:refund", "Refund payment transactions"),
+    (
+        "transactions:confirm",
+        "Manually confirm/reject pending payment transactions",
+    ),
+    (
+        "transactions:reconcile",
+        "Reconcile payment transactions against gateway",
+    ),
+    ("payouts:read", "View gateway payouts/settlements"),
+    // Shipping module permissions
+    (
+        "shipping:read",
+        "Read shipping configuration (methods/zones/rates)",
+    ),
+    ("shipping:create", "Create shipping methods/zones/rates"),
+    ("shipping:update", "Update shipping methods/zones/rates"),
+    ("shipping:delete", "Delete shipping methods/zones/rates"),
+    ("shipments:read", "Read shipments"),
+    ("shipments:create", "Create shipments"),
+    ("shipments:update", "Update shipment status / tracking"),
+    (
+        "shipments:assign",
+        "Assign / reassign drivers / dispatch providers",
+    ),
+    ("shipments:cancel", "Cancel shipments"),
+    ("drivers:read", "Read drivers"),
+    ("drivers:create", "Create drivers"),
+    ("drivers:update", "Update drivers"),
+    ("drivers:delete", "Delete drivers"),
+    (
+        "delivery_providers:read",
+        "Read delivery provider configuration",
+    ),
+    (
+        "delivery_providers:create",
+        "Create delivery provider (super_admin only)",
+    ),
+    (
+        "delivery_providers:update",
+        "Update delivery provider (super_admin only)",
+    ),
+    (
+        "delivery_providers:delete",
+        "Delete delivery provider (super_admin only)",
+    ),
+    // Catalog module permissions
+    (
+        "catalog:read",
+        "Read product listings, images, approved reviews, wishlist",
+    ),
+    ("catalog:create", "Create product listings"),
+    (
+        "catalog:update",
+        "Update listings, manage images, publish/unpublish",
+    ),
+    ("catalog:delete", "Delete listings"),
+    ("catalog:review", "Submit product reviews (customer)"),
+    ("catalog:moderate", "Approve / delete reviews (manager+)"),
+    (
+        "image_storage_providers:read",
+        "Read image storage configuration",
+    ),
+    (
+        "image_storage_providers:create",
+        "Create image storage provider (super_admin only)",
+    ),
+    (
+        "image_storage_providers:update",
+        "Update image storage provider (super_admin only)",
+    ),
+    (
+        "image_storage_providers:delete",
+        "Delete image storage provider (super_admin only)",
+    ),
     // Reports permissions
     ("reports:sales", "Access sales reports"),
     ("reports:inventory", "Access inventory reports"),
@@ -309,6 +412,55 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "goods_receipts:read",
             "goods_receipts:confirm",
             "goods_receipts:cancel",
+            // Fiscal
+            "invoices:create",
+            "invoices:read",
+            "invoices:void",
+            "invoices:report",
+            "tax_rates:create",
+            "tax_rates:read",
+            "tax_rates:update",
+            "tax_rates:delete",
+            // Payments
+            "payment_gateways:read",
+            "payment_gateways:create",
+            "payment_gateways:update",
+            "payment_gateways:delete",
+            "transactions:create",
+            "transactions:read",
+            "transactions:refund",
+            "transactions:confirm",
+            "transactions:reconcile",
+            "payouts:read",
+            // Shipping
+            "shipping:read",
+            "shipping:create",
+            "shipping:update",
+            "shipping:delete",
+            "shipments:read",
+            "shipments:create",
+            "shipments:update",
+            "shipments:assign",
+            "shipments:cancel",
+            "drivers:read",
+            "drivers:create",
+            "drivers:update",
+            "drivers:delete",
+            "delivery_providers:read",
+            "delivery_providers:create",
+            "delivery_providers:update",
+            "delivery_providers:delete",
+            // Catalog
+            "catalog:read",
+            "catalog:create",
+            "catalog:update",
+            "catalog:delete",
+            "catalog:review",
+            "catalog:moderate",
+            "image_storage_providers:read",
+            "image_storage_providers:create",
+            "image_storage_providers:update",
+            "image_storage_providers:delete",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -429,6 +581,49 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "goods_receipts:read",
             "goods_receipts:confirm",
             "goods_receipts:cancel",
+            // Fiscal
+            "invoices:create",
+            "invoices:read",
+            "invoices:void",
+            "invoices:report",
+            "tax_rates:create",
+            "tax_rates:read",
+            "tax_rates:update",
+            "tax_rates:delete",
+            // Payments — store_admin can view gateways and operate transactions
+            // (gateway create/update/delete is reserved to super_admin at the
+            // handler layer)
+            "payment_gateways:read",
+            "transactions:create",
+            "transactions:read",
+            "transactions:refund",
+            "transactions:confirm",
+            "transactions:reconcile",
+            "payouts:read",
+            // Shipping (store_admin can configure methods/zones/rates and
+            // operate shipments; delivery_providers CUD is super_admin only)
+            "shipping:read",
+            "shipping:create",
+            "shipping:update",
+            "shipping:delete",
+            "shipments:read",
+            "shipments:create",
+            "shipments:update",
+            "shipments:assign",
+            "shipments:cancel",
+            "drivers:read",
+            "drivers:create",
+            "drivers:update",
+            "drivers:delete",
+            "delivery_providers:read",
+            // Catalog (store_admin can fully manage listings + moderate reviews;
+            // image_storage_providers CUD stays super_admin-only)
+            "catalog:read",
+            "catalog:create",
+            "catalog:update",
+            "catalog:delete",
+            "catalog:moderate",
+            "image_storage_providers:read",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -520,6 +715,37 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "purchase_orders:submit",
             "goods_receipts:create",
             "goods_receipts:read",
+            // Fiscal
+            "invoices:create",
+            "invoices:read",
+            "invoices:void",
+            "invoices:report",
+            "tax_rates:read",
+            // Payments — managers process and confirm transactions but don't
+            // have reconcile-by-bank-statement (super_admin / store_admin)
+            "payment_gateways:read",
+            "transactions:create",
+            "transactions:read",
+            "transactions:refund",
+            "transactions:confirm",
+            "payouts:read",
+            // Shipping (manager runs the day-to-day; cannot delete config)
+            "shipping:read",
+            "shipments:read",
+            "shipments:create",
+            "shipments:update",
+            "shipments:assign",
+            "shipments:cancel",
+            "drivers:read",
+            "drivers:create",
+            "drivers:update",
+            "delivery_providers:read",
+            // Catalog (manager updates listings + moderates reviews; no delete)
+            "catalog:read",
+            "catalog:create",
+            "catalog:update",
+            "catalog:moderate",
+            "image_storage_providers:read",
             // Reports
             "reports:sales",
             "reports:inventory",
@@ -564,6 +790,23 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             // Promotions (read + apply at checkout)
             "promotions:read",
             "promotions:apply",
+            // Fiscal (generate invoices at POS)
+            "invoices:create",
+            "invoices:read",
+            "tax_rates:read",
+            // Payments — cashier records charges (manual flow leaves them
+            // pending for a manager to confirm)
+            "payment_gateways:read",
+            "transactions:create",
+            "transactions:read",
+            // Shipping (cashier may issue StorePickup/OwnDelivery shipments at POS)
+            "shipping:read",
+            "shipments:read",
+            "shipments:create",
+            "shipments:update",
+            "drivers:read",
+            // Catalog (read-only; cashier needs it to look up products by slug)
+            "catalog:read",
         ],
     ),
     // Inventory clerk
@@ -653,6 +896,20 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "goods_receipts:read",
             // Promotions
             "promotions:read",
+            // Fiscal
+            "invoices:read",
+            "tax_rates:read",
+            // Payments — read-only
+            "payment_gateways:read",
+            "transactions:read",
+            "payouts:read",
+            // Shipping read-only
+            "shipping:read",
+            "shipments:read",
+            "drivers:read",
+            "delivery_providers:read",
+            // Catalog read-only
+            "catalog:read",
         ],
     ),
     // Customer - e-commerce user
@@ -684,6 +941,9 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "wishlist:manage",
             "reviews:create",
             "reviews:view",
+            // Catalog browsing + reviews + wishlist
+            "catalog:read",
+            "catalog:review",
         ],
     ),
 ];

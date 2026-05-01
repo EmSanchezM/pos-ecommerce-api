@@ -10,8 +10,15 @@ pos_core = { path = "../modules/core" }
 inventory = { path = "../modules/inventory" }
 purchasing = { path = "../modules/purchasing" }
 sales = { path = "../modules/sales" }
+fiscal = { path = "../modules/fiscal" }
+payments = { path = "../modules/payments" }
+shipping = { path = "../modules/shipping" }
+catalog = { path = "../modules/catalog" }
+events = { path = "../modules/events" }
+notifications = { path = "../modules/notifications" }
+analytics = { path = "../modules/analytics" }
 
-axum = { workspace = true, features = ["json"] }
+axum = { workspace = true, features = ["json", "multipart"] }
 async-trait = { workspace = true }
 chrono = { workspace = true }
 serde = { workspace = true }

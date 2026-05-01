@@ -21,7 +21,7 @@ pub const MAX_NAME_LENGTH: usize = 100;
 /// * `Err(AuthError::PasswordTooShort)` if the password is too short
 ///
 /// # Requirements
-/// - Minimum 8 characters (Requirements 1.4, 6.3)
+/// - Minimum 8 characters
 ///
 /// # Examples
 /// ```
@@ -48,7 +48,7 @@ pub fn validate_password(password: &str) -> Result<(), AuthError> {
 /// * `Err(AuthError::InvalidName)` if the name is invalid
 ///
 /// # Requirements
-/// - 1-100 characters after trimming (Requirement 6.4)
+/// - 1-100 characters after trimming
 /// - Non-empty after trimming
 ///
 /// # Examples

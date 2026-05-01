@@ -1,6 +1,4 @@
 // Store use cases - Application layer business logic for store management
-//
-// Requirements: 7.1, 7.2, 7.3, 7.4, 8.1, 8.2, 8.3
 
 use std::sync::Arc;
 
@@ -19,7 +17,6 @@ use crate::error::IdentityError;
 /// Creates a store with the provided details. If is_ecommerce is not specified,
 /// it defaults to false (physical POS store).
 ///
-/// Requirements: 7.1, 7.2
 pub struct CreateStoreUseCase<S, A>
 where
     S: StoreRepository,
@@ -52,21 +49,20 @@ where
     /// The created Store on success
     ///
     /// # Notes
-    /// - is_ecommerce defaults to false if not specified (Requirement 7.2)
+    /// - is_ecommerce defaults to false if not specified
     pub async fn execute(
         &self,
         command: CreateStoreCommand,
         actor_id: UserId,
     ) -> Result<Store, IdentityError> {
         // Create store - is_ecommerce defaults to false in CreateStoreCommand via #[serde(default)]
-        // Requirement 7.2: default is_ecommerce to false
         let store = if command.is_ecommerce {
             Store::create_ecommerce(command.name, command.address)
         } else {
             Store::create(command.name, command.address)
         };
 
-        // Save to repository (Requirement 7.1)
+        // Save to repository
         self.store_repo.save(&store).await?;
 
         // Create audit entry
@@ -84,8 +80,6 @@ where
 /// Use case for updating an existing store's details
 ///
 /// Updates the store's name, address, and/or is_ecommerce flag.
-///
-/// Requirements: 7.4
 pub struct UpdateStoreUseCase<S, A>
 where
     S: StoreRepository,
@@ -136,17 +130,17 @@ where
         // Store old state for audit
         let old_store = store.clone();
 
-        // Update name if provided (Requirement 7.4)
+        // Update name if provided
         if let Some(name) = command.name {
             store.set_name(name);
         }
 
-        // Update address if provided (Requirement 7.4)
+        // Update address if provided
         if let Some(address) = command.address {
             store.set_address(address);
         }
 
-        // Update is_ecommerce if provided (Requirement 7.4)
+        // Update is_ecommerce if provided
         if let Some(is_ecommerce) = command.is_ecommerce {
             store.set_ecommerce(is_ecommerce);
         }
@@ -170,8 +164,6 @@ where
 /// Use case for enabling or disabling a store
 ///
 /// Updates the store's is_active flag and creates an audit entry.
-///
-/// Requirements: 7.3
 pub struct SetStoreActiveUseCase<S, A>
 where
     S: StoreRepository,
@@ -222,7 +214,7 @@ where
         // Store old state for audit
         let old_store = store.clone();
 
-        // Update active status (Requirement 7.3)
+        // Update active status
         if is_active {
             store.activate();
         } else {
@@ -249,8 +241,6 @@ where
 ///
 /// Creates a membership relationship between a user and a store,
 /// allowing the user to be assigned roles in that store.
-///
-/// Requirements: 8.1, 8.2
 pub struct AddUserToStoreUseCase<U, S, A>
 where
     U: UserRepository,
@@ -307,10 +297,10 @@ where
             .await?
             .ok_or(IdentityError::StoreNotFound(store_id.into_uuid()))?;
 
-        // Add user to store (Requirements 8.1, 8.2)
+        // Add user to store
         self.user_repo.add_to_store(user_id, store_id).await?;
 
-        // Create audit entry (Requirement 9.4)
+        // Create audit entry
         let audit_entry = AuditEntry::create(
             "user_store".to_string(),
             user_id.into_uuid(),
@@ -338,8 +328,6 @@ where
 ///
 /// Removes the membership relationship between a user and a store.
 /// This also implicitly removes any role assignments for that user in that store.
-///
-/// Requirements: 8.3
 pub struct RemoveUserFromStoreUseCase<U, S, A>
 where
     U: UserRepository,
@@ -395,10 +383,10 @@ where
             .await?
             .map(|s| s.name().to_string());
 
-        // Remove user from store (Requirement 8.3)
+        // Remove user from store
         self.user_repo.remove_from_store(user_id, store_id).await?;
 
-        // Create audit entry (Requirement 9.4)
+        // Create audit entry
         let audit_entry = AuditEntry::create(
             "user_store".to_string(),
             user_id.into_uuid(),

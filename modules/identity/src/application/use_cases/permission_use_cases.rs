@@ -16,8 +16,6 @@ use crate::error::IdentityError;
 ///
 /// Validates the permission format, checks for uniqueness, saves to repository,
 /// and creates an audit entry.
-///
-/// Requirements: 1.1, 1.2, 1.3
 pub struct CreatePermissionUseCase<P, A>
 where
     P: PermissionRepository,
@@ -59,10 +57,10 @@ where
         description: Option<String>,
         actor_id: UserId,
     ) -> Result<Permission, IdentityError> {
-        // Validate permission format (Requirements 1.1, 1.2)
+        // Validate permission format
         let permission_code = PermissionCode::new(code)?;
 
-        // Check for uniqueness (Requirement 1.3)
+        // Check for uniqueness
         if self.permission_repo.exists(&permission_code).await? {
             return Err(IdentityError::DuplicatePermission(code.to_string()));
         }
@@ -93,7 +91,6 @@ where
 /// Removes the permission from all roles before deleting it, and creates
 /// an audit entry.
 ///
-/// Requirements: 1.5
 pub struct DeletePermissionUseCase<P, R, A>
 where
     P: PermissionRepository,
@@ -140,7 +137,7 @@ where
             .await?
             .ok_or(IdentityError::PermissionNotFound(permission_id.into_uuid()))?;
 
-        // Remove permission from all roles first (Requirement 1.5)
+        // Remove permission from all roles first
         self.role_repo
             .remove_permission_from_all_roles(permission_id)
             .await?;
@@ -168,8 +165,6 @@ where
 /// Use case for listing permissions with optional module filtering
 ///
 /// Returns all permissions or filters by module prefix.
-///
-/// Requirements: 1.4
 pub struct ListPermissionsUseCase<P>
 where
     P: PermissionRepository,
@@ -535,7 +530,7 @@ mod tests {
 
         assert!(result.is_ok());
         let response = result.unwrap();
-        assert_eq!(response.data.len(), 2);
+        assert_eq!(response.items.len(), 2);
         assert_eq!(response.total, 2);
     }
 
@@ -566,9 +561,9 @@ mod tests {
 
         assert!(result.is_ok());
         let response = result.unwrap();
-        assert_eq!(response.data.len(), 2);
+        assert_eq!(response.items.len(), 2);
         assert_eq!(response.total, 2);
-        assert!(response.data.iter().all(|p| p.module() == "sales"));
+        assert!(response.items.iter().all(|p| p.module() == "sales"));
     }
 
     #[tokio::test]
@@ -588,7 +583,7 @@ mod tests {
 
         assert!(result.is_ok());
         let response = result.unwrap();
-        assert!(response.data.is_empty());
+        assert!(response.items.is_empty());
         assert_eq!(response.total, 0);
     }
 }

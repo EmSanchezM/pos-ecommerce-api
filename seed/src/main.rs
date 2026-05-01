@@ -3,6 +3,7 @@ use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
+use chrono::NaiveDate;
 use sqlx::postgres::PgPoolOptions;
 use tracing::{Level, info};
 use tracing_subscriber::FmtSubscriber;
@@ -57,6 +58,35 @@ async fn main() -> Result<()> {
     // Assign super admin to main store with super_admin role
     info!("Assigning super admin to main store...");
     seed_super_admin_store_assignment(&mut tx, super_admin_id, store_id, &role_ids).await?;
+
+    // Seed terminal for the main store
+    info!("Seeding terminal...");
+    let terminal_id = seed_terminal(&mut tx, store_id).await?;
+
+    // Seed CAI range for the terminal
+    info!("Seeding CAI range...");
+    let cai_range_id = seed_cai_range(&mut tx, terminal_id).await?;
+
+    // Seed tax rates for the main store
+    info!("Seeding tax rates...");
+    seed_tax_rates(&mut tx, store_id).await?;
+
+    // Seed fiscal sequence for the terminal
+    info!("Seeding fiscal sequence...");
+    seed_fiscal_sequence(&mut tx, store_id, terminal_id, cai_range_id).await?;
+
+    // Seed default Manual payment gateway for the main store. Honduras-friendly
+    // out of the box: charges go in `pending` until a manager confirms.
+    info!("Seeding payment gateway (Manual)...");
+    seed_payment_gateway(&mut tx, store_id).await?;
+
+    // Seed shipping defaults: StorePickup + OwnDelivery + Tegucigalpa zone + rates.
+    info!("Seeding shipping defaults...");
+    seed_shipping_defaults(&mut tx, store_id).await?;
+
+    // Seed default LocalServer image storage provider for the main store.
+    info!("Seeding catalog defaults...");
+    seed_catalog_defaults(&mut tx, store_id).await?;
 
     tx.commit().await?;
 
@@ -279,5 +309,305 @@ async fn seed_super_admin_store_assignment(
 
     info!("  Assigned super_admin role to user in store");
 
+    Ok(())
+}
+
+async fn seed_terminal(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<Uuid> {
+    let id = Uuid::now_v7();
+
+    sqlx::query(
+        r#"
+        INSERT INTO terminals (id, store_id, code, name, is_active)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT DO NOTHING
+        "#,
+    )
+    .bind(id)
+    .bind(store_id)
+    .bind("CAJA-001")
+    .bind("Caja Principal")
+    .bind(true)
+    .execute(&mut **tx)
+    .await?;
+
+    // Get actual ID
+    let row: (Uuid,) = sqlx::query_as("SELECT id FROM terminals WHERE store_id = $1 AND code = $2")
+        .bind(store_id)
+        .bind("CAJA-001")
+        .fetch_one(&mut **tx)
+        .await?;
+
+    info!("  Terminal: CAJA-001 (Caja Principal)");
+    Ok(row.0)
+}
+
+async fn seed_cai_range(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    terminal_id: Uuid,
+) -> Result<Uuid> {
+    let id = Uuid::now_v7();
+    let expiry = NaiveDate::from_ymd_opt(2027, 12, 31).unwrap();
+
+    sqlx::query(
+        r#"
+        INSERT INTO cai_ranges (id, terminal_id, cai_number, range_start, range_end, current_number, expiration_date, is_exhausted)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT DO NOTHING
+        "#,
+    )
+    .bind(id)
+    .bind(terminal_id)
+    .bind("A1B2C3-D4E5F6-G7H8I9-J0K1L2-M3N4O5-P6")
+    .bind(1_i64)
+    .bind(50000_i64)
+    .bind(1_i64)
+    .bind(expiry)
+    .bind(false)
+    .execute(&mut **tx)
+    .await?;
+
+    // Get actual ID
+    let row: (Uuid,) = sqlx::query_as(
+        "SELECT id FROM cai_ranges WHERE terminal_id = $1 ORDER BY created_at DESC LIMIT 1",
+    )
+    .bind(terminal_id)
+    .fetch_one(&mut **tx)
+    .await?;
+
+    info!("  CAI: A1B2C3-...P6 (rango 1-50000, expira 2027-12-31)");
+    Ok(row.0)
+}
+
+async fn seed_tax_rates(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    let tax_rates = [
+        ("ISV 15%", "isv_15", "0.1500", true, "all"),
+        ("ISV 18%", "isv_18", "0.1800", false, "categories"),
+        ("Exento", "exempt", "0.0000", false, "categories"),
+    ];
+
+    for (name, tax_type, rate, is_default, applies_to) in &tax_rates {
+        let id = Uuid::now_v7();
+        let rate_decimal: rust_decimal::Decimal = rate.parse().unwrap();
+
+        sqlx::query(
+            r#"
+            INSERT INTO tax_rates (id, store_id, name, tax_type, rate, is_default, is_active, applies_to, category_ids)
+            VALUES ($1, $2, $3, $4, $5, $6, true, $7, '{}')
+            ON CONFLICT (store_id, name) DO NOTHING
+            "#,
+        )
+        .bind(id)
+        .bind(store_id)
+        .bind(name)
+        .bind(tax_type)
+        .bind(rate_decimal)
+        .bind(is_default)
+        .bind(applies_to)
+        .execute(&mut **tx)
+        .await?;
+
+        info!("  Tax Rate: {} ({} = {})", name, tax_type, rate);
+    }
+
+    Ok(())
+}
+
+async fn seed_fiscal_sequence(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+    terminal_id: Uuid,
+    cai_range_id: Uuid,
+) -> Result<()> {
+    let id = Uuid::now_v7();
+
+    sqlx::query(
+        r#"
+        INSERT INTO fiscal_sequences (id, store_id, terminal_id, cai_range_id, prefix, current_number, range_start, range_end, is_active)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (terminal_id, cai_range_id) DO NOTHING
+        "#,
+    )
+    .bind(id)
+    .bind(store_id)
+    .bind(terminal_id)
+    .bind(cai_range_id)
+    .bind("000-001-01-")
+    .bind(0_i64)
+    .bind(1_i64)
+    .bind(50000_i64)
+    .bind(true)
+    .execute(&mut **tx)
+    .await?;
+
+    info!("  Fiscal Sequence: 000-001-01- (rango 1-50000)");
+    Ok(())
+}
+
+async fn seed_payment_gateway(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    let id = Uuid::now_v7();
+
+    // The Manual adapter ignores credentials — these placeholder values just
+    // satisfy the NOT NULL constraints. Real adapters (Stripe, BAC, …) will
+    // need encrypted secrets here.
+    let supported_methods: Vec<String> = vec![
+        "cash".to_string(),
+        "bank_transfer".to_string(),
+        "cash_on_delivery".to_string(),
+        "agency_deposit".to_string(),
+    ];
+    let supported_currencies: Vec<String> = vec!["HNL".to_string(), "USD".to_string()];
+
+    sqlx::query(
+        r#"
+        INSERT INTO payment_gateways (
+            id, store_id, name, gateway_type, is_active, is_default,
+            api_key_encrypted, secret_key_encrypted, merchant_id, is_sandbox,
+            supported_methods, supported_currencies, webhook_secret
+        )
+        VALUES ($1, $2, $3, 'manual', true, true, $4, $5, NULL, false, $6, $7, NULL)
+        ON CONFLICT (store_id, name) DO NOTHING
+        "#,
+    )
+    .bind(id)
+    .bind(store_id)
+    .bind("Caja Manual (HN)")
+    .bind("manual-not-applicable")
+    .bind("manual-not-applicable")
+    .bind(&supported_methods)
+    .bind(&supported_currencies)
+    .execute(&mut **tx)
+    .await?;
+
+    info!("  Payment Gateway: Caja Manual (HN) — manual, default");
+    Ok(())
+}
+
+async fn seed_shipping_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    // Two methods covering the most common HN scenarios out of the box.
+    sqlx::query(
+        r#"INSERT INTO shipping_methods
+           (id, store_id, name, code, method_type, description, sort_order)
+           VALUES ($1, $2, $3, $4, 'store_pickup', $5, 0)
+           ON CONFLICT (store_id, code) DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(store_id)
+    .bind("Retiro en tienda")
+    .bind("pickup")
+    .bind("El cliente recoge el pedido directamente en la tienda")
+    .execute(&mut **tx)
+    .await?;
+
+    sqlx::query(
+        r#"INSERT INTO shipping_methods
+           (id, store_id, name, code, method_type, description,
+            estimated_days_min, estimated_days_max, sort_order)
+           VALUES ($1, $2, $3, $4, 'own_delivery', $5, 0, 1, 1)
+           ON CONFLICT (store_id, code) DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(store_id)
+    .bind("Envío con motorista propio")
+    .bind("own_delivery")
+    .bind("Repartido por un conductor de la tienda dentro de Tegucigalpa")
+    .execute(&mut **tx)
+    .await?;
+    info!("  Shipping methods: Retiro en tienda + Envío con motorista propio");
+
+    sqlx::query(
+        r#"INSERT INTO shipping_zones
+           (id, store_id, name, countries, states, zip_codes)
+           VALUES ($1, $2, 'Tegucigalpa', $3, $4, '{}')
+           ON CONFLICT DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(store_id)
+    .bind(vec!["HN".to_string()])
+    .bind(vec!["FM".to_string()])
+    .execute(&mut **tx)
+    .await?;
+    info!("  Shipping zone: Tegucigalpa (HN/FM)");
+
+    // Resolve real ids for the rates.
+    let pickup_id: (Uuid,) = sqlx::query_as(
+        "SELECT id FROM shipping_methods WHERE store_id = $1 AND code = 'pickup' LIMIT 1",
+    )
+    .bind(store_id)
+    .fetch_one(&mut **tx)
+    .await?;
+    let own_id: (Uuid,) = sqlx::query_as(
+        "SELECT id FROM shipping_methods WHERE store_id = $1 AND code = 'own_delivery' LIMIT 1",
+    )
+    .bind(store_id)
+    .fetch_one(&mut **tx)
+    .await?;
+    let zone_id: (Uuid,) = sqlx::query_as(
+        "SELECT id FROM shipping_zones WHERE store_id = $1 AND name = 'Tegucigalpa' LIMIT 1",
+    )
+    .bind(store_id)
+    .fetch_one(&mut **tx)
+    .await?;
+
+    sqlx::query(
+        r#"INSERT INTO shipping_rates
+           (id, shipping_method_id, shipping_zone_id, rate_type,
+            base_rate, per_kg_rate, free_shipping_threshold, currency)
+           VALUES ($1, $2, $3, 'flat', 0, 0, NULL, 'HNL')
+           ON CONFLICT DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(pickup_id.0)
+    .bind(zone_id.0)
+    .execute(&mut **tx)
+    .await?;
+    sqlx::query(
+        r#"INSERT INTO shipping_rates
+           (id, shipping_method_id, shipping_zone_id, rate_type,
+            base_rate, per_kg_rate, free_shipping_threshold, currency)
+           VALUES ($1, $2, $3, 'order_based', 50.00, 0, 1000.00, 'HNL')
+           ON CONFLICT DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(own_id.0)
+    .bind(zone_id.0)
+    .execute(&mut **tx)
+    .await?;
+    info!("  Shipping rates: Pickup gratis, OwnDelivery L 50 (gratis sobre L 1000)");
+
+    Ok(())
+}
+
+async fn seed_catalog_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    // Default LocalServer image storage provider. The adapter ignores the
+    // credentials — they're placeholders to satisfy the NOT NULL constraints.
+    sqlx::query(
+        r#"INSERT INTO image_storage_providers
+          (id, store_id, name, provider_type, is_active, is_default,
+           api_key_encrypted, secret_key_encrypted, config_json)
+          VALUES ($1, $2, 'Almacenamiento local', 'local_server', true, true,
+                  'local-not-applicable', 'local-not-applicable', NULL)
+          ON CONFLICT (store_id, name) DO NOTHING"#,
+    )
+    .bind(Uuid::now_v7())
+    .bind(store_id)
+    .execute(&mut **tx)
+    .await?;
+
+    info!("  Image storage provider: Almacenamiento local (LocalServer, default)");
     Ok(())
 }

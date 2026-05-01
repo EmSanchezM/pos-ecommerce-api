@@ -5,17 +5,41 @@
 
 use std::sync::Arc;
 
+use analytics::{
+    AnalyticsEventSubscriber, AnalyticsQueryRepository, DashboardRepository, KpiSnapshotRepository,
+    PgAnalyticsQueryRepository, PgDashboardRepository, PgKpiSnapshotRepository, PgWidgetRepository,
+    WidgetRepository,
+};
+use catalog::{
+    DefaultImageStorageRegistry, ImageStorageRegistry, PgImageStorageProviderRepository,
+    PgProductImageRepository, PgProductListingRepository, PgProductReviewRepository,
+    PgWishlistRepository,
+};
+use events::{OutboxRepository, PgOutboxRepository, SubscriberRegistry};
+use fiscal::{PgFiscalSequenceRepository, PgInvoiceRepository, PgTaxRateRepository};
 use identity::{JwtTokenService, PgAuditRepository, PgStoreRepository, PgUserRepository};
 use inventory::{
     PgAdjustmentRepository, PgCategoryRepository, PgInventoryMovementRepository,
     PgInventoryStockRepository, PgProductRepository, PgRecipeRepository, PgReservationRepository,
     PgTransferRepository,
 };
+use notifications::{
+    DefaultNotificationAdapterRegistry, NotificationAdapterRegistry, PgNotificationRepository,
+};
+use payments::{
+    DefaultGatewayAdapterRegistry, GatewayAdapterRegistry, PgPaymentGatewayRepository,
+    PgPayoutRepository, PgTransactionRepository,
+};
 use pos_core::PgTerminalRepository;
 use purchasing::{PgGoodsReceiptRepository, PgPurchaseOrderRepository, PgVendorRepository};
 use sales::{
     PgCartRepository, PgCreditNoteRepository, PgCustomerRepository, PgPromotionRepository,
     PgSaleRepository, PgShiftRepository,
+};
+use shipping::{
+    DefaultDeliveryProviderRegistry, DeliveryProviderRegistry, PgDeliveryProviderRepository,
+    PgDriverRepository, PgShipmentRepository, PgShipmentTrackingEventRepository,
+    PgShippingMethodRepository, PgShippingRateRepository, PgShippingZoneRepository, ShipmentDeps,
 };
 use sqlx::PgPool;
 
@@ -86,6 +110,66 @@ pub struct AppState {
     credit_note_repo: Arc<PgCreditNoteRepository>,
     /// Promotion repository for discount/coupon management
     promotion_repo: Arc<PgPromotionRepository>,
+    // -------------------------------------------------------------------------
+    // Fiscal repositories
+    // -------------------------------------------------------------------------
+    /// Invoice repository for fiscal invoice operations
+    invoice_repo: Arc<PgInvoiceRepository>,
+    /// Tax rate repository for tax rate management
+    tax_rate_repo: Arc<PgTaxRateRepository>,
+    /// Fiscal sequence repository for invoice numbering
+    fiscal_sequence_repo: Arc<PgFiscalSequenceRepository>,
+    // -------------------------------------------------------------------------
+    // Payments repositories + adapter
+    // -------------------------------------------------------------------------
+    /// Payment gateway repository (super-admin managed)
+    payment_gateway_repo: Arc<PgPaymentGatewayRepository>,
+    /// Payment transaction repository
+    transaction_repo: Arc<PgTransactionRepository>,
+    /// Gateway payout repository
+    payout_repo: Arc<PgPayoutRepository>,
+    /// Registry that resolves a `GatewayType` to its adapter (Manual today,
+    /// stubs for Stripe/PayPal/BAC/Ficohsa).
+    gateway_registry: Arc<dyn GatewayAdapterRegistry>,
+    // -------------------------------------------------------------------------
+    // Shipping repositories + adapters
+    // -------------------------------------------------------------------------
+    shipping_method_repo: Arc<PgShippingMethodRepository>,
+    shipping_zone_repo: Arc<PgShippingZoneRepository>,
+    shipping_rate_repo: Arc<PgShippingRateRepository>,
+    driver_repo: Arc<PgDriverRepository>,
+    delivery_provider_repo: Arc<PgDeliveryProviderRepository>,
+    shipment_repo: Arc<PgShipmentRepository>,
+    shipment_event_repo: Arc<PgShipmentTrackingEventRepository>,
+    delivery_registry: Arc<dyn DeliveryProviderRegistry>,
+    /// Pre-built ShipmentDeps to avoid rewiring on every handler invocation.
+    shipment_deps: Arc<ShipmentDeps>,
+    // -------------------------------------------------------------------------
+    // Catalog repositories + image adapter registry
+    // -------------------------------------------------------------------------
+    listing_repo: Arc<PgProductListingRepository>,
+    image_repo: Arc<PgProductImageRepository>,
+    review_repo: Arc<PgProductReviewRepository>,
+    wishlist_repo: Arc<PgWishlistRepository>,
+    image_storage_provider_repo: Arc<PgImageStorageProviderRepository>,
+    image_storage_registry: Arc<dyn ImageStorageRegistry>,
+    // -------------------------------------------------------------------------
+    // Events (transactional outbox + in-process dispatch)
+    // -------------------------------------------------------------------------
+    outbox_repo: Arc<dyn OutboxRepository>,
+    subscriber_registry: SubscriberRegistry,
+    // -------------------------------------------------------------------------
+    // Notifications (multi-channel outbound messaging + adapter registry)
+    // -------------------------------------------------------------------------
+    notification_repo: Arc<PgNotificationRepository>,
+    notification_registry: Arc<dyn NotificationAdapterRegistry>,
+    // -------------------------------------------------------------------------
+    // Analytics (KPI snapshots, dashboards/widgets, cross-module queries)
+    // -------------------------------------------------------------------------
+    kpi_snapshot_repo: Arc<dyn KpiSnapshotRepository>,
+    dashboard_repo: Arc<dyn DashboardRepository>,
+    widget_repo: Arc<dyn WidgetRepository>,
+    analytics_query_repo: Arc<dyn AnalyticsQueryRepository>,
 }
 
 impl AppState {
@@ -134,6 +218,36 @@ impl AppState {
         cart_repo: Arc<PgCartRepository>,
         credit_note_repo: Arc<PgCreditNoteRepository>,
         promotion_repo: Arc<PgPromotionRepository>,
+        invoice_repo: Arc<PgInvoiceRepository>,
+        tax_rate_repo: Arc<PgTaxRateRepository>,
+        fiscal_sequence_repo: Arc<PgFiscalSequenceRepository>,
+        payment_gateway_repo: Arc<PgPaymentGatewayRepository>,
+        transaction_repo: Arc<PgTransactionRepository>,
+        payout_repo: Arc<PgPayoutRepository>,
+        gateway_registry: Arc<dyn GatewayAdapterRegistry>,
+        shipping_method_repo: Arc<PgShippingMethodRepository>,
+        shipping_zone_repo: Arc<PgShippingZoneRepository>,
+        shipping_rate_repo: Arc<PgShippingRateRepository>,
+        driver_repo: Arc<PgDriverRepository>,
+        delivery_provider_repo: Arc<PgDeliveryProviderRepository>,
+        shipment_repo: Arc<PgShipmentRepository>,
+        shipment_event_repo: Arc<PgShipmentTrackingEventRepository>,
+        delivery_registry: Arc<dyn DeliveryProviderRegistry>,
+        shipment_deps: Arc<ShipmentDeps>,
+        listing_repo: Arc<PgProductListingRepository>,
+        image_repo: Arc<PgProductImageRepository>,
+        review_repo: Arc<PgProductReviewRepository>,
+        wishlist_repo: Arc<PgWishlistRepository>,
+        image_storage_provider_repo: Arc<PgImageStorageProviderRepository>,
+        image_storage_registry: Arc<dyn ImageStorageRegistry>,
+        outbox_repo: Arc<dyn OutboxRepository>,
+        subscriber_registry: SubscriberRegistry,
+        notification_repo: Arc<PgNotificationRepository>,
+        notification_registry: Arc<dyn NotificationAdapterRegistry>,
+        kpi_snapshot_repo: Arc<dyn KpiSnapshotRepository>,
+        dashboard_repo: Arc<dyn DashboardRepository>,
+        widget_repo: Arc<dyn WidgetRepository>,
+        analytics_query_repo: Arc<dyn AnalyticsQueryRepository>,
     ) -> Self {
         Self {
             pool,
@@ -159,6 +273,36 @@ impl AppState {
             cart_repo,
             credit_note_repo,
             promotion_repo,
+            invoice_repo,
+            tax_rate_repo,
+            fiscal_sequence_repo,
+            payment_gateway_repo,
+            transaction_repo,
+            payout_repo,
+            gateway_registry,
+            shipping_method_repo,
+            shipping_zone_repo,
+            shipping_rate_repo,
+            driver_repo,
+            delivery_provider_repo,
+            shipment_repo,
+            shipment_event_repo,
+            delivery_registry,
+            shipment_deps,
+            listing_repo,
+            image_repo,
+            review_repo,
+            wishlist_repo,
+            image_storage_provider_repo,
+            image_storage_registry,
+            outbox_repo,
+            subscriber_registry,
+            notification_repo,
+            notification_registry,
+            kpi_snapshot_repo,
+            dashboard_repo,
+            widget_repo,
+            analytics_query_repo,
         }
     }
 
@@ -205,6 +349,75 @@ impl AppState {
         let credit_note_repo = Arc::new(PgCreditNoteRepository::new((*pool_arc).clone()));
         let promotion_repo = Arc::new(PgPromotionRepository::new((*pool_arc).clone()));
 
+        // Fiscal repositories
+        let invoice_repo = Arc::new(PgInvoiceRepository::new((*pool_arc).clone()));
+        let tax_rate_repo = Arc::new(PgTaxRateRepository::new((*pool_arc).clone()));
+        let fiscal_sequence_repo = Arc::new(PgFiscalSequenceRepository::new((*pool_arc).clone()));
+
+        // Payments repositories
+        let payment_gateway_repo = Arc::new(PgPaymentGatewayRepository::new((*pool_arc).clone()));
+        let transaction_repo = Arc::new(PgTransactionRepository::new((*pool_arc).clone()));
+        let payout_repo = Arc::new(PgPayoutRepository::new((*pool_arc).clone()));
+        // Default registry: Manual is fully wired today; Stripe/PayPal/BAC/
+        // Ficohsa are stubs that fail loudly until their adapters are filled in.
+        let gateway_registry: Arc<dyn GatewayAdapterRegistry> =
+            Arc::new(DefaultGatewayAdapterRegistry::new());
+
+        // Shipping repositories + adapters
+        let shipping_method_repo = Arc::new(PgShippingMethodRepository::new((*pool_arc).clone()));
+        let shipping_zone_repo = Arc::new(PgShippingZoneRepository::new((*pool_arc).clone()));
+        let shipping_rate_repo = Arc::new(PgShippingRateRepository::new((*pool_arc).clone()));
+        let driver_repo = Arc::new(PgDriverRepository::new((*pool_arc).clone()));
+        let delivery_provider_repo =
+            Arc::new(PgDeliveryProviderRepository::new((*pool_arc).clone()));
+        let shipment_repo = Arc::new(PgShipmentRepository::new((*pool_arc).clone()));
+        let shipment_event_repo =
+            Arc::new(PgShipmentTrackingEventRepository::new((*pool_arc).clone()));
+        let delivery_registry: Arc<dyn DeliveryProviderRegistry> =
+            Arc::new(DefaultDeliveryProviderRegistry::new());
+        let shipment_deps = Arc::new(ShipmentDeps {
+            method_repo: shipping_method_repo.clone(),
+            driver_repo: driver_repo.clone(),
+            provider_repo: delivery_provider_repo.clone(),
+            shipment_repo: shipment_repo.clone(),
+            event_repo: shipment_event_repo.clone(),
+            provider_registry: delivery_registry.clone(),
+            transaction_repo: transaction_repo.clone(),
+        });
+
+        // Catalog repositories + image storage registry
+        let listing_repo = Arc::new(PgProductListingRepository::new((*pool_arc).clone()));
+        let image_repo = Arc::new(PgProductImageRepository::new((*pool_arc).clone()));
+        let review_repo = Arc::new(PgProductReviewRepository::new((*pool_arc).clone()));
+        let wishlist_repo = Arc::new(PgWishlistRepository::new((*pool_arc).clone()));
+        let image_storage_provider_repo =
+            Arc::new(PgImageStorageProviderRepository::new((*pool_arc).clone()));
+        let image_storage_registry: Arc<dyn ImageStorageRegistry> =
+            Arc::new(DefaultImageStorageRegistry::new());
+
+        // Events repositories + subscriber registry. Subscribers from
+        // downstream modules (analytics, accounting, notifications-webhooks,
+        // ...) are registered below before AppState is built.
+        let outbox_repo: Arc<dyn OutboxRepository> =
+            Arc::new(PgOutboxRepository::new((*pool_arc).clone()));
+        let mut subscriber_registry = SubscriberRegistry::new();
+
+        // Notifications repository + adapter registry
+        let notification_repo = Arc::new(PgNotificationRepository::new((*pool_arc).clone()));
+        let notification_registry: Arc<dyn NotificationAdapterRegistry> =
+            Arc::new(DefaultNotificationAdapterRegistry::new());
+
+        // Analytics repositories + register its outbox subscriber.
+        let kpi_snapshot_repo: Arc<dyn KpiSnapshotRepository> =
+            Arc::new(PgKpiSnapshotRepository::new((*pool_arc).clone()));
+        let dashboard_repo: Arc<dyn DashboardRepository> =
+            Arc::new(PgDashboardRepository::new((*pool_arc).clone()));
+        let widget_repo: Arc<dyn WidgetRepository> =
+            Arc::new(PgWidgetRepository::new((*pool_arc).clone()));
+        let analytics_query_repo: Arc<dyn AnalyticsQueryRepository> =
+            Arc::new(PgAnalyticsQueryRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(AnalyticsEventSubscriber::new()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -232,6 +445,36 @@ impl AppState {
             cart_repo,
             credit_note_repo,
             promotion_repo,
+            invoice_repo,
+            tax_rate_repo,
+            fiscal_sequence_repo,
+            payment_gateway_repo,
+            transaction_repo,
+            payout_repo,
+            gateway_registry,
+            shipping_method_repo,
+            shipping_zone_repo,
+            shipping_rate_repo,
+            driver_repo,
+            delivery_provider_repo,
+            shipment_repo,
+            shipment_event_repo,
+            delivery_registry,
+            shipment_deps,
+            listing_repo,
+            image_repo,
+            review_repo,
+            wishlist_repo,
+            image_storage_provider_repo,
+            image_storage_registry,
+            outbox_repo,
+            subscriber_registry,
+            notification_repo,
+            notification_registry,
+            kpi_snapshot_repo,
+            dashboard_repo,
+            widget_repo,
+            analytics_query_repo,
         }
     }
 
@@ -360,5 +603,142 @@ impl AppState {
     /// Returns a reference to the promotion repository.
     pub fn promotion_repo(&self) -> Arc<PgPromotionRepository> {
         self.promotion_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Fiscal repository accessors
+    // -------------------------------------------------------------------------
+
+    /// Returns a reference to the invoice repository.
+    pub fn invoice_repo(&self) -> Arc<PgInvoiceRepository> {
+        self.invoice_repo.clone()
+    }
+
+    /// Returns a reference to the tax rate repository.
+    pub fn tax_rate_repo(&self) -> Arc<PgTaxRateRepository> {
+        self.tax_rate_repo.clone()
+    }
+
+    /// Returns a reference to the fiscal sequence repository.
+    pub fn fiscal_sequence_repo(&self) -> Arc<PgFiscalSequenceRepository> {
+        self.fiscal_sequence_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Payments accessors
+    // -------------------------------------------------------------------------
+
+    /// Returns a reference to the payment gateway repository.
+    pub fn payment_gateway_repo(&self) -> Arc<PgPaymentGatewayRepository> {
+        self.payment_gateway_repo.clone()
+    }
+
+    /// Returns a reference to the payment transaction repository.
+    pub fn transaction_repo(&self) -> Arc<PgTransactionRepository> {
+        self.transaction_repo.clone()
+    }
+
+    /// Returns a reference to the payout repository.
+    pub fn payout_repo(&self) -> Arc<PgPayoutRepository> {
+        self.payout_repo.clone()
+    }
+
+    /// Returns the configured default gateway adapter.
+    pub fn gateway_registry(&self) -> Arc<dyn GatewayAdapterRegistry> {
+        self.gateway_registry.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Shipping accessors
+    // -------------------------------------------------------------------------
+
+    pub fn shipping_method_repo(&self) -> Arc<PgShippingMethodRepository> {
+        self.shipping_method_repo.clone()
+    }
+    pub fn shipping_zone_repo(&self) -> Arc<PgShippingZoneRepository> {
+        self.shipping_zone_repo.clone()
+    }
+    pub fn shipping_rate_repo(&self) -> Arc<PgShippingRateRepository> {
+        self.shipping_rate_repo.clone()
+    }
+    pub fn driver_repo(&self) -> Arc<PgDriverRepository> {
+        self.driver_repo.clone()
+    }
+    pub fn delivery_provider_repo(&self) -> Arc<PgDeliveryProviderRepository> {
+        self.delivery_provider_repo.clone()
+    }
+    pub fn shipment_repo(&self) -> Arc<PgShipmentRepository> {
+        self.shipment_repo.clone()
+    }
+    pub fn shipment_event_repo(&self) -> Arc<PgShipmentTrackingEventRepository> {
+        self.shipment_event_repo.clone()
+    }
+    pub fn delivery_registry(&self) -> Arc<dyn DeliveryProviderRegistry> {
+        self.delivery_registry.clone()
+    }
+    pub fn shipment_deps(&self) -> Arc<ShipmentDeps> {
+        self.shipment_deps.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Catalog accessors
+    // -------------------------------------------------------------------------
+
+    pub fn listing_repo(&self) -> Arc<PgProductListingRepository> {
+        self.listing_repo.clone()
+    }
+    pub fn catalog_image_repo(&self) -> Arc<PgProductImageRepository> {
+        self.image_repo.clone()
+    }
+    pub fn review_repo(&self) -> Arc<PgProductReviewRepository> {
+        self.review_repo.clone()
+    }
+    pub fn wishlist_repo(&self) -> Arc<PgWishlistRepository> {
+        self.wishlist_repo.clone()
+    }
+    pub fn image_storage_provider_repo(&self) -> Arc<PgImageStorageProviderRepository> {
+        self.image_storage_provider_repo.clone()
+    }
+    pub fn image_storage_registry(&self) -> Arc<dyn ImageStorageRegistry> {
+        self.image_storage_registry.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Events accessors
+    // -------------------------------------------------------------------------
+
+    pub fn outbox_repo(&self) -> Arc<dyn OutboxRepository> {
+        self.outbox_repo.clone()
+    }
+    pub fn subscriber_registry(&self) -> SubscriberRegistry {
+        self.subscriber_registry.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Notifications accessors
+    // -------------------------------------------------------------------------
+
+    pub fn notification_repo(&self) -> Arc<PgNotificationRepository> {
+        self.notification_repo.clone()
+    }
+    pub fn notification_registry(&self) -> Arc<dyn NotificationAdapterRegistry> {
+        self.notification_registry.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Analytics accessors
+    // -------------------------------------------------------------------------
+
+    pub fn kpi_snapshot_repo(&self) -> Arc<dyn KpiSnapshotRepository> {
+        self.kpi_snapshot_repo.clone()
+    }
+    pub fn dashboard_repo(&self) -> Arc<dyn DashboardRepository> {
+        self.dashboard_repo.clone()
+    }
+    pub fn widget_repo(&self) -> Arc<dyn WidgetRepository> {
+        self.widget_repo.clone()
+    }
+    pub fn analytics_query_repo(&self) -> Arc<dyn AnalyticsQueryRepository> {
+        self.analytics_query_repo.clone()
     }
 }

@@ -12,7 +12,6 @@ use uuid::Uuid;
 // =============================================================================
 
 /// Command to create a new permission
-/// Requirements: 1.1
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreatePermissionCommand {
     /// Permission code in format `module:action` (e.g., `sales:create_invoice`)
@@ -36,7 +35,6 @@ pub struct CreateRoleCommand {
 }
 
 /// Command to update an existing role
-/// Requirements: 2.1
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateRoleCommand {
     /// New name for the role (if changing)
@@ -50,7 +48,6 @@ pub struct UpdateRoleCommand {
 // =============================================================================
 
 /// Command to create a new user
-/// Requirements: 6.1
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateUserCommand {
     /// Unique username for login
@@ -66,7 +63,6 @@ pub struct CreateUserCommand {
 }
 
 /// Command to update an existing user's profile
-/// Requirements: 6.5
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateUserCommand {
     /// New first name (if changing)
@@ -82,7 +78,6 @@ pub struct UpdateUserCommand {
 // =============================================================================
 
 /// Command to create a new store
-/// Requirements: 7.1
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateStoreCommand {
     /// Store name
@@ -95,7 +90,6 @@ pub struct CreateStoreCommand {
 }
 
 /// Command to update an existing store
-/// Requirements: 7.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateStoreCommand {
     /// New store name (if changing)
@@ -111,7 +105,6 @@ pub struct UpdateStoreCommand {
 // =============================================================================
 
 /// Command to assign a role to a user in a specific store
-/// Requirements: 3.1
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssignRoleCommand {
     /// The user to assign the role to
@@ -123,7 +116,6 @@ pub struct AssignRoleCommand {
 }
 
 /// Command to remove a role from a user in a specific store
-/// Requirements: 3.1
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RemoveRoleCommand {
     /// The user to remove the role from
@@ -139,7 +131,6 @@ pub struct RemoveRoleCommand {
 // =============================================================================
 
 /// Command to add a user to a store
-/// Requirements: 8.1
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddUserToStoreCommand {
     /// The user to add to the store
@@ -149,7 +140,6 @@ pub struct AddUserToStoreCommand {
 }
 
 /// Command to remove a user from a store
-/// Requirements: 8.3
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RemoveUserFromStoreCommand {
     /// The user to remove from the store
@@ -163,7 +153,6 @@ pub struct RemoveUserFromStoreCommand {
 // =============================================================================
 
 /// Command to add a permission to a role
-/// Requirements: 2.3
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AddPermissionToRoleCommand {
     /// The role to add the permission to
@@ -173,7 +162,6 @@ pub struct AddPermissionToRoleCommand {
 }
 
 /// Command to remove a permission from a role
-/// Requirements: 2.4
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RemovePermissionFromRoleCommand {
     /// The role to remove the permission from
@@ -187,7 +175,6 @@ pub struct RemovePermissionFromRoleCommand {
 // =============================================================================
 
 /// Command to set a user's active status
-/// Requirements: 6.3
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetUserActiveCommand {
     /// The user to update
@@ -197,7 +184,6 @@ pub struct SetUserActiveCommand {
 }
 
 /// Command to set a store's active status
-/// Requirements: 7.3
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetStoreActiveCommand {
     /// The store to update
