@@ -1,5 +1,6 @@
 // HTTP handlers for the API Gateway
 
+pub mod analytics;
 pub mod auth_handlers;
 pub mod cai_handlers;
 pub mod catalog;

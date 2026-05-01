@@ -5,6 +5,11 @@
 
 use std::sync::Arc;
 
+use analytics::{
+    AnalyticsEventSubscriber, AnalyticsQueryRepository, DashboardRepository, KpiSnapshotRepository,
+    PgAnalyticsQueryRepository, PgDashboardRepository, PgKpiSnapshotRepository, PgWidgetRepository,
+    WidgetRepository,
+};
 use catalog::{
     DefaultImageStorageRegistry, ImageStorageRegistry, PgImageStorageProviderRepository,
     PgProductImageRepository, PgProductListingRepository, PgProductReviewRepository,
@@ -158,6 +163,13 @@ pub struct AppState {
     // -------------------------------------------------------------------------
     notification_repo: Arc<PgNotificationRepository>,
     notification_registry: Arc<dyn NotificationAdapterRegistry>,
+    // -------------------------------------------------------------------------
+    // Analytics (KPI snapshots, dashboards/widgets, cross-module queries)
+    // -------------------------------------------------------------------------
+    kpi_snapshot_repo: Arc<dyn KpiSnapshotRepository>,
+    dashboard_repo: Arc<dyn DashboardRepository>,
+    widget_repo: Arc<dyn WidgetRepository>,
+    analytics_query_repo: Arc<dyn AnalyticsQueryRepository>,
 }
 
 impl AppState {
@@ -232,6 +244,10 @@ impl AppState {
         subscriber_registry: SubscriberRegistry,
         notification_repo: Arc<PgNotificationRepository>,
         notification_registry: Arc<dyn NotificationAdapterRegistry>,
+        kpi_snapshot_repo: Arc<dyn KpiSnapshotRepository>,
+        dashboard_repo: Arc<dyn DashboardRepository>,
+        widget_repo: Arc<dyn WidgetRepository>,
+        analytics_query_repo: Arc<dyn AnalyticsQueryRepository>,
     ) -> Self {
         Self {
             pool,
@@ -283,6 +299,10 @@ impl AppState {
             subscriber_registry,
             notification_repo,
             notification_registry,
+            kpi_snapshot_repo,
+            dashboard_repo,
+            widget_repo,
+            analytics_query_repo,
         }
     }
 
@@ -375,18 +395,28 @@ impl AppState {
         let image_storage_registry: Arc<dyn ImageStorageRegistry> =
             Arc::new(DefaultImageStorageRegistry::new());
 
-        // Events repositories + (empty) subscriber registry
+        // Events repositories + subscriber registry. Subscribers from
+        // downstream modules (analytics, accounting, notifications-webhooks,
+        // ...) are registered below before AppState is built.
         let outbox_repo: Arc<dyn OutboxRepository> =
             Arc::new(PgOutboxRepository::new((*pool_arc).clone()));
-        // Subscribers register themselves at startup; downstream modules
-        // (analytics, accounting, notifications-webhooks, ...) push their
-        // EventSubscriber implementations into this registry. Empty by default.
-        let subscriber_registry = SubscriberRegistry::new();
+        let mut subscriber_registry = SubscriberRegistry::new();
 
         // Notifications repository + adapter registry
         let notification_repo = Arc::new(PgNotificationRepository::new((*pool_arc).clone()));
         let notification_registry: Arc<dyn NotificationAdapterRegistry> =
             Arc::new(DefaultNotificationAdapterRegistry::new());
+
+        // Analytics repositories + register its outbox subscriber.
+        let kpi_snapshot_repo: Arc<dyn KpiSnapshotRepository> =
+            Arc::new(PgKpiSnapshotRepository::new((*pool_arc).clone()));
+        let dashboard_repo: Arc<dyn DashboardRepository> =
+            Arc::new(PgDashboardRepository::new((*pool_arc).clone()));
+        let widget_repo: Arc<dyn WidgetRepository> =
+            Arc::new(PgWidgetRepository::new((*pool_arc).clone()));
+        let analytics_query_repo: Arc<dyn AnalyticsQueryRepository> =
+            Arc::new(PgAnalyticsQueryRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(AnalyticsEventSubscriber::new()));
 
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
@@ -441,6 +471,10 @@ impl AppState {
             subscriber_registry,
             notification_repo,
             notification_registry,
+            kpi_snapshot_repo,
+            dashboard_repo,
+            widget_repo,
+            analytics_query_repo,
         }
     }
 
@@ -689,5 +723,22 @@ impl AppState {
     }
     pub fn notification_registry(&self) -> Arc<dyn NotificationAdapterRegistry> {
         self.notification_registry.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Analytics accessors
+    // -------------------------------------------------------------------------
+
+    pub fn kpi_snapshot_repo(&self) -> Arc<dyn KpiSnapshotRepository> {
+        self.kpi_snapshot_repo.clone()
+    }
+    pub fn dashboard_repo(&self) -> Arc<dyn DashboardRepository> {
+        self.dashboard_repo.clone()
+    }
+    pub fn widget_repo(&self) -> Arc<dyn WidgetRepository> {
+        self.widget_repo.clone()
+    }
+    pub fn analytics_query_repo(&self) -> Arc<dyn AnalyticsQueryRepository> {
+        self.analytics_query_repo.clone()
     }
 }

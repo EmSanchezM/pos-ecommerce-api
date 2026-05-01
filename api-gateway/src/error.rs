@@ -3,6 +3,7 @@
 // This module provides a unified error type for the API Gateway that maps
 // domain errors to appropriate HTTP responses.
 
+use analytics::AnalyticsError;
 use axum::{
     Json,
     http::StatusCode,
@@ -2015,6 +2016,56 @@ impl From<CatalogError> for AppError {
             CatalogError::NotImplemented => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::new("NOT_IMPLEMENTED", "Feature not yet implemented"),
+            ),
+        };
+
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<AnalyticsError> Implementation
+// =============================================================================
+
+impl From<AnalyticsError> for AppError {
+    fn from(err: AnalyticsError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            AnalyticsError::DashboardNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "DASHBOARD_NOT_FOUND",
+                    format!("Dashboard not found: {}", id),
+                ),
+            ),
+            AnalyticsError::WidgetNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("WIDGET_NOT_FOUND", format!("Widget not found: {}", id)),
+            ),
+            AnalyticsError::SnapshotNotFound(key) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "KPI_SNAPSHOT_NOT_FOUND",
+                    format!("No snapshot for KPI '{}'", key),
+                ),
+            ),
+
+            // 400
+            AnalyticsError::UnknownKpiKey(_)
+            | AnalyticsError::UnknownReportKind(_)
+            | AnalyticsError::InvalidTimeWindow(_)
+            | AnalyticsError::InvalidWidgetKind(_)
+            | AnalyticsError::InvalidWidgetConfig(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 500
+            AnalyticsError::Database(_)
+            | AnalyticsError::Serialization(_)
+            | AnalyticsError::Subscriber(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
             ),
         };
 

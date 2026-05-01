@@ -1,5 +1,6 @@
 // HTTP routes for the API Gateway
 
+pub mod analytics_routes;
 pub mod auth_routes;
 pub mod catalog_routes;
 pub mod fiscal_routes;
@@ -11,6 +12,7 @@ pub mod shipping_routes;
 pub mod store_routes;
 pub mod terminal_routes;
 
+pub use analytics_routes::analytics_router;
 pub use auth_routes::auth_router;
 pub use catalog_routes::{
     catalog_images_router, catalog_listings_router, catalog_public_router, catalog_reviews_router,

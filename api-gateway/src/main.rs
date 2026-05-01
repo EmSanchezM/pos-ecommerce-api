@@ -16,7 +16,7 @@ mod routes;
 mod state;
 
 use routes::{
-    auth_router, cart_router, catalog_images_router, catalog_listings_router,
+    analytics_router, auth_router, cart_router, catalog_images_router, catalog_listings_router,
     catalog_public_router, catalog_reviews_router, catalog_storage_providers_router,
     catalog_wishlist_router, categories_router, credit_notes_router, customers_router,
     delivery_providers_router, delivery_webhooks_router, drivers_router, goods_receipts_router,
@@ -157,6 +157,8 @@ async fn main() {
             catalog_storage_providers_router(app_state.clone()),
         )
         .nest("/api/v1/catalog/public", catalog_public_router())
+        // Analytics
+        .nest("/api/v1/analytics", analytics_router(app_state.clone()))
         // Static file serving for the LocalServer image storage adapter.
         // The mount path matches IMAGE_STORAGE_PUBLIC_URL (default `/uploads`).
         .nest_service(
@@ -175,6 +177,7 @@ async fn main() {
     let event_dispatch_batch_size = env_or::<i64>("EVENT_DISPATCH_BATCH_SIZE", 100);
     let notification_retry_interval = env_or::<u64>("NOTIFICATION_RETRY_INTERVAL_SECS", 60);
     let notification_retry_batch_size = env_or::<i64>("NOTIFICATION_RETRY_BATCH_SIZE", 50);
+    let analytics_recompute_interval = env_or::<u64>("ANALYTICS_RECOMPUTE_INTERVAL_SECS", 1800);
 
     jobs::reservation_expiry::spawn(
         app_state.reservation_repo(),
@@ -193,6 +196,11 @@ async fn main() {
         app_state.notification_registry(),
         notification_retry_interval,
         notification_retry_batch_size,
+    );
+    jobs::analytics_recompute::spawn(
+        app_state.analytics_query_repo(),
+        app_state.kpi_snapshot_repo(),
+        analytics_recompute_interval,
     );
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
