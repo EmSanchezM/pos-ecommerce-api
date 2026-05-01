@@ -17,6 +17,7 @@ catalog = { path = "../modules/catalog" }
 events = { path = "../modules/events" }
 notifications = { path = "../modules/notifications" }
 analytics = { path = "../modules/analytics" }
+accounting = { path = "../modules/accounting" }
 
 axum = { workspace = true, features = ["json", "multipart"] }
 async-trait = { workspace = true }
