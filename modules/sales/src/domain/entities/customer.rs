@@ -418,7 +418,7 @@ mod tests {
 
     #[test]
     fn test_display_name() {
-        let mut individual = Customer::create(
+        let individual = Customer::create(
             StoreId::new(),
             "CUS-001".to_string(),
             "John".to_string(),

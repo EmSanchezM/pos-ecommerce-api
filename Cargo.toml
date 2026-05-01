@@ -11,6 +11,8 @@ members = [
     "modules/payments",
     "modules/shipping",
     "modules/catalog",
+    "modules/events",
+    "modules/notifications",
     "api-gateway",
     "seed",
 ]

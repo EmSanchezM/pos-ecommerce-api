@@ -10,12 +10,16 @@ use catalog::{
     PgProductImageRepository, PgProductListingRepository, PgProductReviewRepository,
     PgWishlistRepository,
 };
+use events::{OutboxRepository, PgOutboxRepository, SubscriberRegistry};
 use fiscal::{PgFiscalSequenceRepository, PgInvoiceRepository, PgTaxRateRepository};
 use identity::{JwtTokenService, PgAuditRepository, PgStoreRepository, PgUserRepository};
 use inventory::{
     PgAdjustmentRepository, PgCategoryRepository, PgInventoryMovementRepository,
     PgInventoryStockRepository, PgProductRepository, PgRecipeRepository, PgReservationRepository,
     PgTransferRepository,
+};
+use notifications::{
+    DefaultNotificationAdapterRegistry, NotificationAdapterRegistry, PgNotificationRepository,
 };
 use payments::{
     DefaultGatewayAdapterRegistry, GatewayAdapterRegistry, PgPaymentGatewayRepository,
@@ -144,6 +148,16 @@ pub struct AppState {
     wishlist_repo: Arc<PgWishlistRepository>,
     image_storage_provider_repo: Arc<PgImageStorageProviderRepository>,
     image_storage_registry: Arc<dyn ImageStorageRegistry>,
+    // -------------------------------------------------------------------------
+    // Events (transactional outbox + in-process dispatch)
+    // -------------------------------------------------------------------------
+    outbox_repo: Arc<dyn OutboxRepository>,
+    subscriber_registry: SubscriberRegistry,
+    // -------------------------------------------------------------------------
+    // Notifications (multi-channel outbound messaging + adapter registry)
+    // -------------------------------------------------------------------------
+    notification_repo: Arc<PgNotificationRepository>,
+    notification_registry: Arc<dyn NotificationAdapterRegistry>,
 }
 
 impl AppState {
@@ -214,6 +228,10 @@ impl AppState {
         wishlist_repo: Arc<PgWishlistRepository>,
         image_storage_provider_repo: Arc<PgImageStorageProviderRepository>,
         image_storage_registry: Arc<dyn ImageStorageRegistry>,
+        outbox_repo: Arc<dyn OutboxRepository>,
+        subscriber_registry: SubscriberRegistry,
+        notification_repo: Arc<PgNotificationRepository>,
+        notification_registry: Arc<dyn NotificationAdapterRegistry>,
     ) -> Self {
         Self {
             pool,
@@ -261,6 +279,10 @@ impl AppState {
             wishlist_repo,
             image_storage_provider_repo,
             image_storage_registry,
+            outbox_repo,
+            subscriber_registry,
+            notification_repo,
+            notification_registry,
         }
     }
 
@@ -353,6 +375,19 @@ impl AppState {
         let image_storage_registry: Arc<dyn ImageStorageRegistry> =
             Arc::new(DefaultImageStorageRegistry::new());
 
+        // Events repositories + (empty) subscriber registry
+        let outbox_repo: Arc<dyn OutboxRepository> =
+            Arc::new(PgOutboxRepository::new((*pool_arc).clone()));
+        // Subscribers register themselves at startup; downstream modules
+        // (analytics, accounting, notifications-webhooks, ...) push their
+        // EventSubscriber implementations into this registry. Empty by default.
+        let subscriber_registry = SubscriberRegistry::new();
+
+        // Notifications repository + adapter registry
+        let notification_repo = Arc::new(PgNotificationRepository::new((*pool_arc).clone()));
+        let notification_registry: Arc<dyn NotificationAdapterRegistry> =
+            Arc::new(DefaultNotificationAdapterRegistry::new());
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -402,6 +437,10 @@ impl AppState {
             wishlist_repo,
             image_storage_provider_repo,
             image_storage_registry,
+            outbox_repo,
+            subscriber_registry,
+            notification_repo,
+            notification_registry,
         }
     }
 
@@ -628,5 +667,27 @@ impl AppState {
     }
     pub fn image_storage_registry(&self) -> Arc<dyn ImageStorageRegistry> {
         self.image_storage_registry.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Events accessors
+    // -------------------------------------------------------------------------
+
+    pub fn outbox_repo(&self) -> Arc<dyn OutboxRepository> {
+        self.outbox_repo.clone()
+    }
+    pub fn subscriber_registry(&self) -> SubscriberRegistry {
+        self.subscriber_registry.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Notifications accessors
+    // -------------------------------------------------------------------------
+
+    pub fn notification_repo(&self) -> Arc<PgNotificationRepository> {
+        self.notification_repo.clone()
+    }
+    pub fn notification_registry(&self) -> Arc<dyn NotificationAdapterRegistry> {
+        self.notification_registry.clone()
     }
 }

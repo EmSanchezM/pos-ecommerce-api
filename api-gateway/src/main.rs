@@ -171,6 +171,10 @@ async fn main() {
     // Start background jobs
     let reservation_expiry_interval = env_or::<u64>("RESERVATION_EXPIRY_INTERVAL_SECS", 300);
     let cart_cleanup_interval = env_or::<u64>("CART_CLEANUP_INTERVAL_SECS", 900);
+    let event_dispatch_interval = env_or::<u64>("EVENT_DISPATCH_INTERVAL_SECS", 5);
+    let event_dispatch_batch_size = env_or::<i64>("EVENT_DISPATCH_BATCH_SIZE", 100);
+    let notification_retry_interval = env_or::<u64>("NOTIFICATION_RETRY_INTERVAL_SECS", 60);
+    let notification_retry_batch_size = env_or::<i64>("NOTIFICATION_RETRY_BATCH_SIZE", 50);
 
     jobs::reservation_expiry::spawn(
         app_state.reservation_repo(),
@@ -178,6 +182,18 @@ async fn main() {
         reservation_expiry_interval,
     );
     jobs::cart_cleanup::spawn(app_state.cart_repo(), cart_cleanup_interval);
+    jobs::event_dispatcher::spawn(
+        app_state.outbox_repo(),
+        app_state.subscriber_registry(),
+        event_dispatch_interval,
+        event_dispatch_batch_size,
+    );
+    jobs::notification_dispatcher::spawn(
+        app_state.notification_repo(),
+        app_state.notification_registry(),
+        notification_retry_interval,
+        notification_retry_batch_size,
+    );
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();
     println!("API Gateway running on http://0.0.0.0:8000");
