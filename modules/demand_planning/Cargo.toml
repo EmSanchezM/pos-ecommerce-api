@@ -1,0 +1,26 @@
+[package]
+name = "demand_planning"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+common = { path = "../common" }
+identity = { path = "../identity" }
+events = { path = "../events" }
+inventory = { path = "../inventory" }
+purchasing = { path = "../purchasing" }
+
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+rust_decimal = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+statrs = { workspace = true }
+
+[dev-dependencies]
+rust_decimal_macros = { workspace = true }

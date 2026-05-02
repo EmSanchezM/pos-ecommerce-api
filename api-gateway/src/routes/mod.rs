@@ -4,6 +4,7 @@ pub mod accounting_routes;
 pub mod analytics_routes;
 pub mod auth_routes;
 pub mod catalog_routes;
+pub mod demand_planning_routes;
 pub mod fiscal_routes;
 pub mod inventory_routes;
 pub mod payments_routes;
@@ -19,6 +20,10 @@ pub use auth_routes::auth_router;
 pub use catalog_routes::{
     catalog_images_router, catalog_listings_router, catalog_public_router, catalog_reviews_router,
     catalog_storage_providers_router, catalog_wishlist_router,
+};
+pub use demand_planning_routes::{
+    abc_classification_router, forecasts_router, reorder_policies_router,
+    replenishment_suggestions_router,
 };
 pub use fiscal_routes::{invoices_router, tax_rates_router};
 pub use inventory_routes::{

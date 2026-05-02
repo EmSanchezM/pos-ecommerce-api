@@ -20,6 +20,13 @@ use catalog::{
     PgProductImageRepository, PgProductListingRepository, PgProductReviewRepository,
     PgWishlistRepository,
 };
+use demand_planning::{
+    AbcClassificationRepository, DemandForecastRepository, DemandPlanningEventSubscriber,
+    PgAbcClassificationRepository, PgDemandForecastRepository, PgReorderPolicyRepository,
+    PgReplenishmentSuggestionRepository, PgSalesHistoryRepository, PgStockSnapshotRepository,
+    ReorderPolicyRepository, ReplenishmentSuggestionRepository, SalesHistoryRepository,
+    StockSnapshotRepository,
+};
 use events::{OutboxRepository, PgOutboxRepository, SubscriberRegistry};
 use fiscal::{PgFiscalSequenceRepository, PgInvoiceRepository, PgTaxRateRepository};
 use identity::{JwtTokenService, PgAuditRepository, PgStoreRepository, PgUserRepository};
@@ -182,6 +189,15 @@ pub struct AppState {
     accounting_period_repo: Arc<dyn AccountingPeriodRepository>,
     journal_entry_repo: Arc<dyn JournalEntryRepository>,
     accounting_report_repo: Arc<dyn AccountingReportRepository>,
+    // -------------------------------------------------------------------------
+    // Demand planning (forecasts, reorder policies, replenishment, ABC)
+    // -------------------------------------------------------------------------
+    demand_forecast_repo: Arc<dyn DemandForecastRepository>,
+    reorder_policy_repo: Arc<dyn ReorderPolicyRepository>,
+    replenishment_suggestion_repo: Arc<dyn ReplenishmentSuggestionRepository>,
+    abc_classification_repo: Arc<dyn AbcClassificationRepository>,
+    sales_history_repo: Arc<dyn SalesHistoryRepository>,
+    stock_snapshot_repo: Arc<dyn StockSnapshotRepository>,
 }
 
 impl AppState {
@@ -264,6 +280,12 @@ impl AppState {
         accounting_period_repo: Arc<dyn AccountingPeriodRepository>,
         journal_entry_repo: Arc<dyn JournalEntryRepository>,
         accounting_report_repo: Arc<dyn AccountingReportRepository>,
+        demand_forecast_repo: Arc<dyn DemandForecastRepository>,
+        reorder_policy_repo: Arc<dyn ReorderPolicyRepository>,
+        replenishment_suggestion_repo: Arc<dyn ReplenishmentSuggestionRepository>,
+        abc_classification_repo: Arc<dyn AbcClassificationRepository>,
+        sales_history_repo: Arc<dyn SalesHistoryRepository>,
+        stock_snapshot_repo: Arc<dyn StockSnapshotRepository>,
     ) -> Self {
         Self {
             pool,
@@ -323,6 +345,12 @@ impl AppState {
             accounting_period_repo,
             journal_entry_repo,
             accounting_report_repo,
+            demand_forecast_repo,
+            reorder_policy_repo,
+            replenishment_suggestion_repo,
+            abc_classification_repo,
+            sales_history_repo,
+            stock_snapshot_repo,
         }
     }
 
@@ -449,6 +477,22 @@ impl AppState {
             Arc::new(PgAccountingReportRepository::new((*pool_arc).clone()));
         subscriber_registry.register(Arc::new(AccountingEventSubscriber::new()));
 
+        // Demand planning repositories + register its outbox subscriber.
+        let demand_forecast_repo: Arc<dyn DemandForecastRepository> =
+            Arc::new(PgDemandForecastRepository::new((*pool_arc).clone()));
+        let reorder_policy_repo: Arc<dyn ReorderPolicyRepository> =
+            Arc::new(PgReorderPolicyRepository::new((*pool_arc).clone()));
+        let replenishment_suggestion_repo: Arc<dyn ReplenishmentSuggestionRepository> = Arc::new(
+            PgReplenishmentSuggestionRepository::new((*pool_arc).clone()),
+        );
+        let abc_classification_repo: Arc<dyn AbcClassificationRepository> =
+            Arc::new(PgAbcClassificationRepository::new((*pool_arc).clone()));
+        let sales_history_repo: Arc<dyn SalesHistoryRepository> =
+            Arc::new(PgSalesHistoryRepository::new((*pool_arc).clone()));
+        let stock_snapshot_repo: Arc<dyn StockSnapshotRepository> =
+            Arc::new(PgStockSnapshotRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(DemandPlanningEventSubscriber::new()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -510,6 +554,12 @@ impl AppState {
             accounting_period_repo,
             journal_entry_repo,
             accounting_report_repo,
+            demand_forecast_repo,
+            reorder_policy_repo,
+            replenishment_suggestion_repo,
+            abc_classification_repo,
+            sales_history_repo,
+            stock_snapshot_repo,
         }
     }
 
@@ -792,5 +842,28 @@ impl AppState {
     }
     pub fn accounting_report_repo(&self) -> Arc<dyn AccountingReportRepository> {
         self.accounting_report_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Demand planning accessors
+    // -------------------------------------------------------------------------
+
+    pub fn demand_forecast_repo(&self) -> Arc<dyn DemandForecastRepository> {
+        self.demand_forecast_repo.clone()
+    }
+    pub fn reorder_policy_repo(&self) -> Arc<dyn ReorderPolicyRepository> {
+        self.reorder_policy_repo.clone()
+    }
+    pub fn replenishment_suggestion_repo(&self) -> Arc<dyn ReplenishmentSuggestionRepository> {
+        self.replenishment_suggestion_repo.clone()
+    }
+    pub fn abc_classification_repo(&self) -> Arc<dyn AbcClassificationRepository> {
+        self.abc_classification_repo.clone()
+    }
+    pub fn sales_history_repo(&self) -> Arc<dyn SalesHistoryRepository> {
+        self.sales_history_repo.clone()
+    }
+    pub fn stock_snapshot_repo(&self) -> Arc<dyn StockSnapshotRepository> {
+        self.stock_snapshot_repo.clone()
     }
 }

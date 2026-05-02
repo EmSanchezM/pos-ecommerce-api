@@ -258,6 +258,29 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
         "accounting:write",
         "Create accounts, open/close periods, post journal entries",
     ),
+    // Demand planning module
+    ("demand_planning:read_forecast", "Read demand forecasts"),
+    ("demand_planning:read_policy", "Read reorder policies"),
+    (
+        "demand_planning:write_policy",
+        "Create or update reorder policies",
+    ),
+    (
+        "demand_planning:read_suggestion",
+        "List replenishment suggestions",
+    ),
+    (
+        "demand_planning:approve_suggestion",
+        "Approve a replenishment suggestion (creates a Purchase Order)",
+    ),
+    (
+        "demand_planning:dismiss_suggestion",
+        "Dismiss a replenishment suggestion",
+    ),
+    (
+        "demand_planning:read_abc",
+        "Read ABC classification of products",
+    ),
     // System permissions
     (
         "system:admin",
@@ -493,6 +516,14 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             // Accounting
             "accounting:read",
             "accounting:write",
+            // Demand planning
+            "demand_planning:read_forecast",
+            "demand_planning:read_policy",
+            "demand_planning:write_policy",
+            "demand_planning:read_suggestion",
+            "demand_planning:approve_suggestion",
+            "demand_planning:dismiss_suggestion",
+            "demand_planning:read_abc",
             // System
             "system:admin",
             "system:settings",
@@ -661,6 +692,14 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             // Accounting — chart of accounts, periods, JEs, P&L
             "accounting:read",
             "accounting:write",
+            // Demand planning — forecasts, reorder policies, replenishment, ABC
+            "demand_planning:read_forecast",
+            "demand_planning:read_policy",
+            "demand_planning:write_policy",
+            "demand_planning:read_suggestion",
+            "demand_planning:approve_suggestion",
+            "demand_planning:dismiss_suggestion",
+            "demand_planning:read_abc",
         ],
     ),
     // Store manager
@@ -1025,3 +1064,194 @@ pub const CHART_OF_ACCOUNTS: &[(&str, &str, &str)] = &[
     ("5030", "Gastos de Personal", "expense"),
     ("5040", "Gastos Financieros", "expense"),
 ];
+
+// ============================================================================
+// Demand planning seed data
+//
+// Eight high-rotation grocery items typical of an HN bodega plus one slow
+// mover. Each row carries enough fields to seed `products` + `inventory_stock`
+// + `reorder_policies` together, and every product gets ~120 days of synthetic
+// completed sales so the recompute job has signal on first run. The three
+// "near-trigger" SKUs ship with a stock level just below `min + safety` so a
+// `pending` suggestion appears immediately.
+//
+// Fields, in order:
+//   sku, name, unit_of_measure, base_price, cost_price,
+//   on_hand_qty, min_qty, max_qty, safety_stock_qty, lead_time_days,
+//   review_cycle_days, daily_demand_mean, weekly_amplitude
+// `daily_demand_mean` and `weekly_amplitude` drive the synthetic sales: each
+// day samples `mean + amplitude * sin(2π * weekday / 7)` units, rounded down,
+// floor 0.
+// ============================================================================
+
+pub struct DemandSeedItem {
+    pub sku: &'static str,
+    pub name: &'static str,
+    pub uom: &'static str,
+    pub base_price: f64,
+    pub cost_price: f64,
+    pub on_hand_qty: f64,
+    pub min_qty: f64,
+    pub max_qty: f64,
+    pub safety_stock_qty: f64,
+    pub lead_time_days: i32,
+    pub review_cycle_days: i32,
+    pub daily_demand_mean: f64,
+    pub weekly_amplitude: f64,
+}
+
+pub const DEMAND_SEED_ITEMS: &[DemandSeedItem] = &[
+    // High-rotation, currently below trigger → suggestion expected.
+    DemandSeedItem {
+        sku: "DP-ARROZ-1KG",
+        name: "Arroz blanco 1 kg",
+        uom: "kg",
+        base_price: 32.00,
+        cost_price: 22.00,
+        on_hand_qty: 18.0,
+        min_qty: 25.0,
+        max_qty: 120.0,
+        safety_stock_qty: 10.0,
+        lead_time_days: 5,
+        review_cycle_days: 7,
+        daily_demand_mean: 12.0,
+        weekly_amplitude: 4.0,
+    },
+    DemandSeedItem {
+        sku: "DP-FRIJOL-1LB",
+        name: "Frijoles rojos 1 lb",
+        uom: "lb",
+        base_price: 24.00,
+        cost_price: 16.00,
+        on_hand_qty: 22.0,
+        min_qty: 30.0,
+        max_qty: 150.0,
+        safety_stock_qty: 12.0,
+        lead_time_days: 5,
+        review_cycle_days: 7,
+        daily_demand_mean: 14.0,
+        weekly_amplitude: 5.0,
+    },
+    DemandSeedItem {
+        sku: "DP-ACEITE-1L",
+        name: "Aceite vegetal 1 L",
+        uom: "liter",
+        base_price: 58.00,
+        cost_price: 40.00,
+        on_hand_qty: 9.0,
+        min_qty: 15.0,
+        max_qty: 80.0,
+        safety_stock_qty: 6.0,
+        lead_time_days: 7,
+        review_cycle_days: 14,
+        daily_demand_mean: 6.0,
+        weekly_amplitude: 1.5,
+    },
+    // Stable rotation, well above trigger → no suggestion.
+    DemandSeedItem {
+        sku: "DP-LECHE-1L",
+        name: "Leche entera UHT 1 L",
+        uom: "liter",
+        base_price: 36.00,
+        cost_price: 26.00,
+        on_hand_qty: 95.0,
+        min_qty: 30.0,
+        max_qty: 140.0,
+        safety_stock_qty: 8.0,
+        lead_time_days: 3,
+        review_cycle_days: 7,
+        daily_demand_mean: 18.0,
+        weekly_amplitude: 6.0,
+    },
+    DemandSeedItem {
+        sku: "DP-PAPEL-4PK",
+        name: "Papel higiénico 4 rollos",
+        uom: "unit",
+        base_price: 78.00,
+        cost_price: 55.00,
+        on_hand_qty: 60.0,
+        min_qty: 20.0,
+        max_qty: 90.0,
+        safety_stock_qty: 5.0,
+        lead_time_days: 7,
+        review_cycle_days: 14,
+        daily_demand_mean: 5.0,
+        weekly_amplitude: 1.0,
+    },
+    DemandSeedItem {
+        sku: "DP-JABON-200G",
+        name: "Jabón de baño 200 g",
+        uom: "unit",
+        base_price: 22.00,
+        cost_price: 14.00,
+        on_hand_qty: 50.0,
+        min_qty: 25.0,
+        max_qty: 110.0,
+        safety_stock_qty: 8.0,
+        lead_time_days: 7,
+        review_cycle_days: 14,
+        daily_demand_mean: 8.0,
+        weekly_amplitude: 2.0,
+    },
+    // Strong weekend spike (high amplitude) → Holt-Winters value-add.
+    DemandSeedItem {
+        sku: "DP-COCA-2L",
+        name: "Coca-Cola 2 L",
+        uom: "liter",
+        base_price: 45.00,
+        cost_price: 32.00,
+        on_hand_qty: 70.0,
+        min_qty: 25.0,
+        max_qty: 130.0,
+        safety_stock_qty: 10.0,
+        lead_time_days: 4,
+        review_cycle_days: 7,
+        daily_demand_mean: 14.0,
+        weekly_amplitude: 9.0,
+    },
+    // Slow mover → likely class C.
+    DemandSeedItem {
+        sku: "DP-SAL-1KG",
+        name: "Sal refinada 1 kg",
+        uom: "kg",
+        base_price: 12.00,
+        cost_price: 7.00,
+        on_hand_qty: 35.0,
+        min_qty: 8.0,
+        max_qty: 40.0,
+        safety_stock_qty: 2.0,
+        lead_time_days: 14,
+        review_cycle_days: 30,
+        daily_demand_mean: 1.2,
+        weekly_amplitude: 0.4,
+    },
+    // Currently below trigger, slow mover → suggestion expected (small).
+    DemandSeedItem {
+        sku: "DP-CAFE-200G",
+        name: "Café molido 200 g",
+        uom: "unit",
+        base_price: 88.00,
+        cost_price: 62.00,
+        on_hand_qty: 6.0,
+        min_qty: 12.0,
+        max_qty: 50.0,
+        safety_stock_qty: 4.0,
+        lead_time_days: 10,
+        review_cycle_days: 14,
+        daily_demand_mean: 2.5,
+        weekly_amplitude: 0.5,
+    },
+];
+
+/// Vendor used for every demo product so suggestion → PO has a target vendor.
+/// (code, name, legal_name, tax_id, payment_terms_days)
+pub const DEMAND_DEFAULT_VENDOR: (&str, &str, &str, &str, i32) = (
+    "DP-VEN-001",
+    "Distribuidora La Económica",
+    "Distribuidora La Económica S. de R.L.",
+    "08019999000123",
+    15,
+);
+
+/// Category every demo product is filed under: (slug, name).
+pub const DEMAND_DEFAULT_CATEGORY: (&str, &str) = ("abarrotes", "Abarrotes");
