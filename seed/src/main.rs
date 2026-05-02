@@ -3,7 +3,9 @@ use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
-use chrono::{Datelike, NaiveDate, TimeZone, Utc};
+use chrono::{Datelike, Duration, NaiveDate, TimeZone, Utc};
+use rust_decimal::Decimal;
+use rust_decimal::prelude::FromPrimitive;
 use sqlx::postgres::PgPoolOptions;
 use tracing::{Level, info};
 use tracing_subscriber::FmtSubscriber;
@@ -92,6 +94,12 @@ async fn main() -> Result<()> {
     // open period for the current month.
     info!("Seeding accounting defaults...");
     seed_accounting_defaults(&mut tx).await?;
+
+    // Seed demand-planning demo: a vendor, ~9 grocery products with stock,
+    // reorder policies, and 120 days of synthetic completed sales so the
+    // recompute job has signal on first run.
+    info!("Seeding demand planning demo data...");
+    seed_demand_planning_demo(&mut tx, store_id, super_admin_id).await?;
 
     tx.commit().await?;
 
@@ -709,5 +717,305 @@ async fn seed_accounting_defaults(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>
         );
     }
 
+    Ok(())
+}
+
+/// Number of days of synthetic history to generate. 120 covers two seasonal
+/// cycles (m=7) so Holt-Winters has a fair shot.
+const DEMAND_HISTORY_DAYS: i64 = 120;
+
+/// Deterministic pseudo-random in [0, 1). Avoids pulling a `rand` dependency
+/// for what is genuinely deterministic seed data.
+fn pseudo_unit(seed: u64) -> f64 {
+    // Splitmix64 — short, fast, good enough for "shake the data a bit".
+    let mut z = seed.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^= z >> 31;
+    (z >> 11) as f64 / (1u64 << 53) as f64
+}
+
+fn dec(value: f64) -> Decimal {
+    Decimal::from_f64(value)
+        .unwrap_or(Decimal::ZERO)
+        .round_dp(4)
+}
+
+async fn seed_demand_planning_demo(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+    cashier_id: Uuid,
+) -> Result<()> {
+    // ---- Category ----------------------------------------------------------
+    let (cat_slug, cat_name) = data::DEMAND_DEFAULT_CATEGORY;
+    let category_id: Uuid =
+        match sqlx::query_as::<_, (Uuid,)>("SELECT id FROM product_categories WHERE slug = $1")
+            .bind(cat_slug)
+            .fetch_optional(&mut **tx)
+            .await?
+        {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                INSERT INTO product_categories (id, parent_id, name, slug, is_active)
+                VALUES ($1, NULL, $2, $3, TRUE)
+                "#,
+                )
+                .bind(id)
+                .bind(cat_name)
+                .bind(cat_slug)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+    info!("  Category: {}", cat_slug);
+
+    // ---- Vendor ------------------------------------------------------------
+    let (v_code, v_name, v_legal, v_tax, v_terms) = data::DEMAND_DEFAULT_VENDOR;
+    let vendor_id: Uuid =
+        match sqlx::query_as::<_, (Uuid,)>("SELECT id FROM vendors WHERE code = $1")
+            .bind(v_code)
+            .fetch_optional(&mut **tx)
+            .await?
+        {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                    INSERT INTO vendors (
+                        id, code, name, legal_name, tax_id,
+                        payment_terms_days, currency, is_active
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, 'HNL', TRUE)
+                    "#,
+                )
+                .bind(id)
+                .bind(v_code)
+                .bind(v_name)
+                .bind(v_legal)
+                .bind(v_tax)
+                .bind(v_terms)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+    info!("  Vendor: {} ({})", v_name, v_code);
+
+    // ---- Products + stock + policies + sales history -----------------------
+    let today = Utc::now().date_naive();
+    let mut total_sales = 0i64;
+
+    for (item_idx, item) in data::DEMAND_SEED_ITEMS.iter().enumerate() {
+        // Product (skip insert if SKU already there).
+        let product_id: Uuid =
+            match sqlx::query_as::<_, (Uuid,)>("SELECT id FROM products WHERE sku = $1")
+                .bind(item.sku)
+                .fetch_optional(&mut **tx)
+                .await?
+            {
+                Some((id,)) => id,
+                None => {
+                    let id = Uuid::new_v7(Timestamp::now(NoContext));
+                    sqlx::query(
+                        r#"
+                        INSERT INTO products (
+                            id, sku, name, category_id, unit_of_measure,
+                            base_price, cost_price, currency,
+                            is_perishable, is_trackable, has_variants,
+                            tax_rate, tax_included, attributes, is_active
+                        )
+                        VALUES (
+                            $1, $2, $3, $4, $5,
+                            $6, $7, 'HNL',
+                            FALSE, TRUE, FALSE,
+                            0, FALSE, '{}'::jsonb, TRUE
+                        )
+                        "#,
+                    )
+                    .bind(id)
+                    .bind(item.sku)
+                    .bind(item.name)
+                    .bind(category_id)
+                    .bind(item.uom)
+                    .bind(dec(item.base_price))
+                    .bind(dec(item.cost_price))
+                    .execute(&mut **tx)
+                    .await?;
+                    id
+                }
+            };
+
+        // Stock (one row per (store, product)). Skip if already initialised.
+        let stock_exists = sqlx::query_as::<_, (Uuid,)>(
+            "SELECT id FROM inventory_stock WHERE store_id = $1 AND product_id = $2",
+        )
+        .bind(store_id)
+        .bind(product_id)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if stock_exists.is_none() {
+            sqlx::query(
+                r#"
+                INSERT INTO inventory_stock (
+                    id, store_id, product_id, variant_id,
+                    quantity, reserved_quantity, min_stock_level
+                )
+                VALUES ($1, $2, $3, NULL, $4, 0, $5)
+                "#,
+            )
+            .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+            .bind(store_id)
+            .bind(product_id)
+            .bind(dec(item.on_hand_qty))
+            .bind(dec(item.min_qty))
+            .execute(&mut **tx)
+            .await?;
+        }
+
+        // Reorder policy (one row per (variant_id, store_id) — we use
+        // product_id as the "variant id" per the demand_planning convention).
+        let policy_exists = sqlx::query_as::<_, (Uuid,)>(
+            "SELECT id FROM reorder_policies WHERE product_variant_id = $1 AND store_id = $2",
+        )
+        .bind(product_id)
+        .bind(store_id)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if policy_exists.is_none() {
+            sqlx::query(
+                r#"
+                INSERT INTO reorder_policies (
+                    id, product_variant_id, store_id,
+                    min_qty, max_qty, lead_time_days,
+                    safety_stock_qty, review_cycle_days,
+                    preferred_vendor_id, is_active, version
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, 0)
+                "#,
+            )
+            .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+            .bind(product_id)
+            .bind(store_id)
+            .bind(dec(item.min_qty))
+            .bind(dec(item.max_qty))
+            .bind(item.lead_time_days)
+            .bind(dec(item.safety_stock_qty))
+            .bind(item.review_cycle_days)
+            .bind(vendor_id)
+            .execute(&mut **tx)
+            .await?;
+        }
+
+        // ---- Synthetic 120-day sales history -------------------------------
+        // Skip if we already seeded sales for this SKU.
+        let already_seeded: (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)::BIGINT
+            FROM sale_items
+            WHERE product_id = $1 AND sku LIKE 'DP-DEMO-%'
+            "#,
+        )
+        .bind(product_id)
+        .fetch_one(&mut **tx)
+        .await?;
+        if already_seeded.0 > 0 {
+            continue;
+        }
+
+        for d in 0..DEMAND_HISTORY_DAYS {
+            // Day shifted from `today - 120` toward today.
+            let day = today - Duration::days(DEMAND_HISTORY_DAYS - d);
+            let weekday = day.weekday().num_days_from_monday() as f64;
+            // Sinusoidal weekly pattern + small deterministic jitter in [-1, +1].
+            let seasonal = (2.0 * std::f64::consts::PI * weekday / 7.0).sin();
+            let seed = (item_idx as u64) * 131_071 + d as u64;
+            let jitter = (pseudo_unit(seed) * 2.0) - 1.0;
+            let raw = item.daily_demand_mean + item.weekly_amplitude * seasonal + jitter;
+            let qty = raw.max(0.0).round();
+            if qty <= 0.0 {
+                continue;
+            }
+
+            let sale_id = Uuid::new_v7(Timestamp::now(NoContext));
+            // Sale completed at noon local — collapse to UTC for simplicity.
+            let completed_at = Utc
+                .with_ymd_and_hms(day.year(), day.month(), day.day(), 18, 0, 0)
+                .single()
+                .unwrap_or_else(Utc::now);
+            let line_total = dec(item.base_price * qty);
+
+            sqlx::query(
+                r#"
+                INSERT INTO sales (
+                    id, sale_number, store_id, sale_type, status,
+                    cashier_id, currency,
+                    subtotal, discount_value, discount_amount, tax_amount,
+                    total, amount_paid, amount_due, change_given,
+                    completed_at, created_at, updated_at
+                )
+                VALUES (
+                    $1, $2, $3, 'pos', 'completed',
+                    $4, 'HNL',
+                    $5, 0, 0, 0,
+                    $5, $5, 0, 0,
+                    $6, $6, $6
+                )
+                "#,
+            )
+            .bind(sale_id)
+            .bind(format!("DP-DEMO-{}-{:03}", &item.sku[3..], d))
+            .bind(store_id)
+            .bind(cashier_id)
+            .bind(line_total)
+            .bind(completed_at)
+            .execute(&mut **tx)
+            .await?;
+
+            sqlx::query(
+                r#"
+                INSERT INTO sale_items (
+                    id, sale_id, line_number, product_id, variant_id,
+                    sku, description, quantity, unit_of_measure,
+                    unit_price, unit_cost,
+                    discount_value, discount_amount, tax_rate, tax_amount,
+                    subtotal, total
+                )
+                VALUES (
+                    $1, $2, 1, $3, NULL,
+                    $4, $5, $6, $7,
+                    $8, $9,
+                    0, 0, 0, 0,
+                    $10, $10
+                )
+                "#,
+            )
+            .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+            .bind(sale_id)
+            .bind(product_id)
+            .bind(item.sku)
+            .bind(item.name)
+            .bind(dec(qty))
+            .bind(item.uom)
+            .bind(dec(item.base_price))
+            .bind(dec(item.cost_price))
+            .bind(line_total)
+            .execute(&mut **tx)
+            .await?;
+
+            total_sales += 1;
+        }
+    }
+
+    info!(
+        "  Demand planning: {} products, vendor + reorder policies seeded, {} synthetic sales over {} days",
+        data::DEMAND_SEED_ITEMS.len(),
+        total_sales,
+        DEMAND_HISTORY_DAYS
+    );
     Ok(())
 }

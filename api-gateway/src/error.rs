@@ -11,6 +11,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use catalog::CatalogError;
+use demand_planning::DemandPlanningError;
 use fiscal::FiscalError;
 use identity::{AuthError, ErrorResponse, IdentityError};
 use inventory::InventoryError;
@@ -2144,6 +2145,80 @@ impl From<AccountingError> for AppError {
             ),
         };
 
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<DemandPlanningError> Implementation
+// =============================================================================
+
+impl From<DemandPlanningError> for AppError {
+    fn from(err: DemandPlanningError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            DemandPlanningError::ForecastNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("FORECAST_NOT_FOUND", format!("Forecast not found: {}", id)),
+            ),
+            DemandPlanningError::ReorderPolicyNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "REORDER_POLICY_NOT_FOUND",
+                    format!("Reorder policy not found: {}", id),
+                ),
+            ),
+            DemandPlanningError::SuggestionNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SUGGESTION_NOT_FOUND",
+                    format!("Replenishment suggestion not found: {}", id),
+                ),
+            ),
+
+            // 409
+            DemandPlanningError::DuplicateReorderPolicy { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_REORDER_POLICY", err.to_string()),
+            ),
+            DemandPlanningError::PolicyVersionConflict(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("POLICY_VERSION_CONFLICT", err.to_string()),
+            ),
+            DemandPlanningError::InvalidSuggestionTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATUS_TRANSITION", err.to_string()),
+            ),
+
+            // 400 — validation
+            DemandPlanningError::InvalidPolicyRange
+            | DemandPlanningError::InvalidPolicyDays
+            | DemandPlanningError::NegativeQuantity
+            | DemandPlanningError::InsufficientHistory { .. }
+            | DemandPlanningError::InvalidForecastMethod(_)
+            | DemandPlanningError::InvalidForecastPeriod(_)
+            | DemandPlanningError::InvalidSuggestionStatus(_)
+            | DemandPlanningError::InvalidAbcClass(_)
+            | DemandPlanningError::DismissReasonRequired
+            | DemandPlanningError::ForecastingFailed(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502 — downstream module (purchasing) refused the request. Surface
+            // its message so operators don't have to grep server logs to know
+            // why the auto-PO didn't get created.
+            DemandPlanningError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            DemandPlanningError::Database(_) | DemandPlanningError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
         AppError::new(status, response)
     }
 }
