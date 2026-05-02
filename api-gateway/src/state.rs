@@ -15,6 +15,11 @@ use analytics::{
     PgAnalyticsQueryRepository, PgDashboardRepository, PgKpiSnapshotRepository, PgWidgetRepository,
     WidgetRepository,
 };
+use cash_management::{
+    BankAccountRepository, BankReconciliationRepository, BankTransactionRepository,
+    CashDepositRepository, CashManagementEventSubscriber, PgBankAccountRepository,
+    PgBankReconciliationRepository, PgBankTransactionRepository, PgCashDepositRepository,
+};
 use catalog::{
     DefaultImageStorageRegistry, ImageStorageRegistry, PgImageStorageProviderRepository,
     PgProductImageRepository, PgProductListingRepository, PgProductReviewRepository,
@@ -198,6 +203,13 @@ pub struct AppState {
     abc_classification_repo: Arc<dyn AbcClassificationRepository>,
     sales_history_repo: Arc<dyn SalesHistoryRepository>,
     stock_snapshot_repo: Arc<dyn StockSnapshotRepository>,
+    // -------------------------------------------------------------------------
+    // Cash management (bank accounts, bank transactions, deposits, reconciliations)
+    // -------------------------------------------------------------------------
+    bank_account_repo: Arc<dyn BankAccountRepository>,
+    bank_transaction_repo: Arc<dyn BankTransactionRepository>,
+    cash_deposit_repo: Arc<dyn CashDepositRepository>,
+    bank_reconciliation_repo: Arc<dyn BankReconciliationRepository>,
 }
 
 impl AppState {
@@ -286,6 +298,10 @@ impl AppState {
         abc_classification_repo: Arc<dyn AbcClassificationRepository>,
         sales_history_repo: Arc<dyn SalesHistoryRepository>,
         stock_snapshot_repo: Arc<dyn StockSnapshotRepository>,
+        bank_account_repo: Arc<dyn BankAccountRepository>,
+        bank_transaction_repo: Arc<dyn BankTransactionRepository>,
+        cash_deposit_repo: Arc<dyn CashDepositRepository>,
+        bank_reconciliation_repo: Arc<dyn BankReconciliationRepository>,
     ) -> Self {
         Self {
             pool,
@@ -351,6 +367,10 @@ impl AppState {
             abc_classification_repo,
             sales_history_repo,
             stock_snapshot_repo,
+            bank_account_repo,
+            bank_transaction_repo,
+            cash_deposit_repo,
+            bank_reconciliation_repo,
         }
     }
 
@@ -493,6 +513,17 @@ impl AppState {
             Arc::new(PgStockSnapshotRepository::new((*pool_arc).clone()));
         subscriber_registry.register(Arc::new(DemandPlanningEventSubscriber::new()));
 
+        // Cash management repositories + register its outbox subscriber.
+        let bank_account_repo: Arc<dyn BankAccountRepository> =
+            Arc::new(PgBankAccountRepository::new((*pool_arc).clone()));
+        let bank_transaction_repo: Arc<dyn BankTransactionRepository> =
+            Arc::new(PgBankTransactionRepository::new((*pool_arc).clone()));
+        let cash_deposit_repo: Arc<dyn CashDepositRepository> =
+            Arc::new(PgCashDepositRepository::new((*pool_arc).clone()));
+        let bank_reconciliation_repo: Arc<dyn BankReconciliationRepository> =
+            Arc::new(PgBankReconciliationRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(CashManagementEventSubscriber::new()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -560,6 +591,10 @@ impl AppState {
             abc_classification_repo,
             sales_history_repo,
             stock_snapshot_repo,
+            bank_account_repo,
+            bank_transaction_repo,
+            cash_deposit_repo,
+            bank_reconciliation_repo,
         }
     }
 
@@ -865,5 +900,22 @@ impl AppState {
     }
     pub fn stock_snapshot_repo(&self) -> Arc<dyn StockSnapshotRepository> {
         self.stock_snapshot_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Cash management accessors
+    // -------------------------------------------------------------------------
+
+    pub fn bank_account_repo(&self) -> Arc<dyn BankAccountRepository> {
+        self.bank_account_repo.clone()
+    }
+    pub fn bank_transaction_repo(&self) -> Arc<dyn BankTransactionRepository> {
+        self.bank_transaction_repo.clone()
+    }
+    pub fn cash_deposit_repo(&self) -> Arc<dyn CashDepositRepository> {
+        self.cash_deposit_repo.clone()
+    }
+    pub fn bank_reconciliation_repo(&self) -> Arc<dyn BankReconciliationRepository> {
+        self.bank_reconciliation_repo.clone()
     }
 }

@@ -281,6 +281,38 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
         "demand_planning:read_abc",
         "Read ABC classification of products",
     ),
+    // Cash management module
+    ("cash_management:read_account", "Read bank accounts"),
+    (
+        "cash_management:write_account",
+        "Create or update bank accounts",
+    ),
+    ("cash_management:read_transaction", "List bank transactions"),
+    (
+        "cash_management:write_transaction",
+        "Record manual bank transactions",
+    ),
+    ("cash_management:read_deposit", "List cash deposits"),
+    (
+        "cash_management:write_deposit",
+        "Create cash deposits and mark them sent to bank",
+    ),
+    (
+        "cash_management:link_deposit",
+        "Link a deposit to its matching bank transaction",
+    ),
+    (
+        "cash_management:read_reconciliation",
+        "List bank reconciliations",
+    ),
+    (
+        "cash_management:write_reconciliation",
+        "Start a bank reconciliation",
+    ),
+    (
+        "cash_management:close_reconciliation",
+        "Close a bank reconciliation (audit boundary)",
+    ),
     // System permissions
     (
         "system:admin",
@@ -524,6 +556,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "demand_planning:approve_suggestion",
             "demand_planning:dismiss_suggestion",
             "demand_planning:read_abc",
+            // Cash management
+            "cash_management:read_account",
+            "cash_management:write_account",
+            "cash_management:read_transaction",
+            "cash_management:write_transaction",
+            "cash_management:read_deposit",
+            "cash_management:write_deposit",
+            "cash_management:link_deposit",
+            "cash_management:read_reconciliation",
+            "cash_management:write_reconciliation",
+            "cash_management:close_reconciliation",
             // System
             "system:admin",
             "system:settings",
@@ -700,6 +743,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "demand_planning:approve_suggestion",
             "demand_planning:dismiss_suggestion",
             "demand_planning:read_abc",
+            // Cash management — bank accounts, manual transactions, deposits, reconciliations
+            "cash_management:read_account",
+            "cash_management:write_account",
+            "cash_management:read_transaction",
+            "cash_management:write_transaction",
+            "cash_management:read_deposit",
+            "cash_management:write_deposit",
+            "cash_management:link_deposit",
+            "cash_management:read_reconciliation",
+            "cash_management:write_reconciliation",
+            "cash_management:close_reconciliation",
         ],
     ),
     // Store manager
@@ -1255,3 +1309,20 @@ pub const DEMAND_DEFAULT_VENDOR: (&str, &str, &str, &str, i32) = (
 
 /// Category every demo product is filed under: (slug, name).
 pub const DEMAND_DEFAULT_CATEGORY: (&str, &str) = ("abarrotes", "Abarrotes");
+
+// ============================================================================
+// Cash management seed data
+//
+// Default bank account so the API has somewhere to record deposits and
+// transactions on first run. Numbers are placeholders — replace before going
+// to production. (bank_name, account_number, account_type, currency,
+// opening_balance)
+// ============================================================================
+
+pub const DEMO_BANK_ACCOUNT: (&str, &str, &str, &str, f64) = (
+    "BAC Honduras",
+    "10-200-300456",
+    "checking",
+    "HNL",
+    25_000.00,
+);

@@ -10,6 +10,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use cash_management::CashManagementError;
 use catalog::CatalogError;
 use demand_planning::DemandPlanningError;
 use fiscal::FiscalError;
@@ -2215,6 +2216,103 @@ impl From<DemandPlanningError> for AppError {
 
             // 500
             DemandPlanningError::Database(_) | DemandPlanningError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<CashManagementError> Implementation
+// =============================================================================
+
+impl From<CashManagementError> for AppError {
+    fn from(err: CashManagementError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            CashManagementError::BankAccountNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "BANK_ACCOUNT_NOT_FOUND",
+                    format!("Bank account not found: {}", id),
+                ),
+            ),
+            CashManagementError::BankTransactionNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "BANK_TRANSACTION_NOT_FOUND",
+                    format!("Bank transaction not found: {}", id),
+                ),
+            ),
+            CashManagementError::CashDepositNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "CASH_DEPOSIT_NOT_FOUND",
+                    format!("Cash deposit not found: {}", id),
+                ),
+            ),
+            CashManagementError::ReconciliationNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "RECONCILIATION_NOT_FOUND",
+                    format!("Reconciliation not found: {}", id),
+                ),
+            ),
+            CashManagementError::ShiftNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SHIFT_NOT_FOUND",
+                    format!("Cashier shift not found: {}", id),
+                ),
+            ),
+
+            // 409
+            CashManagementError::DuplicateAccountNumber(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_ACCOUNT_NUMBER", err.to_string()),
+            ),
+            CashManagementError::AccountVersionConflict(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("ACCOUNT_VERSION_CONFLICT", err.to_string()),
+            ),
+            CashManagementError::ShiftNotClosed(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SHIFT_NOT_CLOSED", err.to_string()),
+            ),
+            CashManagementError::InvalidDepositTransition { .. }
+            | CashManagementError::InvalidReconciliationTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATUS_TRANSITION", err.to_string()),
+            ),
+            CashManagementError::TransactionAlreadyLinked => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("TRANSACTION_ALREADY_LINKED", err.to_string()),
+            ),
+
+            // 400 — validation
+            CashManagementError::InvalidReconciliationRange
+            | CashManagementError::ReconciliationUnbalanced { .. }
+            | CashManagementError::TransactionAccountMismatch
+            | CashManagementError::TransactionAmountMismatch { .. }
+            | CashManagementError::NegativeAmount
+            | CashManagementError::InvalidTransactionType(_)
+            | CashManagementError::InvalidAccountType(_)
+            | CashManagementError::InvalidDepositStatus(_)
+            | CashManagementError::InvalidReconciliationStatus(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502 — downstream module error (e.g. sales/cashier_shifts SQL).
+            CashManagementError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            CashManagementError::Database(_) | CashManagementError::Serialization(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
             ),

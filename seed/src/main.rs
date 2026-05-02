@@ -27,10 +27,36 @@ async fn main() -> Result<()> {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     info!("Connecting to database...");
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url)
-        .await?;
+    // Retry connect a few times — when launched by docker-compose, postgres
+    // may still be coming up even after the healthcheck passed.
+    let pool = {
+        let mut attempts = 0;
+        loop {
+            match PgPoolOptions::new()
+                .max_connections(5)
+                .acquire_timeout(std::time::Duration::from_secs(3))
+                .connect(&database_url)
+                .await
+            {
+                Ok(p) => break p,
+                Err(e) if attempts < 30 => {
+                    attempts += 1;
+                    info!(
+                        "  database not ready ({}); retrying in 2s ({}/30)",
+                        e, attempts
+                    );
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                }
+                Err(e) => return Err(e.into()),
+            }
+        }
+    };
+
+    // Run migrations embedded at compile time. Idempotent: sqlx tracks applied
+    // versions in `_sqlx_migrations`. Putting this here means the seed binary
+    // is the single boot-time entry point — no separate sqlx-cli step.
+    info!("Running migrations...");
+    sqlx::migrate!("../migrations").run(&pool).await?;
 
     info!("Starting seed process...");
 
@@ -100,6 +126,11 @@ async fn main() -> Result<()> {
     // recompute job has signal on first run.
     info!("Seeding demand planning demo data...");
     seed_demand_planning_demo(&mut tx, store_id, super_admin_id).await?;
+
+    // Seed a default bank account so cash_management endpoints have somewhere
+    // to record deposits/transactions on first boot.
+    info!("Seeding cash management defaults...");
+    seed_cash_management_defaults(&mut tx, store_id).await?;
 
     tx.commit().await?;
 
@@ -1016,6 +1047,55 @@ async fn seed_demand_planning_demo(
         data::DEMAND_SEED_ITEMS.len(),
         total_sales,
         DEMAND_HISTORY_DAYS
+    );
+    Ok(())
+}
+
+async fn seed_cash_management_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    let (bank_name, account_number, account_type, currency, opening_balance) =
+        data::DEMO_BANK_ACCOUNT;
+    let opening = Decimal::from_f64(opening_balance)
+        .unwrap_or(Decimal::ZERO)
+        .round_dp(4);
+
+    let exists: Option<(Uuid,)> =
+        sqlx::query_as("SELECT id FROM bank_accounts WHERE account_number = $1")
+            .bind(account_number)
+            .fetch_optional(&mut **tx)
+            .await?;
+    if exists.is_some() {
+        info!(
+            "  Bank account {} already exists — skipping",
+            account_number
+        );
+        return Ok(());
+    }
+
+    sqlx::query(
+        r#"
+        INSERT INTO bank_accounts (
+            id, store_id, bank_name, account_number, account_type,
+            currency, current_balance, is_active, version
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, 0)
+        "#,
+    )
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+    .bind(store_id)
+    .bind(bank_name)
+    .bind(account_number)
+    .bind(account_type)
+    .bind(currency)
+    .bind(opening)
+    .execute(&mut **tx)
+    .await?;
+
+    info!(
+        "  Bank account: {} {} ({}, opening L {:.2})",
+        bank_name, account_number, account_type, opening_balance
     );
     Ok(())
 }

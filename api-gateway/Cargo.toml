@@ -19,6 +19,7 @@ notifications = { path = "../modules/notifications" }
 analytics = { path = "../modules/analytics" }
 accounting = { path = "../modules/accounting" }
 demand_planning = { path = "../modules/demand_planning" }
+cash_management = { path = "../modules/cash_management" }
 
 axum = { workspace = true, features = ["json", "multipart"] }
 async-trait = { workspace = true }
