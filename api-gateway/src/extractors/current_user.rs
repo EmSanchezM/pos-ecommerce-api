@@ -93,7 +93,14 @@ mod tests {
             .iter()
             .filter_map(|p| PermissionCode::new(p).ok())
             .collect();
-        UserContext::new(UserId::new(), StoreId::new(), permissions, vec![], false)
+        UserContext::new(
+            UserId::new(),
+            StoreId::new(),
+            permissions,
+            vec![],
+            false,
+            None,
+        )
     }
 
     #[tokio::test]

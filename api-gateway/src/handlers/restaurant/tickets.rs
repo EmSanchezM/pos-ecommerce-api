@@ -21,6 +21,7 @@ use restaurant_operations::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::{require_feature, verify_store_in_org};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -52,6 +53,10 @@ pub async fn list_tickets_handler(
     Query(params): Query<ListKdsTicketsQuery>,
 ) -> Result<Json<Vec<KdsTicketResponse>>, Response> {
     require_permission(&ctx, "restaurant:read_ticket")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
+    if let Some(store_id) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, store_id).await?;
+    }
     let status = match params.status.as_deref() {
         Some(s) => {
             Some(KdsTicketStatus::from_str(s).map_err(|e| AppError::from(e).into_response())?)
@@ -81,6 +86,8 @@ pub async fn create_ticket_handler(
     Json(cmd): Json<CreateKdsTicketCommand>,
 ) -> Result<Json<KdsTicketDetailResponse>, Response> {
     require_permission(&ctx, "restaurant:write_ticket")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case = CreateKdsTicketUseCase::new(deps(&state));
     let (ticket, items) = use_case
         .execute(cmd, Some(*ctx.user_id().as_uuid()))
@@ -98,6 +105,7 @@ pub async fn get_ticket_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<KdsTicketDetailResponse>, Response> {
     require_permission(&ctx, "restaurant:read_ticket")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = GetKdsTicketUseCase::new(state.kds_ticket_repo(), state.kds_ticket_item_repo());
     let (ticket, items) = use_case
         .execute(KdsTicketId::from_uuid(id))
@@ -115,6 +123,7 @@ pub async fn send_ticket_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<KdsTicketResponse>, Response> {
     require_permission(&ctx, "restaurant:transition_ticket")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = SendKdsTicketUseCase::new(deps(&state));
     let ticket = use_case
         .execute(KdsTicketId::from_uuid(id))
@@ -129,6 +138,7 @@ pub async fn mark_ticket_ready_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<KdsTicketResponse>, Response> {
     require_permission(&ctx, "restaurant:transition_ticket")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = MarkKdsTicketReadyUseCase::new(deps(&state));
     let ticket = use_case
         .execute(KdsTicketId::from_uuid(id))
@@ -143,6 +153,7 @@ pub async fn serve_ticket_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<KdsTicketResponse>, Response> {
     require_permission(&ctx, "restaurant:transition_ticket")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = ServeKdsTicketUseCase::new(deps(&state));
     let ticket = use_case
         .execute(KdsTicketId::from_uuid(id))
@@ -158,6 +169,7 @@ pub async fn cancel_ticket_handler(
     Json(cmd): Json<CancelKdsTicketCommand>,
 ) -> Result<Json<KdsTicketResponse>, Response> {
     require_permission(&ctx, "restaurant:cancel_ticket")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = CancelKdsTicketUseCase::new(deps(&state));
     let ticket = use_case
         .execute(KdsTicketId::from_uuid(id), cmd)
@@ -173,6 +185,7 @@ pub async fn set_item_status_handler(
     Json(cmd): Json<SetItemStatusCommand>,
 ) -> Result<Json<KdsTicketItemResponse>, Response> {
     require_permission(&ctx, "restaurant:transition_ticket")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = SetItemStatusUseCase::new(deps(&state));
     let item = use_case
         .execute(KdsTicketItemId::from_uuid(item_id), cmd)

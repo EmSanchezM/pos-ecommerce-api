@@ -95,6 +95,7 @@ pub async fn auth_middleware(
         permissions,
         accessible_store_ids,
         is_super_admin,
+        claims.organization_id,
     );
 
     // 6. Insert UserContext into request extensions

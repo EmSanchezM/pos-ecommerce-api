@@ -16,6 +16,7 @@ use restaurant_operations::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::{require_feature, verify_store_in_org};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -31,6 +32,8 @@ pub async fn list_modifier_groups_handler(
     Query(params): Query<ListModifierGroupsQuery>,
 ) -> Result<Json<Vec<MenuModifierGroupResponse>>, Response> {
     require_permission(&ctx, "restaurant:read_modifier")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
+    verify_store_in_org(state.pool(), &ctx, params.store_id).await?;
     let only_active = !params.include_inactive.unwrap_or(false);
     let use_case = ListGroupsWithModifiersUseCase::new(state.menu_modifier_repo());
     let groups = use_case
@@ -48,6 +51,8 @@ pub async fn create_modifier_group_handler(
     Json(cmd): Json<CreateModifierGroupCommand>,
 ) -> Result<Json<MenuModifierGroupResponse>, Response> {
     require_permission(&ctx, "restaurant:write_modifier")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case = CreateModifierGroupUseCase::new(state.menu_modifier_repo());
     let group = use_case
         .execute(cmd)
@@ -63,6 +68,7 @@ pub async fn update_modifier_group_handler(
     Json(cmd): Json<UpdateModifierGroupCommand>,
 ) -> Result<Json<MenuModifierGroupResponse>, Response> {
     require_permission(&ctx, "restaurant:write_modifier")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = UpdateModifierGroupUseCase::new(state.menu_modifier_repo());
     let group = use_case
         .execute(MenuModifierGroupId::from_uuid(id), cmd)
@@ -78,6 +84,7 @@ pub async fn add_modifier_handler(
     Json(cmd): Json<CreateModifierCommand>,
 ) -> Result<Json<MenuModifierResponse>, Response> {
     require_permission(&ctx, "restaurant:write_modifier")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = AddModifierUseCase::new(state.menu_modifier_repo());
     let modifier = use_case
         .execute(MenuModifierGroupId::from_uuid(group_id), cmd)
@@ -93,6 +100,7 @@ pub async fn update_modifier_handler(
     Json(cmd): Json<UpdateModifierCommand>,
 ) -> Result<Json<MenuModifierResponse>, Response> {
     require_permission(&ctx, "restaurant:write_modifier")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = UpdateModifierUseCase::new(state.menu_modifier_repo());
     let modifier = use_case
         .execute(MenuModifierId::from_uuid(modifier_id), cmd)
@@ -108,6 +116,7 @@ pub async fn assign_product_groups_handler(
     Json(cmd): Json<AssignProductModifierGroupsCommand>,
 ) -> Result<axum::http::StatusCode, Response> {
     require_permission(&ctx, "restaurant:write_modifier")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = AssignProductModifierGroupsUseCase::new(state.menu_modifier_repo());
     use_case
         .execute(product_id, cmd)
@@ -122,6 +131,7 @@ pub async fn get_product_groups_handler(
     Path(product_id): Path<Uuid>,
 ) -> Result<Json<Vec<MenuModifierGroupResponse>>, Response> {
     require_permission(&ctx, "restaurant:read_modifier")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = GetProductModifierGroupsUseCase::new(state.menu_modifier_repo());
     let groups = use_case
         .execute(product_id)

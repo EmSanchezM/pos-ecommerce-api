@@ -14,6 +14,7 @@ use restaurant_operations::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::{require_feature, verify_store_in_org};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -29,6 +30,8 @@ pub async fn list_stations_handler(
     Query(params): Query<ListStationsQuery>,
 ) -> Result<Json<Vec<KitchenStationResponse>>, Response> {
     require_permission(&ctx, "restaurant:read_station")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
+    verify_store_in_org(state.pool(), &ctx, params.store_id).await?;
     let only_active = !params.include_inactive.unwrap_or(false);
     let use_case = ListKitchenStationsUseCase::new(state.kitchen_station_repo());
     let stations = use_case
@@ -46,6 +49,8 @@ pub async fn create_station_handler(
     Json(cmd): Json<CreateKitchenStationCommand>,
 ) -> Result<Json<KitchenStationResponse>, Response> {
     require_permission(&ctx, "restaurant:write_station")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case = CreateKitchenStationUseCase::new(state.kitchen_station_repo());
     let station = use_case
         .execute(cmd)
@@ -61,6 +66,7 @@ pub async fn update_station_handler(
     Json(cmd): Json<UpdateKitchenStationCommand>,
 ) -> Result<Json<KitchenStationResponse>, Response> {
     require_permission(&ctx, "restaurant:write_station")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = UpdateKitchenStationUseCase::new(state.kitchen_station_repo());
     let station = use_case
         .execute(KitchenStationId::from_uuid(id), cmd)
@@ -75,6 +81,7 @@ pub async fn deactivate_station_handler(
     Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, Response> {
     require_permission(&ctx, "restaurant:write_station")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = DeactivateKitchenStationUseCase::new(state.kitchen_station_repo());
     use_case
         .execute(KitchenStationId::from_uuid(id))

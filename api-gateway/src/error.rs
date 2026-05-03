@@ -25,6 +25,7 @@ use restaurant_operations::RestaurantOperationsError;
 use sales::SalesError;
 use service_orders::ServiceOrdersError;
 use shipping::ShippingError;
+use tenancy::TenancyError;
 
 // =============================================================================
 // AppError - Unified API Gateway Error Type
@@ -2690,6 +2691,99 @@ impl From<RestaurantOperationsError> for AppError {
             // 500
             RestaurantOperationsError::Database(_)
             | RestaurantOperationsError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<TenancyError> Implementation
+// =============================================================================
+
+impl From<TenancyError> for AppError {
+    fn from(err: TenancyError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            TenancyError::OrganizationNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_NOT_FOUND",
+                    format!("Organization not found: {}", id),
+                ),
+            ),
+            TenancyError::OrganizationNotFoundBySlug(slug) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_NOT_FOUND",
+                    format!("Organization not found for slug: {}", slug),
+                ),
+            ),
+            TenancyError::PlanNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_PLAN_NOT_FOUND",
+                    format!("Plan not found for organization: {}", id),
+                ),
+            ),
+            TenancyError::DomainNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_DOMAIN_NOT_FOUND",
+                    format!("Custom domain not found: {}", id),
+                ),
+            ),
+            TenancyError::DomainNotFoundByHostname(host) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_DOMAIN_NOT_FOUND",
+                    format!("No organization registered for host: {}", host),
+                ),
+            ),
+            TenancyError::BrandingNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_BRANDING_NOT_FOUND",
+                    format!("Branding not configured for organization: {}", id),
+                ),
+            ),
+
+            // 409
+            TenancyError::SlugAlreadyTaken(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SLUG_ALREADY_TAKEN", err.to_string()),
+            ),
+            TenancyError::DomainAlreadyTaken(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DOMAIN_ALREADY_TAKEN", err.to_string()),
+            ),
+            TenancyError::InvalidStatusTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATUS_TRANSITION", err.to_string()),
+            ),
+
+            // 400
+            TenancyError::InvalidStatus(_)
+            | TenancyError::InvalidTier(_)
+            | TenancyError::InvalidTheme(_)
+            | TenancyError::InvalidSlug(_)
+            | TenancyError::InvalidDomain(_)
+            | TenancyError::InvalidColor(_)
+            | TenancyError::Validation(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502
+            TenancyError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            TenancyError::Database(_) | TenancyError::Serialization(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
             ),

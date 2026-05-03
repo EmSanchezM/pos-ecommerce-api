@@ -14,6 +14,7 @@ use restaurant_operations::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::{require_feature, verify_store_in_org};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -29,6 +30,8 @@ pub async fn list_tables_handler(
     Query(params): Query<ListTablesQuery>,
 ) -> Result<Json<Vec<RestaurantTableResponse>>, Response> {
     require_permission(&ctx, "restaurant:read_table")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
+    verify_store_in_org(state.pool(), &ctx, params.store_id).await?;
     let only_active = !params.include_inactive.unwrap_or(false);
     let use_case = ListRestaurantTablesUseCase::new(state.restaurant_table_repo());
     let tables = use_case
@@ -46,6 +49,8 @@ pub async fn create_table_handler(
     Json(cmd): Json<CreateRestaurantTableCommand>,
 ) -> Result<Json<RestaurantTableResponse>, Response> {
     require_permission(&ctx, "restaurant:write_table")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case = CreateRestaurantTableUseCase::new(state.restaurant_table_repo());
     let table = use_case
         .execute(cmd)
@@ -61,6 +66,7 @@ pub async fn update_table_handler(
     Json(cmd): Json<UpdateRestaurantTableCommand>,
 ) -> Result<Json<RestaurantTableResponse>, Response> {
     require_permission(&ctx, "restaurant:write_table")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = UpdateRestaurantTableUseCase::new(state.restaurant_table_repo());
     let table = use_case
         .execute(RestaurantTableId::from_uuid(id), cmd)
@@ -76,6 +82,7 @@ pub async fn set_table_status_handler(
     Json(cmd): Json<SetTableStatusCommand>,
 ) -> Result<Json<RestaurantTableResponse>, Response> {
     require_permission(&ctx, "restaurant:write_table")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = SetTableStatusUseCase::new(state.restaurant_table_repo());
     let table = use_case
         .execute(RestaurantTableId::from_uuid(id), cmd)
@@ -90,6 +97,7 @@ pub async fn deactivate_table_handler(
     Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, Response> {
     require_permission(&ctx, "restaurant:write_table")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
     let use_case = DeactivateRestaurantTableUseCase::new(state.restaurant_table_repo());
     use_case
         .execute(RestaurantTableId::from_uuid(id))

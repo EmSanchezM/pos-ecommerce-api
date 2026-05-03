@@ -24,6 +24,7 @@ loyalty = { path = "../modules/loyalty" }
 booking = { path = "../modules/booking" }
 service_orders = { path = "../modules/service_orders" }
 restaurant_operations = { path = "../modules/restaurant_operations" }
+tenancy = { path = "../modules/tenancy" }
 
 axum = { workspace = true, features = ["json", "multipart"] }
 async-trait = { workspace = true }

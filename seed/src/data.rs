@@ -426,6 +426,35 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
         "Send/ready/serve a ticket or change item statuses",
     ),
     ("restaurant:cancel_ticket", "Cancel a KDS ticket"),
+    // Tenancy module (super_admin only in v1.0)
+    ("tenancy:read_org", "List/read organizations"),
+    (
+        "tenancy:write_org",
+        "Register or update an organization (name + contact)",
+    ),
+    (
+        "tenancy:suspend_org",
+        "Suspend or re-activate an organization",
+    ),
+    (
+        "tenancy:read_plan",
+        "Read an organization plan (tier + feature flags + limits)",
+    ),
+    (
+        "tenancy:write_plan",
+        "Set plan tier, toggle feature flags, change limits",
+    ),
+    ("tenancy:read_domain", "List/read custom domains"),
+    (
+        "tenancy:write_domain",
+        "Register, set primary, or delete a custom domain",
+    ),
+    ("tenancy:verify_domain", "Mark a custom domain as verified"),
+    (
+        "tenancy:read_branding",
+        "Read an organization branding (colors, logo, theme)",
+    ),
+    ("tenancy:write_branding", "Upsert an organization branding"),
     // System permissions
     (
         "system:admin",
@@ -479,6 +508,13 @@ pub const ROLES: &[(&str, &str, bool)] = &[
         "customer",
         "E-commerce customer with access to shopping cart, orders, profile, and product browsing",
         false,
+    ),
+    // Tenancy v1.1 — manages a single organization's branding/domains.
+    // Cannot mutate plan/tier or suspend the org (those stay super_admin).
+    (
+        "org_admin",
+        "Tenant admin: read own organization, manage branding + custom domains",
+        true,
     ),
 ];
 
@@ -724,6 +760,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "restaurant:write_ticket",
             "restaurant:transition_ticket",
             "restaurant:cancel_ticket",
+            // Tenancy (super_admin only in v1.0)
+            "tenancy:read_org",
+            "tenancy:write_org",
+            "tenancy:suspend_org",
+            "tenancy:read_plan",
+            "tenancy:write_plan",
+            "tenancy:read_domain",
+            "tenancy:write_domain",
+            "tenancy:verify_domain",
+            "tenancy:read_branding",
+            "tenancy:write_branding",
             // System
             "system:admin",
             "system:settings",
@@ -1270,6 +1317,22 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "catalog:review",
         ],
     ),
+    // Tenancy v1.1 — org_admin: limited subset that lets the tenant manage
+    // their own branding/domains but NOT their plan or status. Pairs with
+    // require_org_match in the gateway: the user can only ever target their
+    // own org id. write_plan / suspend_org stay super_admin-only.
+    (
+        "org_admin",
+        &[
+            "tenancy:read_org",
+            "tenancy:read_plan",
+            "tenancy:read_domain",
+            "tenancy:write_domain",
+            "tenancy:verify_domain",
+            "tenancy:read_branding",
+            "tenancy:write_branding",
+        ],
+    ),
 ];
 
 /// Main store: (name, address, is_ecommerce, is_active)
@@ -1809,3 +1872,39 @@ pub const DEMO_KDS_TICKET_ITEMS: &[(&str, f64, Option<&str>)] = &[
     ("Hamburguesa clásica con papas", 2.0, Some("Una sin tomate")),
     ("Limonada natural grande", 2.0, None),
 ];
+
+// =============================================================================
+// Tenancy demo data
+//
+// The default org (id `00000000-...0001`, slug `default`, plan `enterprise`
+// with all features ON) is created by migration 50 — the seed binary does NOT
+// re-create it. We add ONE additional demo organization here ("Restaurante
+// Demo") so the by-slug / by-domain endpoints have something else to query
+// and the dashboard list isn't single-row. The demo org gets:
+//   - plan tier `pro` with restaurant + booking enabled, service_orders off
+//   - one custom domain `demo-resto.example.com` (already verified)
+//   - branding: orange primary, dark theme
+// =============================================================================
+
+/// Demo org metadata: (name, slug, contact_email, contact_phone, tier).
+pub const DEMO_TENANCY_ORG: (&str, &str, &str, &str, &str) = (
+    "Restaurante Demo",
+    "demo-resto",
+    "owner@demo-resto.example.com",
+    "+50412345678",
+    "pro",
+);
+
+/// Custom domain to register for the demo org. v1.0 marks it verified
+/// directly in the seed (no DNS check) so the `by-domain` endpoint works
+/// out of the box.
+pub const DEMO_TENANCY_DOMAIN: &str = "demo-resto.example.com";
+
+/// Branding for the demo org.
+/// Format: (logo_url, primary_color, secondary_color, theme).
+pub const DEMO_TENANCY_BRANDING: (&str, &str, &str, &str) = (
+    "https://example.com/demo-resto-logo.png",
+    "#f97316",
+    "#0f172a",
+    "dark",
+);

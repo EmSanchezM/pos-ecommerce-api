@@ -35,6 +35,11 @@ pub struct TokenClaims {
     /// Defaults to empty for backward compatibility with tokens issued before this field existed.
     #[serde(default)]
     pub store_permissions: HashMap<String, Vec<String>>,
+    /// Tenant the user belongs to. Added in tenancy v1.1; `None` for tokens
+    /// issued before this field existed (callers should treat `None` as
+    /// "no scope" — every org-scoped check rejects the request).
+    #[serde(default)]
+    pub organization_id: Option<Uuid>,
 }
 
 impl TokenClaims {
@@ -47,6 +52,10 @@ impl TokenClaims {
     /// * `email` - The user's email address
     /// * `exp` - Expiration timestamp (Unix epoch seconds)
     /// * `iat` - Issued at timestamp (Unix epoch seconds)
+    /// * `store_permissions` - Map of store_id → granted permission codes
+    /// * `organization_id` - The user's tenant (None for users not yet
+    ///   migrated to a tenant — should not happen post-v1.0 backfill).
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_id: Uuid,
         username: String,
@@ -54,6 +63,7 @@ impl TokenClaims {
         exp: i64,
         iat: i64,
         store_permissions: HashMap<String, Vec<String>>,
+        organization_id: Option<Uuid>,
     ) -> Self {
         Self {
             sub: user_id,
@@ -62,6 +72,7 @@ impl TokenClaims {
             exp,
             iat,
             store_permissions,
+            organization_id,
         }
     }
 
@@ -98,6 +109,7 @@ mod tests {
             1705150000, // exp
             1705140000, // iat
             HashMap::new(),
+            None,
         )
     }
 
@@ -199,6 +211,7 @@ mod tests {
             1705150000,
             1705140000,
             HashMap::new(),
+            None,
         );
 
         assert_eq!(claims1, claims2);
