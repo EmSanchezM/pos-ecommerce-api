@@ -330,6 +330,35 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
         "loyalty:redeem_reward",
         "Redeem a member's points for a reward",
     ),
+    // Booking module
+    (
+        "booking:read_resource",
+        "List/read booking resources (people, equipment, rooms)",
+    ),
+    (
+        "booking:write_resource",
+        "Create/update/deactivate booking resources and their calendars",
+    ),
+    ("booking:read_service", "List/read bookable services"),
+    (
+        "booking:write_service",
+        "Create/update/deactivate bookable services and assign resources",
+    ),
+    ("booking:read_appointment", "List/read appointments"),
+    (
+        "booking:write_appointment",
+        "Create appointments on behalf of a customer (walk-in, phone)",
+    ),
+    (
+        "booking:transition_appointment",
+        "Confirm/start/complete/no-show an appointment",
+    ),
+    ("booking:cancel_appointment", "Cancel an appointment"),
+    ("booking:read_policy", "Read the per-store booking policy"),
+    (
+        "booking:write_policy",
+        "Upsert the per-store booking policy",
+    ),
     // System permissions
     (
         "system:admin",
@@ -595,6 +624,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "loyalty:read_reward",
             "loyalty:write_reward",
             "loyalty:redeem_reward",
+            // Booking
+            "booking:read_resource",
+            "booking:write_resource",
+            "booking:read_service",
+            "booking:write_service",
+            "booking:read_appointment",
+            "booking:write_appointment",
+            "booking:transition_appointment",
+            "booking:cancel_appointment",
+            "booking:read_policy",
+            "booking:write_policy",
             // System
             "system:admin",
             "system:settings",
@@ -793,6 +833,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "loyalty:read_reward",
             "loyalty:write_reward",
             "loyalty:redeem_reward",
+            // Booking
+            "booking:read_resource",
+            "booking:write_resource",
+            "booking:read_service",
+            "booking:write_service",
+            "booking:read_appointment",
+            "booking:write_appointment",
+            "booking:transition_appointment",
+            "booking:cancel_appointment",
+            "booking:read_policy",
+            "booking:write_policy",
         ],
     ),
     // Store manager
@@ -1416,3 +1467,83 @@ pub const DEMO_LOYALTY_REWARDS: &[DemoLoyaltyReward] = &[
         max_per_member: Some(2),
     },
 ];
+
+// =============================================================================
+// Booking demo data — gives booking endpoints a complete graph on first boot.
+// =============================================================================
+
+/// Resources scaffolded for the demo store: salon-style "stylist" people plus
+/// one shared room. Color is a Tailwind-ish hex for UI calendars.
+/// Format: (resource_type, name, color)
+pub const DEMO_BOOKING_RESOURCES: &[(&str, &str, &str)] = &[
+    ("person", "Ana — Estilista", "#f97316"),
+    ("person", "Luis — Barbero", "#0ea5e9"),
+    ("room", "Cabina 1", "#10b981"),
+];
+
+/// Weekly availability applied to every demo resource: Mon–Fri 09–17, Sat 09–13.
+/// Format: (day_of_week, start_HH:MM, end_HH:MM). day_of_week: 0=Sun..6=Sat.
+pub const DEMO_BOOKING_CALENDAR: &[(i16, &str, &str)] = &[
+    (1, "09:00", "17:00"),
+    (2, "09:00", "17:00"),
+    (3, "09:00", "17:00"),
+    (4, "09:00", "17:00"),
+    (5, "09:00", "17:00"),
+    (6, "09:00", "13:00"),
+];
+
+/// A demo bookable service. The `eligible_resource_names` field references
+/// names from `DEMO_BOOKING_RESOURCES` so the M2M can be resolved by lookup.
+pub struct DemoBookingService {
+    pub name: &'static str,
+    pub description: &'static str,
+    pub duration_minutes: i32,
+    pub price: f64,
+    pub buffer_minutes_before: i32,
+    pub buffer_minutes_after: i32,
+    pub requires_deposit: bool,
+    pub deposit_amount: Option<f64>,
+    pub eligible_resource_names: &'static [&'static str],
+}
+
+pub const DEMO_BOOKING_SERVICES: &[DemoBookingService] = &[
+    DemoBookingService {
+        name: "Corte de cabello",
+        description: "Corte clásico, lavado incluido.",
+        duration_minutes: 30,
+        price: 250.0,
+        buffer_minutes_before: 0,
+        buffer_minutes_after: 5,
+        requires_deposit: false,
+        deposit_amount: None,
+        eligible_resource_names: &["Ana — Estilista", "Luis — Barbero"],
+    },
+    DemoBookingService {
+        name: "Color y mechas",
+        description: "Aplicación de color completo o mechas.",
+        duration_minutes: 90,
+        price: 1_200.0,
+        buffer_minutes_before: 5,
+        buffer_minutes_after: 10,
+        requires_deposit: true,
+        deposit_amount: Some(300.0),
+        eligible_resource_names: &["Ana — Estilista"],
+    },
+    DemoBookingService {
+        name: "Afeitado clásico",
+        description: "Toalla caliente, navaja, masaje facial.",
+        duration_minutes: 45,
+        price: 350.0,
+        buffer_minutes_before: 0,
+        buffer_minutes_after: 5,
+        requires_deposit: false,
+        deposit_amount: None,
+        eligible_resource_names: &["Luis — Barbero"],
+    },
+];
+
+/// Per-store booking policy.
+/// Format: (requires_deposit, deposit_percentage, cancellation_window_hours,
+///          no_show_fee_amount, default_buffer_minutes, advance_booking_days_max).
+pub const DEMO_BOOKING_POLICY: (bool, Option<f64>, i32, Option<f64>, i32, i32) =
+    (false, None, 24, None, 5, 60);

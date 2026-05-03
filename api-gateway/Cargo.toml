@@ -21,6 +21,7 @@ accounting = { path = "../modules/accounting" }
 demand_planning = { path = "../modules/demand_planning" }
 cash_management = { path = "../modules/cash_management" }
 loyalty = { path = "../modules/loyalty" }
+booking = { path = "../modules/booking" }
 
 axum = { workspace = true, features = ["json", "multipart"] }
 async-trait = { workspace = true }

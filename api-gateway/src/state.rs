@@ -15,6 +15,12 @@ use analytics::{
     PgAnalyticsQueryRepository, PgDashboardRepository, PgKpiSnapshotRepository, PgWidgetRepository,
     WidgetRepository,
 };
+use booking::{
+    AppointmentRepository, BookingEventSubscriber, BookingPolicyRepository,
+    PgAppointmentRepository, PgBookingPolicyRepository, PgResourceCalendarRepository,
+    PgResourceRepository, PgServiceRepository, ResourceCalendarRepository, ResourceRepository,
+    ServiceRepository as BookingServiceRepository,
+};
 use cash_management::{
     BankAccountRepository, BankReconciliationRepository, BankTransactionRepository,
     CashDepositRepository, CashManagementEventSubscriber, PgBankAccountRepository,
@@ -225,6 +231,14 @@ pub struct AppState {
     points_ledger_repo: Arc<dyn PointsLedgerRepository>,
     reward_repo: Arc<dyn RewardRepository>,
     reward_redemption_repo: Arc<dyn RewardRedemptionRepository>,
+    // -------------------------------------------------------------------------
+    // Booking (resources, calendars, services, appointments, policies)
+    // -------------------------------------------------------------------------
+    resource_repo: Arc<dyn ResourceRepository>,
+    resource_calendar_repo: Arc<dyn ResourceCalendarRepository>,
+    booking_service_repo: Arc<dyn BookingServiceRepository>,
+    appointment_repo: Arc<dyn AppointmentRepository>,
+    booking_policy_repo: Arc<dyn BookingPolicyRepository>,
 }
 
 impl AppState {
@@ -323,6 +337,11 @@ impl AppState {
         points_ledger_repo: Arc<dyn PointsLedgerRepository>,
         reward_repo: Arc<dyn RewardRepository>,
         reward_redemption_repo: Arc<dyn RewardRedemptionRepository>,
+        resource_repo: Arc<dyn ResourceRepository>,
+        resource_calendar_repo: Arc<dyn ResourceCalendarRepository>,
+        booking_service_repo: Arc<dyn BookingServiceRepository>,
+        appointment_repo: Arc<dyn AppointmentRepository>,
+        booking_policy_repo: Arc<dyn BookingPolicyRepository>,
     ) -> Self {
         Self {
             pool,
@@ -398,6 +417,11 @@ impl AppState {
             points_ledger_repo,
             reward_repo,
             reward_redemption_repo,
+            resource_repo,
+            resource_calendar_repo,
+            booking_service_repo,
+            appointment_repo,
+            booking_policy_repo,
         }
     }
 
@@ -566,6 +590,19 @@ impl AppState {
             Arc::new(PgRewardRedemptionRepository::new((*pool_arc).clone()));
         subscriber_registry.register(Arc::new(LoyaltyEventSubscriber::new()));
 
+        // Booking repositories + register its outbox subscriber.
+        let resource_repo: Arc<dyn ResourceRepository> =
+            Arc::new(PgResourceRepository::new((*pool_arc).clone()));
+        let resource_calendar_repo: Arc<dyn ResourceCalendarRepository> =
+            Arc::new(PgResourceCalendarRepository::new((*pool_arc).clone()));
+        let booking_service_repo: Arc<dyn BookingServiceRepository> =
+            Arc::new(PgServiceRepository::new((*pool_arc).clone()));
+        let appointment_repo: Arc<dyn AppointmentRepository> =
+            Arc::new(PgAppointmentRepository::new((*pool_arc).clone()));
+        let booking_policy_repo: Arc<dyn BookingPolicyRepository> =
+            Arc::new(PgBookingPolicyRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(BookingEventSubscriber::new()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -643,6 +680,11 @@ impl AppState {
             points_ledger_repo,
             reward_repo,
             reward_redemption_repo,
+            resource_repo,
+            resource_calendar_repo,
+            booking_service_repo,
+            appointment_repo,
+            booking_policy_repo,
         }
     }
 
@@ -988,5 +1030,25 @@ impl AppState {
     }
     pub fn reward_redemption_repo(&self) -> Arc<dyn RewardRedemptionRepository> {
         self.reward_redemption_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Booking accessors
+    // -------------------------------------------------------------------------
+
+    pub fn resource_repo(&self) -> Arc<dyn ResourceRepository> {
+        self.resource_repo.clone()
+    }
+    pub fn resource_calendar_repo(&self) -> Arc<dyn ResourceCalendarRepository> {
+        self.resource_calendar_repo.clone()
+    }
+    pub fn booking_service_repo(&self) -> Arc<dyn BookingServiceRepository> {
+        self.booking_service_repo.clone()
+    }
+    pub fn appointment_repo(&self) -> Arc<dyn AppointmentRepository> {
+        self.appointment_repo.clone()
+    }
+    pub fn booking_policy_repo(&self) -> Arc<dyn BookingPolicyRepository> {
+        self.booking_policy_repo.clone()
     }
 }

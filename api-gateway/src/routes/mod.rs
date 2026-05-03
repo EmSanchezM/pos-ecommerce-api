@@ -3,6 +3,7 @@
 pub mod accounting_routes;
 pub mod analytics_routes;
 pub mod auth_routes;
+pub mod booking_routes;
 pub mod cash_management_routes;
 pub mod catalog_routes;
 pub mod demand_planning_routes;
@@ -19,6 +20,10 @@ pub mod terminal_routes;
 pub use accounting_routes::accounting_router;
 pub use analytics_routes::analytics_router;
 pub use auth_routes::auth_router;
+pub use booking_routes::{
+    booking_appointments_router, booking_policies_router, booking_resources_router,
+    booking_services_router, public_booking_router,
+};
 pub use cash_management_routes::{
     bank_accounts_router, bank_reconciliations_router, bank_transactions_router,
     cash_deposits_router,
