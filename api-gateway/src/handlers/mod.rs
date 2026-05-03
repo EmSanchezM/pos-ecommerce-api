@@ -9,6 +9,7 @@ pub mod catalog;
 pub mod demand_planning;
 pub mod fiscal;
 pub mod inventory;
+pub mod loyalty;
 pub mod payments;
 pub mod purchasing;
 pub mod sales;

@@ -40,6 +40,12 @@ use inventory::{
     PgInventoryStockRepository, PgProductRepository, PgRecipeRepository, PgReservationRepository,
     PgTransferRepository,
 };
+use loyalty::{
+    LoyaltyEventSubscriber, LoyaltyMemberRepository, LoyaltyProgramRepository,
+    MemberTierRepository, PgLoyaltyMemberRepository, PgLoyaltyProgramRepository,
+    PgMemberTierRepository, PgPointsLedgerRepository, PgRewardRedemptionRepository,
+    PgRewardRepository, PointsLedgerRepository, RewardRedemptionRepository, RewardRepository,
+};
 use notifications::{
     DefaultNotificationAdapterRegistry, NotificationAdapterRegistry, PgNotificationRepository,
 };
@@ -210,6 +216,15 @@ pub struct AppState {
     bank_transaction_repo: Arc<dyn BankTransactionRepository>,
     cash_deposit_repo: Arc<dyn CashDepositRepository>,
     bank_reconciliation_repo: Arc<dyn BankReconciliationRepository>,
+    // -------------------------------------------------------------------------
+    // Loyalty (programs, tiers, members, ledger, rewards, redemptions)
+    // -------------------------------------------------------------------------
+    loyalty_program_repo: Arc<dyn LoyaltyProgramRepository>,
+    member_tier_repo: Arc<dyn MemberTierRepository>,
+    loyalty_member_repo: Arc<dyn LoyaltyMemberRepository>,
+    points_ledger_repo: Arc<dyn PointsLedgerRepository>,
+    reward_repo: Arc<dyn RewardRepository>,
+    reward_redemption_repo: Arc<dyn RewardRedemptionRepository>,
 }
 
 impl AppState {
@@ -302,6 +317,12 @@ impl AppState {
         bank_transaction_repo: Arc<dyn BankTransactionRepository>,
         cash_deposit_repo: Arc<dyn CashDepositRepository>,
         bank_reconciliation_repo: Arc<dyn BankReconciliationRepository>,
+        loyalty_program_repo: Arc<dyn LoyaltyProgramRepository>,
+        member_tier_repo: Arc<dyn MemberTierRepository>,
+        loyalty_member_repo: Arc<dyn LoyaltyMemberRepository>,
+        points_ledger_repo: Arc<dyn PointsLedgerRepository>,
+        reward_repo: Arc<dyn RewardRepository>,
+        reward_redemption_repo: Arc<dyn RewardRedemptionRepository>,
     ) -> Self {
         Self {
             pool,
@@ -371,6 +392,12 @@ impl AppState {
             bank_transaction_repo,
             cash_deposit_repo,
             bank_reconciliation_repo,
+            loyalty_program_repo,
+            member_tier_repo,
+            loyalty_member_repo,
+            points_ledger_repo,
+            reward_repo,
+            reward_redemption_repo,
         }
     }
 
@@ -524,6 +551,21 @@ impl AppState {
             Arc::new(PgBankReconciliationRepository::new((*pool_arc).clone()));
         subscriber_registry.register(Arc::new(CashManagementEventSubscriber::new()));
 
+        // Loyalty repositories + register its outbox subscriber.
+        let loyalty_program_repo: Arc<dyn LoyaltyProgramRepository> =
+            Arc::new(PgLoyaltyProgramRepository::new((*pool_arc).clone()));
+        let member_tier_repo: Arc<dyn MemberTierRepository> =
+            Arc::new(PgMemberTierRepository::new((*pool_arc).clone()));
+        let loyalty_member_repo: Arc<dyn LoyaltyMemberRepository> =
+            Arc::new(PgLoyaltyMemberRepository::new((*pool_arc).clone()));
+        let points_ledger_repo: Arc<dyn PointsLedgerRepository> =
+            Arc::new(PgPointsLedgerRepository::new((*pool_arc).clone()));
+        let reward_repo: Arc<dyn RewardRepository> =
+            Arc::new(PgRewardRepository::new((*pool_arc).clone()));
+        let reward_redemption_repo: Arc<dyn RewardRedemptionRepository> =
+            Arc::new(PgRewardRedemptionRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(LoyaltyEventSubscriber::new()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -595,6 +637,12 @@ impl AppState {
             bank_transaction_repo,
             cash_deposit_repo,
             bank_reconciliation_repo,
+            loyalty_program_repo,
+            member_tier_repo,
+            loyalty_member_repo,
+            points_ledger_repo,
+            reward_repo,
+            reward_redemption_repo,
         }
     }
 
@@ -917,5 +965,28 @@ impl AppState {
     }
     pub fn bank_reconciliation_repo(&self) -> Arc<dyn BankReconciliationRepository> {
         self.bank_reconciliation_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Loyalty accessors
+    // -------------------------------------------------------------------------
+
+    pub fn loyalty_program_repo(&self) -> Arc<dyn LoyaltyProgramRepository> {
+        self.loyalty_program_repo.clone()
+    }
+    pub fn member_tier_repo(&self) -> Arc<dyn MemberTierRepository> {
+        self.member_tier_repo.clone()
+    }
+    pub fn loyalty_member_repo(&self) -> Arc<dyn LoyaltyMemberRepository> {
+        self.loyalty_member_repo.clone()
+    }
+    pub fn points_ledger_repo(&self) -> Arc<dyn PointsLedgerRepository> {
+        self.points_ledger_repo.clone()
+    }
+    pub fn reward_repo(&self) -> Arc<dyn RewardRepository> {
+        self.reward_repo.clone()
+    }
+    pub fn reward_redemption_repo(&self) -> Arc<dyn RewardRedemptionRepository> {
+        self.reward_redemption_repo.clone()
     }
 }

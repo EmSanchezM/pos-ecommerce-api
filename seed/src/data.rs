@@ -313,6 +313,23 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
         "cash_management:close_reconciliation",
         "Close a bank reconciliation (audit boundary)",
     ),
+    // Loyalty module
+    ("loyalty:read_program", "Read loyalty programs"),
+    ("loyalty:write_program", "Create or update loyalty programs"),
+    ("loyalty:read_tier", "List program tiers"),
+    ("loyalty:write_tier", "Create/update program tiers"),
+    ("loyalty:read_member", "Read loyalty members + ledgers"),
+    ("loyalty:enroll_member", "Enroll a customer into a program"),
+    (
+        "loyalty:adjust_points",
+        "Manually adjust a member's points (audit boundary)",
+    ),
+    ("loyalty:read_reward", "List rewards"),
+    ("loyalty:write_reward", "Create/update rewards"),
+    (
+        "loyalty:redeem_reward",
+        "Redeem a member's points for a reward",
+    ),
     // System permissions
     (
         "system:admin",
@@ -567,6 +584,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "cash_management:read_reconciliation",
             "cash_management:write_reconciliation",
             "cash_management:close_reconciliation",
+            // Loyalty
+            "loyalty:read_program",
+            "loyalty:write_program",
+            "loyalty:read_tier",
+            "loyalty:write_tier",
+            "loyalty:read_member",
+            "loyalty:enroll_member",
+            "loyalty:adjust_points",
+            "loyalty:read_reward",
+            "loyalty:write_reward",
+            "loyalty:redeem_reward",
             // System
             "system:admin",
             "system:settings",
@@ -754,6 +782,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "cash_management:read_reconciliation",
             "cash_management:write_reconciliation",
             "cash_management:close_reconciliation",
+            // Loyalty
+            "loyalty:read_program",
+            "loyalty:write_program",
+            "loyalty:read_tier",
+            "loyalty:write_tier",
+            "loyalty:read_member",
+            "loyalty:enroll_member",
+            "loyalty:adjust_points",
+            "loyalty:read_reward",
+            "loyalty:write_reward",
+            "loyalty:redeem_reward",
         ],
     ),
     // Store manager
@@ -1326,3 +1365,54 @@ pub const DEMO_BANK_ACCOUNT: (&str, &str, &str, &str, f64) = (
     "HNL",
     25_000.00,
 );
+
+// ============================================================================
+// Loyalty seed data
+// ============================================================================
+
+/// Default loyalty program for the main store: (name, description,
+/// points_per_currency_unit, expiration_days). 1 pt per L 1 spent; points
+/// expire after 365 days.
+pub const DEMO_LOYALTY_PROGRAM: (&str, &str, f64, i32) = (
+    "Cliente Frecuente",
+    "Programa de fidelidad para clientes recurrentes.",
+    1.0,
+    365,
+);
+
+/// Tiers for the demo program: (name, threshold_points, benefits_json,
+/// sort_order). Bronze→Silver→Gold ladder.
+pub const DEMO_LOYALTY_TIERS: &[(&str, i64, &str, i32)] = &[
+    ("Bronze", 0, r#"{"discount_percent":0}"#, 0),
+    ("Silver", 500, r#"{"discount_percent":5}"#, 1),
+    ("Gold", 2000, r#"{"discount_percent":10}"#, 2),
+];
+
+/// Rewards catalog seed entry. All Honduran-style amounts in HNL.
+pub struct DemoLoyaltyReward {
+    pub name: &'static str,
+    pub description: &'static str,
+    pub cost_points: i64,
+    pub reward_type: &'static str,
+    pub reward_value: f64,
+    pub max_per_member: Option<i32>,
+}
+
+pub const DEMO_LOYALTY_REWARDS: &[DemoLoyaltyReward] = &[
+    DemoLoyaltyReward {
+        name: "Descuento L 50",
+        description: "Cupón de L 50 de descuento en tu próxima compra.",
+        cost_points: 500,
+        reward_type: "discount_amount",
+        reward_value: 50.0,
+        max_per_member: None,
+    },
+    DemoLoyaltyReward {
+        name: "10% en tu próxima visita",
+        description: "Descuento del 10% sobre el subtotal de la próxima venta.",
+        cost_points: 1_000,
+        reward_type: "discount_percent",
+        reward_value: 10.0,
+        max_per_member: Some(2),
+    },
+];

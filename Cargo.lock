@@ -93,6 +93,7 @@ dependencies = [
  "governor",
  "identity",
  "inventory",
+ "loyalty",
  "notifications",
  "payments",
  "pos_core",
@@ -1395,6 +1396,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
 
 [[package]]
+name = "loyalty"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "common",
+ "events",
+ "identity",
+ "rust_decimal",
+ "rust_decimal_macros",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "matchit"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2265,6 +2286,7 @@ dependencies = [
  "chrono",
  "dotenvy",
  "rust_decimal",
+ "serde_json",
  "sqlx",
  "tokio",
  "tracing",

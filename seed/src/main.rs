@@ -132,6 +132,11 @@ async fn main() -> Result<()> {
     info!("Seeding cash management defaults...");
     seed_cash_management_defaults(&mut tx, store_id).await?;
 
+    // Seed a loyalty program (Bronze/Silver/Gold + 2 rewards) for the main
+    // store so the loyalty endpoints have a complete graph on first boot.
+    info!("Seeding loyalty defaults...");
+    seed_loyalty_defaults(&mut tx, store_id).await?;
+
     tx.commit().await?;
 
     info!("Seed completed successfully!");
@@ -1097,5 +1102,132 @@ async fn seed_cash_management_defaults(
         "  Bank account: {} {} ({}, opening L {:.2})",
         bank_name, account_number, account_type, opening_balance
     );
+    Ok(())
+}
+
+async fn seed_loyalty_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    let (program_name, program_desc, rate, expiration_days) = data::DEMO_LOYALTY_PROGRAM;
+
+    // Program (idempotent on (store_id, name)).
+    let program_id: Uuid = match sqlx::query_as::<_, (Uuid,)>(
+        "SELECT id FROM loyalty_programs WHERE store_id = $1 AND name = $2",
+    )
+    .bind(store_id)
+    .bind(program_name)
+    .fetch_optional(&mut **tx)
+    .await?
+    {
+        Some((id,)) => {
+            info!(
+                "  Loyalty program {} already exists — skipping",
+                program_name
+            );
+            id
+        }
+        None => {
+            let id = Uuid::new_v7(Timestamp::now(NoContext));
+            let rate_dec = Decimal::from_f64(rate).unwrap_or(Decimal::ONE);
+            sqlx::query(
+                r#"
+                INSERT INTO loyalty_programs (
+                    id, store_id, name, description,
+                    points_per_currency_unit, expiration_days, is_active
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+                "#,
+            )
+            .bind(id)
+            .bind(store_id)
+            .bind(program_name)
+            .bind(program_desc)
+            .bind(rate_dec)
+            .bind(expiration_days)
+            .execute(&mut **tx)
+            .await?;
+            info!(
+                "  Loyalty program: {} (rate {} pt/L 1, expires after {} days)",
+                program_name, rate, expiration_days
+            );
+            id
+        }
+    };
+
+    // Tiers (idempotent on (program_id, name)).
+    for (name, threshold, benefits_json, sort_order) in data::DEMO_LOYALTY_TIERS {
+        let exists: Option<(Uuid,)> = sqlx::query_as(
+            "SELECT id FROM loyalty_member_tiers WHERE program_id = $1 AND name = $2",
+        )
+        .bind(program_id)
+        .bind(*name)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if exists.is_some() {
+            continue;
+        }
+        let benefits: serde_json::Value =
+            serde_json::from_str(benefits_json).unwrap_or_else(|_| serde_json::json!({}));
+        sqlx::query(
+            r#"
+            INSERT INTO loyalty_member_tiers (
+                id, program_id, name, threshold_points, benefits, sort_order, is_active
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+            "#,
+        )
+        .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+        .bind(program_id)
+        .bind(*name)
+        .bind(*threshold)
+        .bind(benefits)
+        .bind(*sort_order)
+        .execute(&mut **tx)
+        .await?;
+    }
+    info!(
+        "  Loyalty tiers: {} (Bronze/Silver/Gold)",
+        data::DEMO_LOYALTY_TIERS.len()
+    );
+
+    // Rewards (idempotent — we look up by (program_id, name)).
+    for reward in data::DEMO_LOYALTY_REWARDS {
+        let exists: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM loyalty_rewards WHERE program_id = $1 AND name = $2")
+                .bind(program_id)
+                .bind(reward.name)
+                .fetch_optional(&mut **tx)
+                .await?;
+        if exists.is_some() {
+            continue;
+        }
+        let value_dec = Decimal::from_f64(reward.reward_value).unwrap_or(Decimal::ZERO);
+        sqlx::query(
+            r#"
+            INSERT INTO loyalty_rewards (
+                id, program_id, name, description,
+                cost_points, reward_type, reward_value,
+                max_redemptions_per_member, is_active
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+            "#,
+        )
+        .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+        .bind(program_id)
+        .bind(reward.name)
+        .bind(reward.description)
+        .bind(reward.cost_points)
+        .bind(reward.reward_type)
+        .bind(value_dec)
+        .bind(reward.max_per_member)
+        .execute(&mut **tx)
+        .await?;
+    }
+    info!(
+        "  Loyalty rewards: {} catalog entries",
+        data::DEMO_LOYALTY_REWARDS.len()
+    );
+
     Ok(())
 }
