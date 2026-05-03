@@ -12,6 +12,7 @@ use analytics::{GetKpiSnapshotUseCase, KpiKey, KpiSnapshotResponse, TimeWindow};
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -33,6 +34,9 @@ pub async fn get_kpi_snapshot_handler(
     Query(params): Query<KpiQuery>,
 ) -> Result<Json<KpiSnapshotResponse>, Response> {
     require_permission(&ctx, "reports:analytics")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = GetKpiSnapshotUseCase::new(state.kpi_snapshot_repo());
     let snapshot = use_case

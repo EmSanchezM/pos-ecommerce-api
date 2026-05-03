@@ -12,6 +12,7 @@ use service_orders::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::require_feature;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -22,6 +23,7 @@ pub async fn add_item_handler(
     Json(cmd): Json<AddItemCommand>,
 ) -> Result<Json<ServiceOrderItemResponse>, Response> {
     require_permission(&ctx, "service_orders:write_item")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let use_case = AddItemUseCase::new(state.service_order_repo(), state.service_order_item_repo());
     let item = use_case
         .execute(ServiceOrderId::from_uuid(order_id), cmd)
@@ -37,6 +39,7 @@ pub async fn update_item_handler(
     Json(cmd): Json<UpdateItemCommand>,
 ) -> Result<Json<ServiceOrderItemResponse>, Response> {
     require_permission(&ctx, "service_orders:write_item")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let use_case =
         UpdateItemUseCase::new(state.service_order_repo(), state.service_order_item_repo());
     let item = use_case
@@ -52,6 +55,7 @@ pub async fn remove_item_handler(
     Path((_order_id, item_id)): Path<(Uuid, Uuid)>,
 ) -> Result<axum::http::StatusCode, Response> {
     require_permission(&ctx, "service_orders:write_item")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let use_case =
         RemoveItemUseCase::new(state.service_order_repo(), state.service_order_item_repo());
     use_case

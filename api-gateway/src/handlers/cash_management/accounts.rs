@@ -16,6 +16,7 @@ use cash_management::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -30,6 +31,9 @@ pub async fn list_bank_accounts_handler(
     Query(params): Query<ListBankAccountsQuery>,
 ) -> Result<Json<Vec<BankAccountResponse>>, Response> {
     require_permission(&ctx, "cash_management:read_account")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
     let use_case = ListBankAccountsUseCase::new(state.bank_account_repo());
     let accounts = use_case
         .execute(params.store_id)
@@ -60,6 +64,7 @@ pub async fn create_bank_account_handler(
     Json(cmd): Json<CreateBankAccountCommand>,
 ) -> Result<Json<BankAccountResponse>, Response> {
     require_permission(&ctx, "cash_management:write_account")?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case = CreateBankAccountUseCase::new(state.bank_account_repo());
     let account = use_case
         .execute(cmd)

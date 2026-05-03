@@ -27,6 +27,7 @@ use pos_core::{
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_super_admin;
 use crate::state::AppState;
 
@@ -173,9 +174,10 @@ pub async fn list_stores_handler(
 /// - Get store details with active terminal count
 pub async fn get_store_handler(
     State(state): State<AppState>,
-    CurrentUser(_ctx): CurrentUser,
+    CurrentUser(ctx): CurrentUser,
     Path(id): Path<Uuid>,
 ) -> Result<Json<StoreDetailResponse>, Response> {
+    verify_store_in_org(state.pool(), &ctx, id).await?;
     let use_case = GetStoreDetailUseCase::new(state.store_repo(), state.terminal_repo());
 
     let store_id = StoreId::from_uuid(id);
@@ -225,6 +227,7 @@ pub async fn update_store_handler(
     Path(id): Path<Uuid>,
     JsonBody(command): JsonBody<UpdateStoreCommand>,
 ) -> Result<Json<StoreResponse>, Response> {
+    verify_store_in_org(state.pool(), &ctx, id).await?;
     let use_case = UpdateStoreUseCase::new(state.store_repo(), state.audit_repo());
 
     let store_id = StoreId::from_uuid(id);
@@ -266,6 +269,7 @@ pub async fn activate_store_handler(
 ) -> Result<Json<StoreResponse>, Response> {
     // Check super_admin permission (Requirement 1.5)
     require_super_admin(&ctx)?;
+    verify_store_in_org(state.pool(), &ctx, id).await?;
 
     let use_case = SetStoreActiveUseCaseExtended::new(
         state.store_repo(),
@@ -312,6 +316,7 @@ pub async fn deactivate_store_handler(
 ) -> Result<Json<StoreResponse>, Response> {
     // Check super_admin permission (Requirement 1.5)
     require_super_admin(&ctx)?;
+    verify_store_in_org(state.pool(), &ctx, id).await?;
 
     let use_case = SetStoreActiveUseCaseExtended::new(
         state.store_repo(),

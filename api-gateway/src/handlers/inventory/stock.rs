@@ -29,6 +29,7 @@ use inventory::{
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -95,6 +96,9 @@ pub async fn list_stock_handler(
     Query(params): Query<ListStockQueryParams>,
 ) -> Result<Json<PaginatedResponse<StockResponse>>, Response> {
     require_permission(&ctx, "inventory:read")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = ListStockUseCase::new(state.stock_repo());
 
@@ -165,6 +169,7 @@ pub async fn get_store_inventory_handler(
     Path(store_id): Path<Uuid>,
 ) -> Result<Json<ListResponse<StockResponse>>, Response> {
     require_permission(&ctx, "inventory:read")?;
+    verify_store_in_org(state.pool(), &ctx, store_id).await?;
 
     let use_case = GetStoreInventoryUseCase::new(state.stock_repo());
 
@@ -247,6 +252,7 @@ pub async fn initialize_stock_handler(
     JsonBody(command): JsonBody<InitializeStockCommand>,
 ) -> Result<(StatusCode, Json<StockResponse>), Response> {
     require_permission(&ctx, "inventory:write")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
 
     let use_case = InitializeStockUseCase::new(
         state.stock_repo(),
@@ -304,6 +310,7 @@ pub async fn bulk_initialize_stock_handler(
     JsonBody(command): JsonBody<BulkInitializeStockCommand>,
 ) -> Result<Json<BulkInitializeStockResult>, Response> {
     require_permission(&ctx, "inventory:write")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
 
     let use_case = BulkInitializeStockUseCase::new(
         state.stock_repo(),
@@ -396,6 +403,7 @@ pub async fn get_low_stock_alerts_handler(
     Path(store_id): Path<Uuid>,
 ) -> Result<Json<ListResponse<StockResponse>>, Response> {
     require_permission(&ctx, "inventory:read")?;
+    verify_store_in_org(state.pool(), &ctx, store_id).await?;
 
     let use_case = GetLowStockAlertsUseCase::new(state.stock_repo());
 

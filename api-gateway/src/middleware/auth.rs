@@ -64,8 +64,11 @@ pub async fn auth_middleware(
     // 4. Get store_id from request header
     let store_id = extract_store_id(&request);
 
-    // 5. Build UserContext from token claims (no DB query needed)
-    let permissions: HashSet<PermissionCode> = claims
+    // 5. Build UserContext from token claims (no DB query needed).
+    //    Effective perms = (perms granted on the active store) ∪ (global perms).
+    //    Globals (e.g. `tenancy:*`) apply regardless of `X-Store-Id` so an
+    //    `org_admin` can hit `/api/v1/organizations` without picking a store.
+    let mut permissions: HashSet<PermissionCode> = claims
         .store_permissions
         .get(&store_id.as_uuid().to_string())
         .map(|perms| {
@@ -75,6 +78,11 @@ pub async fn auth_middleware(
                 .collect()
         })
         .unwrap_or_default();
+    for p in &claims.global_permissions {
+        if let Ok(code) = PermissionCode::new(p) {
+            permissions.insert(code);
+        }
+    }
 
     // Extract all accessible store IDs from the JWT claims
     let accessible_store_ids: Vec<uuid::Uuid> = claims

@@ -31,6 +31,7 @@ use purchasing::{
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -119,6 +120,7 @@ pub async fn create_goods_receipt_handler(
     JsonBody(command): JsonBody<CreateGoodsReceiptCommand>,
 ) -> Result<(StatusCode, Json<GoodsReceiptDetailResponse>), Response> {
     require_permission(&ctx, "goods_receipts:create")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
 
     let use_case =
         CreateGoodsReceiptUseCase::new(state.goods_receipt_repo(), state.purchase_order_repo());
@@ -159,6 +161,9 @@ pub async fn list_goods_receipts_handler(
     Query(params): Query<ListGoodsReceiptsQueryParams>,
 ) -> Result<Json<PaginatedResponse<GoodsReceiptResponse>>, Response> {
     require_permission(&ctx, "goods_receipts:read")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = ListGoodsReceiptsUseCase::new(state.goods_receipt_repo());
 

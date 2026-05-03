@@ -220,7 +220,7 @@ mod tests {
             variants.insert(variant.id(), variant.clone());
             product_variants
                 .entry(variant.product_id())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(variant.id());
 
             if let Some(barcode) = variant.barcode() {

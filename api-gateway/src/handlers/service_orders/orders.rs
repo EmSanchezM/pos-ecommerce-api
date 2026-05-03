@@ -20,6 +20,7 @@ use service_orders::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::{require_feature, verify_store_in_org};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -40,6 +41,10 @@ pub async fn list_service_orders_handler(
     Query(params): Query<ListServiceOrdersQuery>,
 ) -> Result<Json<Vec<ServiceOrderResponse>>, Response> {
     require_permission(&ctx, "service_orders:read_order")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let status = match params.status.as_deref() {
         Some(s) => {
@@ -74,6 +79,8 @@ pub async fn intake_service_order_handler(
     Json(cmd): Json<IntakeServiceOrderCommand>,
 ) -> Result<Json<ServiceOrderResponse>, Response> {
     require_permission(&ctx, "service_orders:write_order")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case =
         IntakeServiceOrderUseCase::new(state.service_asset_repo(), state.service_order_repo());
     let order = use_case
@@ -89,6 +96,7 @@ pub async fn get_service_order_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<ServiceOrderDetailResponse>, Response> {
     require_permission(&ctx, "service_orders:read_order")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let order_id = ServiceOrderId::from_uuid(id);
     let order = GetServiceOrderUseCase::new(state.service_order_repo())
         .execute(order_id)

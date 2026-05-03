@@ -25,6 +25,7 @@ use sales::{
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -65,6 +66,9 @@ pub async fn create_promotion_handler(
     JsonBody(command): JsonBody<CreatePromotionCommand>,
 ) -> Result<(StatusCode, Json<PromotionResponse>), Response> {
     require_permission(&ctx, "promotions:create")?;
+    if let Some(sid) = command.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = CreatePromotionUseCase::new(state.promotion_repo());
 
@@ -84,6 +88,9 @@ pub async fn list_promotions_handler(
     Query(params): Query<ListPromotionsQueryParams>,
 ) -> Result<Json<PaginatedPromotionResponse>, Response> {
     require_permission(&ctx, "promotions:read")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = ListPromotionsUseCase::new(state.promotion_repo());
 
@@ -141,6 +148,9 @@ pub async fn update_promotion_handler(
     JsonBody(command): JsonBody<UpdatePromotionCommand>,
 ) -> Result<Json<PromotionResponse>, Response> {
     require_permission(&ctx, "promotions:update")?;
+    if let Some(sid) = command.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = UpdatePromotionUseCase::new(state.promotion_repo());
 

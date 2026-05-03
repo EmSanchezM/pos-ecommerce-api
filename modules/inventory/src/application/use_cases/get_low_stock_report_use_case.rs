@@ -561,12 +561,12 @@ mod tests {
 
         /// Generates a decimal value for quantity testing
         fn quantity_strategy() -> impl Strategy<Value = Decimal> {
-            (0u32..1000u32).prop_map(|v| Decimal::from(v))
+            (0u32..1000u32).prop_map(Decimal::from)
         }
 
         /// Generates a decimal value for stock levels
         fn level_strategy() -> impl Strategy<Value = Decimal> {
-            (1u32..500u32).prop_map(|v| Decimal::from(v))
+            (1u32..500u32).prop_map(Decimal::from)
         }
 
         // Property 15: Low Stock Report Accuracy

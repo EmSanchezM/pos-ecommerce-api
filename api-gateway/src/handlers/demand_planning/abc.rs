@@ -12,6 +12,7 @@ use demand_planning::{AbcClass, AbcClassificationResponse, ListAbcClassification
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -27,6 +28,9 @@ pub async fn list_abc_handler(
     Query(params): Query<ListAbcQuery>,
 ) -> Result<Json<Vec<AbcClassificationResponse>>, Response> {
     require_permission(&ctx, "demand_planning:read_abc")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
     let use_case = ListAbcClassificationsUseCase::new(state.abc_classification_repo());
     let classifications = use_case
         .execute(params.store_id, params.class)

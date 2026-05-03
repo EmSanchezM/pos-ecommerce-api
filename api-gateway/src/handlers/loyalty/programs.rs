@@ -15,6 +15,7 @@ use loyalty::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::{require_feature, verify_store_in_org};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -29,6 +30,10 @@ pub async fn list_programs_handler(
     Query(params): Query<ListProgramsQuery>,
 ) -> Result<Json<Vec<LoyaltyProgramResponse>>, Response> {
     require_permission(&ctx, "loyalty:read_program")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
     let use_case = ListLoyaltyProgramsUseCase::new(state.loyalty_program_repo());
     let programs = use_case
         .execute(params.store_id)
@@ -45,6 +50,8 @@ pub async fn create_program_handler(
     Json(cmd): Json<CreateLoyaltyProgramCommand>,
 ) -> Result<Json<LoyaltyProgramResponse>, Response> {
     require_permission(&ctx, "loyalty:write_program")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case = CreateLoyaltyProgramUseCase::new(state.loyalty_program_repo());
     let program = use_case
         .execute(cmd)

@@ -12,6 +12,7 @@ use service_orders::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::require_feature;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -22,6 +23,7 @@ pub async fn create_quote_handler(
     Json(cmd): Json<CreateQuoteCommand>,
 ) -> Result<Json<QuoteResponse>, Response> {
     require_permission(&ctx, "service_orders:write_quote")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let use_case = CreateQuoteUseCase::new(
         state.service_order_repo(),
         state.service_order_item_repo(),
@@ -40,6 +42,7 @@ pub async fn send_quote_handler(
     Path((_order_id, quote_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Json<QuoteResponse>, Response> {
     require_permission(&ctx, "service_orders:transition_quote")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let use_case = SendQuoteUseCase::new(state.service_order_repo(), state.service_quote_repo());
     let quote = use_case
         .execute(QuoteId::from_uuid(quote_id))
@@ -55,6 +58,7 @@ pub async fn approve_quote_handler(
     cmd: Option<Json<DecideQuoteCommand>>,
 ) -> Result<Json<QuoteResponse>, Response> {
     require_permission(&ctx, "service_orders:transition_quote")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let cmd = cmd.map(|j| j.0).unwrap_or_default();
     let use_case = ApproveQuoteUseCase::new(state.service_order_repo(), state.service_quote_repo());
     let quote = use_case
@@ -71,6 +75,7 @@ pub async fn reject_quote_handler(
     cmd: Option<Json<DecideQuoteCommand>>,
 ) -> Result<Json<QuoteResponse>, Response> {
     require_permission(&ctx, "service_orders:transition_quote")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let cmd = cmd.map(|j| j.0).unwrap_or_default();
     let use_case = RejectQuoteUseCase::new(state.service_order_repo(), state.service_quote_repo());
     let quote = use_case

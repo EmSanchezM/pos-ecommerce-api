@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use sales::{AddCartItemCommand, CartResponse, CreateCartCommand, UpdateCartItemCommand};
@@ -20,6 +21,7 @@ pub async fn create_cart_handler(
     JsonBody(command): JsonBody<CreateCartCommand>,
 ) -> Result<(StatusCode, Json<CartResponse>), Response> {
     require_permission(&ctx, "sales:manage_cart")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
 
     let use_case = sales::CreateCartUseCase::new(state.cart_repo());
 

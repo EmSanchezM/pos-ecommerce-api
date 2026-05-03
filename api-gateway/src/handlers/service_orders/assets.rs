@@ -16,6 +16,7 @@ use service_orders::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::{require_feature, verify_store_in_org};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -32,6 +33,8 @@ pub async fn list_assets_handler(
     Query(params): Query<ListAssetsQuery>,
 ) -> Result<Json<Vec<AssetResponse>>, Response> {
     require_permission(&ctx, "service_orders:read_asset")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
+    verify_store_in_org(state.pool(), &ctx, params.store_id).await?;
     let only_active = !params.include_inactive.unwrap_or(false);
     let use_case = ListAssetsUseCase::new(state.service_asset_repo());
     let assets = use_case
@@ -47,6 +50,7 @@ pub async fn get_asset_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<AssetResponse>, Response> {
     require_permission(&ctx, "service_orders:read_asset")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let use_case = GetAssetUseCase::new(state.service_asset_repo());
     let asset = use_case
         .execute(AssetId::from_uuid(id))
@@ -67,6 +71,7 @@ pub async fn get_asset_history_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<AssetHistoryResponse>, Response> {
     require_permission(&ctx, "service_orders:read_asset")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let use_case =
         GetAssetWithHistoryUseCase::new(state.service_asset_repo(), state.service_order_repo());
     let (asset, history) = use_case
@@ -85,6 +90,8 @@ pub async fn register_asset_handler(
     Json(cmd): Json<RegisterAssetCommand>,
 ) -> Result<Json<AssetResponse>, Response> {
     require_permission(&ctx, "service_orders:write_asset")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case = RegisterAssetUseCase::new(state.service_asset_repo());
     let asset = use_case
         .execute(cmd)
@@ -100,6 +107,7 @@ pub async fn update_asset_handler(
     Json(cmd): Json<UpdateAssetCommand>,
 ) -> Result<Json<AssetResponse>, Response> {
     require_permission(&ctx, "service_orders:write_asset")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let use_case = UpdateAssetUseCase::new(state.service_asset_repo());
     let asset = use_case
         .execute(AssetId::from_uuid(id), cmd)
@@ -114,6 +122,7 @@ pub async fn deactivate_asset_handler(
     Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, Response> {
     require_permission(&ctx, "service_orders:write_asset")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let use_case = DeactivateAssetUseCase::new(state.service_asset_repo());
     use_case
         .execute(AssetId::from_uuid(id))
