@@ -19,6 +19,7 @@ members = [
     "modules/cash_management",
     "modules/loyalty",
     "modules/booking",
+    "modules/service_orders",
     "api-gateway",
     "seed",
 ]

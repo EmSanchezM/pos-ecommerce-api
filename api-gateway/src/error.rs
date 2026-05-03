@@ -22,6 +22,7 @@ use payments::PaymentsError;
 use pos_core::CoreError;
 use purchasing::PurchasingError;
 use sales::SalesError;
+use service_orders::ServiceOrdersError;
 use shipping::ShippingError;
 
 // =============================================================================
@@ -2488,6 +2489,104 @@ impl From<BookingError> for AppError {
 
             // 500
             BookingError::Database(_) | BookingError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<ServiceOrdersError> Implementation
+// =============================================================================
+
+impl From<ServiceOrdersError> for AppError {
+    fn from(err: ServiceOrdersError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            ServiceOrdersError::AssetNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("ASSET_NOT_FOUND", format!("Asset not found: {}", id)),
+            ),
+            ServiceOrdersError::ServiceOrderNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SERVICE_ORDER_NOT_FOUND",
+                    format!("Service order not found: {}", id),
+                ),
+            ),
+            ServiceOrdersError::ItemNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SERVICE_ORDER_ITEM_NOT_FOUND",
+                    format!("Service order item not found: {}", id),
+                ),
+            ),
+            ServiceOrdersError::DiagnosticNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "DIAGNOSTIC_NOT_FOUND",
+                    format!("Diagnostic not found: {}", id),
+                ),
+            ),
+            ServiceOrdersError::QuoteNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("QUOTE_NOT_FOUND", format!("Quote not found: {}", id)),
+            ),
+            ServiceOrdersError::CustomerNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CUSTOMER_NOT_FOUND", format!("Customer not found: {}", id)),
+            ),
+
+            // 401
+            ServiceOrdersError::InvalidPublicToken => (
+                StatusCode::UNAUTHORIZED,
+                ErrorResponse::new("INVALID_PUBLIC_TOKEN", err.to_string()),
+            ),
+
+            // 409
+            ServiceOrdersError::InvalidStateTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATE_TRANSITION", err.to_string()),
+            ),
+            ServiceOrdersError::InvalidQuoteStateTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_QUOTE_STATE_TRANSITION", err.to_string()),
+            ),
+            ServiceOrdersError::QuoteSuperseded(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("QUOTE_SUPERSEDED", err.to_string()),
+            ),
+            ServiceOrdersError::CannotModifyTerminalOrder => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CANNOT_MODIFY_TERMINAL_ORDER", err.to_string()),
+            ),
+            ServiceOrdersError::InactiveAsset(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INACTIVE_ASSET", err.to_string()),
+            ),
+
+            // 400
+            ServiceOrdersError::InvalidAssetType(_)
+            | ServiceOrdersError::InvalidServiceOrderStatus(_)
+            | ServiceOrdersError::InvalidServiceOrderPriority(_)
+            | ServiceOrdersError::InvalidItemType(_)
+            | ServiceOrdersError::InvalidQuoteStatus(_)
+            | ServiceOrdersError::InvalidDiagnosticSeverity(_)
+            | ServiceOrdersError::Validation(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502
+            ServiceOrdersError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            ServiceOrdersError::Database(_) | ServiceOrdersError::Serialization(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
             ),

@@ -359,6 +359,41 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
         "booking:write_policy",
         "Upsert the per-store booking policy",
     ),
+    // Service orders module
+    (
+        "service_orders:read_asset",
+        "List/read assets being serviced",
+    ),
+    (
+        "service_orders:write_asset",
+        "Register/update/deactivate assets",
+    ),
+    ("service_orders:read_order", "List/read service orders"),
+    (
+        "service_orders:write_order",
+        "Create service orders (intake)",
+    ),
+    (
+        "service_orders:transition_order",
+        "Diagnose/start-repair/start-testing/mark-ready/deliver an order",
+    ),
+    ("service_orders:cancel_order", "Cancel a service order"),
+    (
+        "service_orders:write_item",
+        "Add/update/remove labor or parts items",
+    ),
+    (
+        "service_orders:write_diagnostic",
+        "Record technician diagnostics",
+    ),
+    (
+        "service_orders:write_quote",
+        "Draft a quote from current items",
+    ),
+    (
+        "service_orders:transition_quote",
+        "Send/approve/reject a quote",
+    ),
     // System permissions
     (
         "system:admin",
@@ -635,6 +670,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "booking:cancel_appointment",
             "booking:read_policy",
             "booking:write_policy",
+            // Service orders
+            "service_orders:read_asset",
+            "service_orders:write_asset",
+            "service_orders:read_order",
+            "service_orders:write_order",
+            "service_orders:transition_order",
+            "service_orders:cancel_order",
+            "service_orders:write_item",
+            "service_orders:write_diagnostic",
+            "service_orders:write_quote",
+            "service_orders:transition_quote",
             // System
             "system:admin",
             "system:settings",
@@ -844,6 +890,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "booking:cancel_appointment",
             "booking:read_policy",
             "booking:write_policy",
+            // Service orders
+            "service_orders:read_asset",
+            "service_orders:write_asset",
+            "service_orders:read_order",
+            "service_orders:write_order",
+            "service_orders:transition_order",
+            "service_orders:cancel_order",
+            "service_orders:write_item",
+            "service_orders:write_diagnostic",
+            "service_orders:write_quote",
+            "service_orders:transition_quote",
         ],
     ),
     // Store manager
@@ -1547,3 +1604,91 @@ pub const DEMO_BOOKING_SERVICES: &[DemoBookingService] = &[
 ///          no_show_fee_amount, default_buffer_minutes, advance_booking_days_max).
 pub const DEMO_BOOKING_POLICY: (bool, Option<f64>, i32, Option<f64>, i32, i32) =
     (false, None, 24, None, 5, 60);
+
+// =============================================================================
+// Service orders demo data — gives the workshop endpoints a complete graph on
+// first boot. One customer, two assets (a car + a laptop) and one in-progress
+// service order on the car (status = Diagnosis, with a diagnostic + 2 items
+// already added so the staff can immediately draft a quote).
+// =============================================================================
+
+/// Demo customer. Format: (code, first_name, last_name, email, phone,
+///                          customer_type, tax_id).
+pub const DEMO_SERVICE_CUSTOMER: (&str, &str, &str, &str, &str, &str, &str) = (
+    "DEMO-MARIO-001",
+    "Mario",
+    "Lopez",
+    "mario.lopez@example.com",
+    "+50432109876",
+    "individual",
+    "0801-1985-12345",
+);
+
+/// Demo asset registered for the customer.
+/// Fields: (asset_type, brand, model, identifier, year, color, description).
+pub type DemoServiceAsset = (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    Option<i32>,
+    Option<&'static str>,
+    Option<&'static str>,
+);
+
+pub const DEMO_SERVICE_ASSETS: &[DemoServiceAsset] = &[
+    (
+        "vehicle",
+        "Toyota",
+        "Corolla",
+        "PEC-1234",
+        Some(2018),
+        Some("Gris"),
+        Some("Sedan, transmision automatica"),
+    ),
+    (
+        "electronic",
+        "Apple",
+        "MacBook Pro 14",
+        "C02XK1XYZQ6L",
+        Some(2022),
+        Some("Space Gray"),
+        Some("Pantalla con franja vertical intermitente"),
+    ),
+];
+
+/// Demo service order intake. Mounted on the first asset (the car).
+/// Format: (priority, intake_notes, customer_phone). status starts at 'intake'
+/// and the seeder transitions it forward.
+pub const DEMO_SERVICE_ORDER_INTAKE: (&str, &str) = (
+    "high",
+    "Cliente reporta ruido al frenar y vibracion en volante a alta velocidad.",
+);
+
+/// Demo diagnostic recorded against the order.
+/// Format: (findings, recommended_actions, severity).
+pub const DEMO_SERVICE_DIAGNOSTIC: (&str, &str, &str) = (
+    "Pastillas de freno desgastadas (1mm). Disco delantero derecho con alabeo de 0.08mm.",
+    "Cambiar pastillas delanteras y rectificar disco; balanceo de ruedas delanteras.",
+    "high",
+);
+
+/// Demo line items (labor + parts) on the order.
+/// Format: (item_type, description, quantity, unit_price, tax_rate).
+pub const DEMO_SERVICE_ITEMS: &[(&str, &str, f64, f64, f64)] = &[
+    (
+        "labor",
+        "Mano de obra: cambio de pastillas + rectificado",
+        2.0,
+        350.0,
+        0.15,
+    ),
+    (
+        "part",
+        "Juego de pastillas delanteras OEM",
+        1.0,
+        1_200.0,
+        0.15,
+    ),
+    ("labor", "Balanceo de ruedas delanteras", 1.0, 200.0, 0.15),
+];

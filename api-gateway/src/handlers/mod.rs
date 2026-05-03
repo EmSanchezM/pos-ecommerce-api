@@ -14,6 +14,7 @@ pub mod loyalty;
 pub mod payments;
 pub mod purchasing;
 pub mod sales;
+pub mod service_orders;
 pub mod shipping;
 pub mod store_handlers;
 pub mod terminal_handlers;
