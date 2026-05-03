@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use shipping::{
@@ -68,6 +69,7 @@ pub async fn calculate_shipping_handler(
     JsonBody(cmd): JsonBody<CalculateShippingCommand>,
 ) -> Result<Json<ShippingOptionsResponse>, Response> {
     require_permission(&ctx, "shipping:read")?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let uc = CalculateShippingUseCase::new(
         state.shipping_method_repo(),
         state.shipping_zone_repo(),

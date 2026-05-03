@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use fiscal::{
@@ -23,6 +24,7 @@ pub async fn generate_invoice_handler(
     JsonBody(command): JsonBody<GenerateInvoiceCommand>,
 ) -> Result<(StatusCode, Json<InvoiceResponse>), Response> {
     require_permission(&ctx, "invoices:create")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
 
     let use_case = fiscal::GenerateInvoiceUseCase::new(
         state.invoice_repo(),
@@ -63,6 +65,9 @@ pub async fn list_invoices_handler(
     Query(query): Query<ListInvoicesQuery>,
 ) -> Result<Json<fiscal::InvoiceListResponse>, Response> {
     require_permission(&ctx, "invoices:read")?;
+    if let Some(sid) = query.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = fiscal::ListInvoicesUseCase::new(state.invoice_repo());
 
@@ -100,6 +105,7 @@ pub async fn calculate_tax_handler(
     JsonBody(command): JsonBody<CalculateTaxCommand>,
 ) -> Result<Json<TaxCalculationResponse>, Response> {
     require_permission(&ctx, "invoices:read")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
 
     let use_case = fiscal::CalculateTaxUseCase::new(state.tax_rate_repo());
 

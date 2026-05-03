@@ -15,6 +15,7 @@ use loyalty::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::require_feature;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -29,6 +30,7 @@ pub async fn list_tiers_handler(
     Query(params): Query<ListTiersQuery>,
 ) -> Result<Json<Vec<MemberTierResponse>>, Response> {
     require_permission(&ctx, "loyalty:read_tier")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
     let use_case = ListMemberTiersUseCase::new(state.member_tier_repo());
     let tiers = use_case
         .execute(LoyaltyProgramId::from_uuid(params.program_id))
@@ -43,6 +45,7 @@ pub async fn create_tier_handler(
     Json(cmd): Json<CreateMemberTierCommand>,
 ) -> Result<Json<MemberTierResponse>, Response> {
     require_permission(&ctx, "loyalty:write_tier")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
     let use_case =
         CreateMemberTierUseCase::new(state.loyalty_program_repo(), state.member_tier_repo());
     let tier = use_case

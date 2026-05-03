@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use sales::{
@@ -23,6 +24,7 @@ pub async fn create_customer_handler(
     JsonBody(command): JsonBody<CreateCustomerCommand>,
 ) -> Result<(StatusCode, Json<CustomerResponse>), Response> {
     require_permission(&ctx, "sales:create_customer")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
 
     let use_case = sales::CreateCustomerUseCase::new(state.customer_repo());
 
@@ -57,6 +59,9 @@ pub async fn list_customers_handler(
     Query(query): Query<ListCustomersQuery>,
 ) -> Result<Json<CustomerListResponse>, Response> {
     require_permission(&ctx, "sales:read_customer")?;
+    if let Some(sid) = query.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = sales::ListCustomersUseCase::new(state.customer_repo());
 

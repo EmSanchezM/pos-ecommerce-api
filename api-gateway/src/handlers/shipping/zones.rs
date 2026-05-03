@@ -11,6 +11,7 @@ use uuid::Uuid;
 use super::methods::StoreScopedQuery;
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use shipping::{
@@ -25,6 +26,7 @@ pub async fn create_shipping_zone_handler(
     JsonBody(cmd): JsonBody<CreateShippingZoneCommand>,
 ) -> Result<(StatusCode, Json<ShippingZoneResponse>), Response> {
     require_permission(&ctx, "shipping:create")?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let uc = CreateShippingZoneUseCase::new(state.shipping_zone_repo());
     let resp = uc
         .execute(cmd)
@@ -39,6 +41,7 @@ pub async fn list_shipping_zones_handler(
     Query(q): Query<StoreScopedQuery>,
 ) -> Result<Json<Vec<ShippingZoneResponse>>, Response> {
     require_permission(&ctx, "shipping:read")?;
+    verify_store_in_org(state.pool(), &ctx, q.store_id).await?;
     let uc = ListShippingZonesUseCase::new(state.shipping_zone_repo());
     let resp = uc
         .execute(q.store_id)

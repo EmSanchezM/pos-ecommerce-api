@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use catalog::{
@@ -24,6 +25,7 @@ pub async fn create_listing_handler(
     JsonBody(cmd): JsonBody<CreateListingCommand>,
 ) -> Result<(StatusCode, Json<ListingResponse>), Response> {
     require_permission(&ctx, "catalog:create")?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let uc = CreateListingUseCase::new(state.listing_repo());
     let resp = uc
         .execute(cmd)
@@ -143,6 +145,9 @@ pub async fn list_listings_handler(
     Query(q): Query<ListingsListQuery>,
 ) -> Result<Json<catalog::ListingListResponse>, Response> {
     require_permission(&ctx, "catalog:read")?;
+    if let Some(sid) = q.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
     let uc = catalog::SearchListingsUseCase::new(state.listing_repo());
     let resp = uc
         .execute(catalog::SearchListingsQuery {

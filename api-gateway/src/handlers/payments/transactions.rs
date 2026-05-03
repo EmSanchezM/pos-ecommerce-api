@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use payments::{
@@ -27,6 +28,7 @@ pub async fn process_payment_handler(
     JsonBody(command): JsonBody<ProcessOnlinePaymentCommand>,
 ) -> Result<(StatusCode, Json<TransactionResponse>), Response> {
     require_permission(&ctx, "transactions:create")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
 
     let use_case = ProcessOnlinePaymentUseCase::new(
         state.payment_gateway_repo(),
@@ -71,6 +73,9 @@ pub async fn list_transactions_handler(
     Query(query): Query<ListTransactionsQuery>,
 ) -> Result<Json<TransactionListResponse>, Response> {
     require_permission(&ctx, "transactions:read")?;
+    if let Some(sid) = query.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = ListTransactionsUseCase::new(state.transaction_repo());
     let response = use_case
@@ -145,6 +150,7 @@ pub async fn reconcile_transactions_handler(
     JsonBody(mut command): JsonBody<ReconcilePaymentsCommand>,
 ) -> Result<Json<ReconciliationResponse>, Response> {
     require_permission(&ctx, "transactions:reconcile")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
     command.confirmed_by_id = (*ctx.user_id()).into_uuid();
 
     let use_case = ReconcileManualPaymentsUseCase::new(state.transaction_repo());

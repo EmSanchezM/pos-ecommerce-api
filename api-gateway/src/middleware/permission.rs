@@ -275,7 +275,17 @@ mod tests {
 
     #[test]
     fn test_require_super_admin_success() {
-        let ctx = create_context_with_permissions(&["system:admin"]);
+        // require_super_admin checks ctx.is_super_admin(), not the permission
+        // set — that flag is set by auth_middleware after scanning every store
+        // for `system:admin`. Build a context with the flag asserted directly.
+        let ctx = UserContext::new(
+            UserId::new(),
+            StoreId::new(),
+            HashSet::new(),
+            vec![],
+            true,
+            None,
+        );
         let result = require_super_admin(&ctx);
         assert!(result.is_ok());
     }

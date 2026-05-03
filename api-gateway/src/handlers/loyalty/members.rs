@@ -17,6 +17,7 @@ use loyalty::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::require_feature;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -31,6 +32,7 @@ pub async fn list_members_handler(
     Query(params): Query<ListMembersQuery>,
 ) -> Result<Json<Vec<LoyaltyMemberResponse>>, Response> {
     require_permission(&ctx, "loyalty:read_member")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
     let use_case = ListLoyaltyMembersUseCase::new(state.loyalty_member_repo());
     let members = use_case
         .execute(LoyaltyProgramId::from_uuid(params.program_id))
@@ -47,6 +49,7 @@ pub async fn get_member_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<LoyaltyMemberResponse>, Response> {
     require_permission(&ctx, "loyalty:read_member")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
     let use_case = GetLoyaltyMemberUseCase::new(state.loyalty_member_repo());
     let member = use_case
         .execute(LoyaltyMemberId::from_uuid(id))
@@ -61,6 +64,7 @@ pub async fn enroll_member_handler(
     Json(cmd): Json<EnrollMemberCommand>,
 ) -> Result<Json<LoyaltyMemberResponse>, Response> {
     require_permission(&ctx, "loyalty:enroll_member")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
     let use_case = EnrollMemberUseCase::new(
         state.loyalty_program_repo(),
         state.loyalty_member_repo(),
@@ -85,6 +89,7 @@ pub async fn get_member_ledger_handler(
     Query(params): Query<LedgerQuery>,
 ) -> Result<Json<Vec<PointsLedgerEntryResponse>>, Response> {
     require_permission(&ctx, "loyalty:read_member")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
     let use_case = GetMemberLedgerUseCase::new(state.points_ledger_repo());
     let entries = use_case
         .execute(LoyaltyMemberId::from_uuid(id), params.limit.unwrap_or(50))
@@ -106,6 +111,7 @@ pub async fn earn_points_handler(
 ) -> Result<Json<LoyaltyMemberResponse>, Response> {
     // Earn is admin-driven in v1; subscriber takes over once publishers ship.
     require_permission(&ctx, "loyalty:adjust_points")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
     let use_case = EarnPointsUseCase::new(
         state.loyalty_program_repo(),
         state.loyalty_member_repo(),
@@ -136,6 +142,7 @@ pub async fn adjust_points_handler(
     Json(cmd): Json<AdjustPointsCommand>,
 ) -> Result<Json<LoyaltyMemberResponse>, Response> {
     require_permission(&ctx, "loyalty:adjust_points")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
     let use_case = AdjustPointsUseCase::new(
         state.loyalty_member_repo(),
         state.member_tier_repo(),
@@ -163,6 +170,7 @@ pub async fn redeem_reward_handler(
     Json(cmd): Json<RedeemRewardCommand>,
 ) -> Result<Json<RewardRedemptionResponse>, Response> {
     require_permission(&ctx, "loyalty:redeem_reward")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
     let use_case = RedeemRewardUseCase::new(
         state.loyalty_member_repo(),
         state.reward_repo(),

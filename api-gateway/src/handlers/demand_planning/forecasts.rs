@@ -12,6 +12,7 @@ use demand_planning::{DemandForecastResponse, GetForecastUseCase};
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -27,6 +28,7 @@ pub async fn get_forecast_handler(
     Query(params): Query<GetForecastQuery>,
 ) -> Result<Json<Vec<DemandForecastResponse>>, Response> {
     require_permission(&ctx, "demand_planning:read_forecast")?;
+    verify_store_in_org(state.pool(), &ctx, params.store_id).await?;
     let use_case = GetForecastUseCase::new(state.demand_forecast_repo());
     let forecasts = use_case
         .execute(variant_id, params.store_id)

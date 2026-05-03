@@ -15,6 +15,7 @@ use demand_planning::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -29,6 +30,9 @@ pub async fn list_reorder_policies_handler(
     Query(params): Query<ListPoliciesQuery>,
 ) -> Result<Json<Vec<ReorderPolicyResponse>>, Response> {
     require_permission(&ctx, "demand_planning:read_policy")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
     let use_case = ListReorderPoliciesUseCase::new(state.reorder_policy_repo());
     let policies = use_case
         .execute(params.store_id)
@@ -45,6 +49,7 @@ pub async fn upsert_reorder_policy_handler(
     Json(cmd): Json<UpsertReorderPolicyCommand>,
 ) -> Result<Json<ReorderPolicyResponse>, Response> {
     require_permission(&ctx, "demand_planning:write_policy")?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case = UpsertReorderPolicyUseCase::new(state.reorder_policy_repo());
     let policy = use_case
         .execute(cmd)

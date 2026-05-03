@@ -27,6 +27,7 @@ use inventory::{
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -58,6 +59,8 @@ pub async fn create_transfer_handler(
     JsonBody(command): JsonBody<CreateTransferCommand>,
 ) -> Result<(StatusCode, Json<TransferDetailResponse>), Response> {
     require_permission(&ctx, "transfers:create")?;
+    verify_store_in_org(state.pool(), &ctx, command.from_store_id).await?;
+    verify_store_in_org(state.pool(), &ctx, command.to_store_id).await?;
 
     let use_case = CreateTransferUseCase::new(state.transfer_repo());
 
@@ -77,6 +80,9 @@ pub async fn list_transfers_handler(
     Query(params): Query<ListTransfersQueryParams>,
 ) -> Result<Json<ListResponse<TransferResponse>>, Response> {
     require_permission(&ctx, "transfers:read")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = ListTransfersUseCase::new(state.transfer_repo());
 

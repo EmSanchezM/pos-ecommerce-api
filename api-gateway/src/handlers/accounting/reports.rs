@@ -12,6 +12,7 @@ use accounting::{AccountingPeriodId, GenerateProfitAndLossUseCase, ProfitAndLoss
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -27,6 +28,9 @@ pub async fn profit_and_loss_handler(
     Query(params): Query<PnlQuery>,
 ) -> Result<Json<ProfitAndLossResponse>, Response> {
     require_permission(&ctx, "accounting:read")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = GenerateProfitAndLossUseCase::new(state.accounting_report_repo());
     let response = use_case

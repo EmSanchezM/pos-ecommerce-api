@@ -11,6 +11,7 @@ use service_orders::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::require_feature;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -21,6 +22,7 @@ pub async fn add_diagnostic_handler(
     Json(cmd): Json<AddDiagnosticCommand>,
 ) -> Result<Json<DiagnosticResponse>, Response> {
     require_permission(&ctx, "service_orders:write_diagnostic")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let use_case =
         AddDiagnosticUseCase::new(state.service_order_repo(), state.service_diagnostic_repo());
     let diagnostic = use_case

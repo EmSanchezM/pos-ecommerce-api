@@ -19,6 +19,7 @@ use purchasing::CreatePurchaseOrderUseCase;
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -34,6 +35,9 @@ pub async fn list_replenishment_suggestions_handler(
     Query(params): Query<ListSuggestionsQuery>,
 ) -> Result<Json<Vec<ReplenishmentSuggestionResponse>>, Response> {
     require_permission(&ctx, "demand_planning:read_suggestion")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
     let use_case = ListReplenishmentSuggestionsUseCase::new(state.replenishment_suggestion_repo());
     let suggestions = use_case
         .execute(params.store_id, params.status)

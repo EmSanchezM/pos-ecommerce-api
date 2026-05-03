@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use sales::{
@@ -23,6 +24,7 @@ pub async fn open_shift_handler(
     JsonBody(command): JsonBody<OpenShiftCommand>,
 ) -> Result<(StatusCode, Json<ShiftResponse>), Response> {
     require_permission(&ctx, "sales:manage_shift")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
 
     let use_case = sales::OpenShiftUseCase::new(state.shift_repo());
 
@@ -95,6 +97,9 @@ pub async fn list_shifts_handler(
     Query(query): Query<ListShiftsQuery>,
 ) -> Result<Json<ShiftListResponse>, Response> {
     require_permission(&ctx, "sales:read_shift")?;
+    if let Some(sid) = query.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = sales::ListShiftsUseCase::new(state.shift_repo());
 

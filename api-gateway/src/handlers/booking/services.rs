@@ -16,6 +16,7 @@ use booking::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::{require_feature, verify_store_in_org};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -31,6 +32,8 @@ pub async fn list_services_handler(
     Query(params): Query<ListServicesQuery>,
 ) -> Result<Json<Vec<ServiceResponse>>, Response> {
     require_permission(&ctx, "booking:read_service")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
+    verify_store_in_org(state.pool(), &ctx, params.store_id).await?;
     let only_active = !params.include_inactive.unwrap_or(false);
     let use_case = ListServicesUseCase::new(state.booking_service_repo());
     let services = use_case
@@ -46,6 +49,8 @@ pub async fn create_service_handler(
     Json(cmd): Json<CreateServiceCommand>,
 ) -> Result<Json<ServiceResponse>, Response> {
     require_permission(&ctx, "booking:write_service")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case = CreateServiceUseCase::new(state.booking_service_repo());
     let service = use_case
         .execute(cmd)
@@ -61,6 +66,7 @@ pub async fn update_service_handler(
     Json(cmd): Json<UpdateServiceCommand>,
 ) -> Result<Json<ServiceResponse>, Response> {
     require_permission(&ctx, "booking:write_service")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
     let use_case = UpdateServiceUseCase::new(state.booking_service_repo());
     let service = use_case
         .execute(ServiceId::from_uuid(id), cmd)
@@ -75,6 +81,7 @@ pub async fn deactivate_service_handler(
     Path(id): Path<Uuid>,
 ) -> Result<axum::http::StatusCode, Response> {
     require_permission(&ctx, "booking:write_service")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
     let use_case = DeactivateServiceUseCase::new(state.booking_service_repo());
     use_case
         .execute(ServiceId::from_uuid(id))
@@ -90,6 +97,7 @@ pub async fn assign_service_resources_handler(
     Json(cmd): Json<AssignServiceResourcesCommand>,
 ) -> Result<axum::http::StatusCode, Response> {
     require_permission(&ctx, "booking:write_service")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
     let use_case =
         AssignServiceResourcesUseCase::new(state.booking_service_repo(), state.resource_repo());
     use_case

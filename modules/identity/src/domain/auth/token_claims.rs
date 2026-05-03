@@ -40,6 +40,13 @@ pub struct TokenClaims {
     /// "no scope" — every org-scoped check rejects the request).
     #[serde(default)]
     pub organization_id: Option<Uuid>,
+    /// Permissions that apply at the organization level — not tied to any
+    /// individual store. Added in tenancy v1.2 so `org_admin` can call
+    /// `tenancy:*` endpoints without sending `X-Store-Id`. `auth_middleware`
+    /// unions these into `UserContext.permissions` regardless of the active
+    /// store.
+    #[serde(default)]
+    pub global_permissions: Vec<String>,
 }
 
 impl TokenClaims {
@@ -55,6 +62,8 @@ impl TokenClaims {
     /// * `store_permissions` - Map of store_id → granted permission codes
     /// * `organization_id` - The user's tenant (None for users not yet
     ///   migrated to a tenant — should not happen post-v1.0 backfill).
+    /// * `global_permissions` - Permissions not bound to any specific store
+    ///   (e.g. `tenancy:*` for `org_admin`). Apply regardless of `X-Store-Id`.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_id: Uuid,
@@ -64,6 +73,7 @@ impl TokenClaims {
         iat: i64,
         store_permissions: HashMap<String, Vec<String>>,
         organization_id: Option<Uuid>,
+        global_permissions: Vec<String>,
     ) -> Self {
         Self {
             sub: user_id,
@@ -73,6 +83,7 @@ impl TokenClaims {
             iat,
             store_permissions,
             organization_id,
+            global_permissions,
         }
     }
 
@@ -110,6 +121,7 @@ mod tests {
             1705140000, // iat
             HashMap::new(),
             None,
+            Vec::new(),
         )
     }
 
@@ -212,6 +224,7 @@ mod tests {
             1705140000,
             HashMap::new(),
             None,
+            Vec::new(),
         );
 
         assert_eq!(claims1, claims2);

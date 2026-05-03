@@ -15,6 +15,7 @@ use service_orders::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::require_feature;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -26,6 +27,7 @@ macro_rules! transition_handler {
             Path(id): Path<Uuid>,
         ) -> Result<Json<ServiceOrderResponse>, Response> {
             require_permission(&ctx, $perm)?;
+            require_feature(state.pool(), &ctx, "service_orders").await?;
             let use_case = $use_case::new(state.service_order_repo());
             let order = use_case
                 .execute(ServiceOrderId::from_uuid(id))
@@ -69,6 +71,7 @@ pub async fn cancel_service_order_handler(
     Json(cmd): Json<CancelServiceOrderCommand>,
 ) -> Result<Json<ServiceOrderResponse>, Response> {
     require_permission(&ctx, "service_orders:cancel_order")?;
+    require_feature(state.pool(), &ctx, "service_orders").await?;
     let use_case = CancelServiceOrderUseCase::new(state.service_order_repo());
     let order = use_case
         .execute(ServiceOrderId::from_uuid(id), cmd)

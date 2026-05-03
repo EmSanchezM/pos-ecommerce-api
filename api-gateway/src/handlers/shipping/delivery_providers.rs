@@ -11,6 +11,7 @@ use uuid::Uuid;
 use super::methods::StoreScopedQuery;
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::{require_permission, require_super_admin};
 use crate::state::AppState;
 use shipping::{
@@ -39,6 +40,7 @@ pub async fn list_delivery_providers_handler(
     Query(q): Query<StoreScopedQuery>,
 ) -> Result<Json<Vec<DeliveryProviderResponse>>, Response> {
     require_permission(&ctx, "delivery_providers:read")?;
+    verify_store_in_org(state.pool(), &ctx, q.store_id).await?;
     let uc = ListDeliveryProvidersUseCase::new(state.delivery_provider_repo());
     let resp = uc
         .execute(q.store_id)

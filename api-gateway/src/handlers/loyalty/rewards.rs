@@ -14,6 +14,7 @@ use loyalty::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::require_feature;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -28,6 +29,7 @@ pub async fn list_rewards_handler(
     Query(params): Query<ListRewardsQuery>,
 ) -> Result<Json<Vec<RewardResponse>>, Response> {
     require_permission(&ctx, "loyalty:read_reward")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
     let use_case = ListRewardsUseCase::new(state.reward_repo());
     let rewards = use_case
         .execute(LoyaltyProgramId::from_uuid(params.program_id))
@@ -42,6 +44,7 @@ pub async fn create_reward_handler(
     Json(cmd): Json<CreateRewardCommand>,
 ) -> Result<Json<RewardResponse>, Response> {
     require_permission(&ctx, "loyalty:write_reward")?;
+    require_feature(state.pool(), &ctx, "loyalty").await?;
     let use_case = CreateRewardUseCase::new(state.loyalty_program_repo(), state.reward_repo());
     let reward = use_case
         .execute(cmd)

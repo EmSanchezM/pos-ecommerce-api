@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use fiscal::{CreateTaxRateCommand, TaxRateResponse, UpdateTaxRateCommand};
@@ -20,6 +21,7 @@ pub async fn create_tax_rate_handler(
     JsonBody(command): JsonBody<CreateTaxRateCommand>,
 ) -> Result<(StatusCode, Json<TaxRateResponse>), Response> {
     require_permission(&ctx, "tax_rates:create")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
 
     let use_case = fiscal::CreateTaxRateUseCase::new(state.tax_rate_repo());
 
@@ -54,6 +56,7 @@ pub async fn list_tax_rates_handler(
     Path(store_id): Path<Uuid>,
 ) -> Result<Json<Vec<TaxRateResponse>>, Response> {
     require_permission(&ctx, "tax_rates:read")?;
+    verify_store_in_org(state.pool(), &ctx, store_id).await?;
 
     let use_case = fiscal::ListTaxRatesUseCase::new(state.tax_rate_repo());
 

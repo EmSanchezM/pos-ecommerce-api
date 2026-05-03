@@ -187,20 +187,20 @@ mod tests {
             let mut filtered: Vec<_> = reservations
                 .values()
                 .filter(|r| {
-                    if let Some(sid) = stock_id {
-                        if r.stock_id() != sid {
-                            return false;
-                        }
+                    if let Some(sid) = stock_id
+                        && r.stock_id() != sid
+                    {
+                        return false;
                     }
-                    if let Some(s) = status {
-                        if r.status().to_string() != s {
-                            return false;
-                        }
+                    if let Some(s) = status
+                        && r.status().to_string() != s
+                    {
+                        return false;
                     }
-                    if let Some(rt) = reference_type {
-                        if r.reference_type() != rt {
-                            return false;
-                        }
+                    if let Some(rt) = reference_type
+                        && r.reference_type() != rt
+                    {
+                        return false;
                     }
                     true
                 })

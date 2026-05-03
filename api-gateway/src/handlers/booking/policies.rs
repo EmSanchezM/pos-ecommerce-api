@@ -15,6 +15,7 @@ use booking::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::{require_feature, verify_store_in_org};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -29,6 +30,8 @@ pub async fn get_booking_policy_handler(
     Query(params): Query<PolicyQuery>,
 ) -> Result<Json<BookingPolicyResponse>, Response> {
     require_permission(&ctx, "booking:read_policy")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
+    verify_store_in_org(state.pool(), &ctx, params.store_id).await?;
     let use_case = GetBookingPolicyUseCase::new(state.booking_policy_repo());
     let policy = use_case
         .execute(params.store_id)
@@ -43,6 +46,8 @@ pub async fn upsert_booking_policy_handler(
     Json(cmd): Json<UpsertBookingPolicyCommand>,
 ) -> Result<Json<BookingPolicyResponse>, Response> {
     require_permission(&ctx, "booking:write_policy")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case = UpsertBookingPolicyUseCase::new(state.booking_policy_repo());
     let policy = use_case
         .execute(cmd)

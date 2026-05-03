@@ -22,6 +22,7 @@ use booking::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::{require_feature, verify_store_in_org};
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -42,6 +43,10 @@ pub async fn list_appointments_handler(
     Query(params): Query<ListAppointmentsQuery>,
 ) -> Result<Json<Vec<AppointmentResponse>>, Response> {
     require_permission(&ctx, "booking:read_appointment")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let status = match params.status.as_deref() {
         Some(s) => {
@@ -76,6 +81,8 @@ pub async fn create_appointment_handler(
     Json(cmd): Json<CreateAppointmentAdminCommand>,
 ) -> Result<Json<AppointmentResponse>, Response> {
     require_permission(&ctx, "booking:write_appointment")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let use_case = CreateAppointmentAdminUseCase::new(
         state.booking_service_repo(),
         state.resource_repo(),
@@ -94,6 +101,7 @@ pub async fn get_appointment_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<AppointmentResponse>, Response> {
     require_permission(&ctx, "booking:read_appointment")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
     let use_case = GetAppointmentUseCase::new(state.appointment_repo());
     let appt = use_case
         .execute(AppointmentId::from_uuid(id))
@@ -108,6 +116,7 @@ pub async fn confirm_appointment_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<AppointmentResponse>, Response> {
     require_permission(&ctx, "booking:transition_appointment")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
     let use_case = ConfirmAppointmentUseCase::new(state.appointment_repo());
     let appt = use_case
         .execute(AppointmentId::from_uuid(id))
@@ -122,6 +131,7 @@ pub async fn start_appointment_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<AppointmentResponse>, Response> {
     require_permission(&ctx, "booking:transition_appointment")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
     let use_case = StartAppointmentUseCase::new(state.appointment_repo());
     let appt = use_case
         .execute(AppointmentId::from_uuid(id))
@@ -137,6 +147,7 @@ pub async fn complete_appointment_handler(
     Json(cmd): Json<CompleteAppointmentCommand>,
 ) -> Result<Json<AppointmentResponse>, Response> {
     require_permission(&ctx, "booking:transition_appointment")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
     let use_case = CompleteAppointmentUseCase::new(state.appointment_repo());
     let appt = use_case
         .execute(AppointmentId::from_uuid(id), cmd)
@@ -152,6 +163,7 @@ pub async fn cancel_appointment_handler(
     Json(cmd): Json<CancelAppointmentCommand>,
 ) -> Result<Json<AppointmentResponse>, Response> {
     require_permission(&ctx, "booking:cancel_appointment")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
     let use_case =
         CancelAppointmentUseCase::new(state.appointment_repo(), state.booking_policy_repo());
     let appt = use_case
@@ -167,6 +179,7 @@ pub async fn no_show_appointment_handler(
     Path(id): Path<Uuid>,
 ) -> Result<Json<AppointmentResponse>, Response> {
     require_permission(&ctx, "booking:transition_appointment")?;
+    require_feature(state.pool(), &ctx, "booking").await?;
     let use_case = NoShowAppointmentUseCase::new(state.appointment_repo());
     let appt = use_case
         .execute(AppointmentId::from_uuid(id))

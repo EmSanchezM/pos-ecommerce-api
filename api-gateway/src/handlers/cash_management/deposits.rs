@@ -16,6 +16,7 @@ use cash_management::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -31,6 +32,9 @@ pub async fn list_cash_deposits_handler(
     Query(params): Query<ListDepositsQuery>,
 ) -> Result<Json<Vec<CashDepositResponse>>, Response> {
     require_permission(&ctx, "cash_management:read_deposit")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
     let use_case = ListCashDepositsUseCase::new(state.cash_deposit_repo());
     let deposits = use_case
         .execute(params.store_id, params.status)
