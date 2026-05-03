@@ -18,6 +18,7 @@ pub mod sales;
 pub mod service_orders;
 pub mod shipping;
 pub mod store_handlers;
+pub mod tenancy;
 pub mod terminal_handlers;
 
 pub use auth_handlers::*;

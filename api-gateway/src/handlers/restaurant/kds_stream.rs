@@ -22,6 +22,7 @@ use uuid::Uuid;
 use restaurant_operations::KitchenStationId;
 
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::require_feature;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -31,6 +32,7 @@ pub async fn kds_stream_handler(
     Path(station_id): Path<Uuid>,
 ) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, Response> {
     require_permission(&ctx, "restaurant:read_ticket")?;
+    require_feature(state.pool(), &ctx, "restaurant").await?;
 
     let receiver = state
         .kds_broadcaster_handle()

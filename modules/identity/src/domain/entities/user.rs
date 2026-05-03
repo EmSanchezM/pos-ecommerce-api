@@ -2,6 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::domain::value_objects::{Email, UserId, Username};
 
@@ -9,6 +10,9 @@ use crate::domain::value_objects::{Email, UserId, Username};
 ///
 /// Contains authentication credentials, profile information, and status.
 /// Users can be assigned to multiple stores and have different roles per store.
+/// `organization_id` was added in tenancy v1.0 and stays `Option<Uuid>` until
+/// v1.3 flips the column to NOT NULL — until then, legacy rows backfilled
+/// during migration 50 may still surface as `None` in error paths.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     id: UserId,
@@ -18,6 +22,7 @@ pub struct User {
     last_name: String,
     password_hash: String,
     is_active: bool,
+    organization_id: Option<Uuid>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 }
@@ -36,6 +41,7 @@ impl User {
         last_name: String,
         password_hash: String,
         is_active: bool,
+        organization_id: Option<Uuid>,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
     ) -> Self {
@@ -47,12 +53,15 @@ impl User {
             last_name,
             password_hash,
             is_active,
+            organization_id,
             created_at,
             updated_at,
         }
     }
 
-    /// Creates a new active User with current timestamps
+    /// Creates a new active User with current timestamps. v1.0 leaves
+    /// `organization_id = None` so existing call sites stay source-compatible;
+    /// the seed binary explicitly assigns the default org id at INSERT time.
     pub fn create(
         username: Username,
         email: Email,
@@ -69,6 +78,7 @@ impl User {
             last_name,
             password_hash,
             is_active: true,
+            organization_id: None,
             created_at: now,
             updated_at: now,
         }
@@ -102,6 +112,10 @@ impl User {
 
     pub fn is_active(&self) -> bool {
         self.is_active
+    }
+
+    pub fn organization_id(&self) -> Option<Uuid> {
+        self.organization_id
     }
 
     pub fn created_at(&self) -> DateTime<Utc> {
@@ -152,6 +166,14 @@ impl User {
     /// Deactivates the user account
     pub fn deactivate(&mut self) {
         self.is_active = false;
+        self.updated_at = Utc::now();
+    }
+
+    /// Re-assigns the user to a different organization. Used by the
+    /// tenancy admin flow (v1.2 self-service signup; v1.0/v1.1 keep the
+    /// default-org assignment from the data migration).
+    pub fn set_organization(&mut self, organization_id: Option<Uuid>) {
+        self.organization_id = organization_id;
         self.updated_at = Utc::now();
     }
 }
@@ -246,6 +268,7 @@ mod tests {
             "Name".to_string(),
             "different_hash".to_string(),
             false,
+            None,
             Utc::now(),
             Utc::now(),
         );

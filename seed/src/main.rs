@@ -155,6 +155,13 @@ async fn main() -> Result<()> {
     info!("Seeding restaurant operations defaults...");
     seed_restaurant_defaults(&mut tx, store_id, super_admin_id).await?;
 
+    // Seed tenancy demo: a second org "Restaurante Demo" with Pro plan,
+    // one verified custom domain, and dark-themed branding. The default
+    // org (id `00000000-...0001`) is created by migration 50 — we don't
+    // touch it here.
+    info!("Seeding tenancy defaults...");
+    seed_tenancy_defaults(&mut tx).await?;
+
     tx.commit().await?;
 
     info!("Seed completed successfully!");
@@ -268,11 +275,17 @@ async fn seed_role_permissions(
 
 async fn seed_main_store(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<Uuid> {
     let id = Uuid::now_v7();
+    // Hard-coded id of the default org created by migration
+    // 20260501000050_create_default_organization.sql. Pinning the seed's new
+    // store to it keeps tenancy v1.0 backward-compatible: every existing
+    // single-tenant install (and every fresh seed) lands inside one well-
+    // known org, so the future scope-by-org middleware sees consistent data.
+    let default_org_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
 
     sqlx::query(
         r#"
-        INSERT INTO stores (id, name, address, is_ecommerce, is_active)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO stores (id, name, address, is_ecommerce, is_active, organization_id)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT DO NOTHING
         "#,
     )
@@ -281,6 +294,7 @@ async fn seed_main_store(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Resu
     .bind(data::MAIN_STORE.1)
     .bind(data::MAIN_STORE.2)
     .bind(data::MAIN_STORE.3)
+    .bind(default_org_id)
     .execute(&mut **tx)
     .await?;
 
@@ -306,10 +320,14 @@ async fn seed_super_admin_user(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -
         .expect("Failed to hash password")
         .to_string();
 
+    let default_org_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
     sqlx::query(
         r#"
-        INSERT INTO users (id, email, username, first_name, last_name, password_hash, is_active)
-        VALUES ($1, $2, $3, $4, $5, $6, true)
+        INSERT INTO users (
+            id, email, username, first_name, last_name,
+            password_hash, is_active, organization_id
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, true, $7)
         ON CONFLICT (email) DO NOTHING
         "#,
     )
@@ -319,6 +337,7 @@ async fn seed_super_admin_user(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -
     .bind(data::SUPER_ADMIN_USER.2) // first_name
     .bind(data::SUPER_ADMIN_USER.3) // last_name
     .bind(&password_hash)
+    .bind(default_org_id)
     .execute(&mut **tx)
     .await?;
 
@@ -1889,6 +1908,197 @@ async fn seed_restaurant_defaults(
         "  KDS ticket #1 on Mesa 1 / Hot Line, {} items pending",
         data::DEMO_KDS_TICKET_ITEMS.len()
     );
+
+    Ok(())
+}
+
+/// Seeds an additional demo organization (besides the default org created by
+/// migration 50) so the by-slug / by-domain endpoints have multiple rows to
+/// query and the dashboard list isn't single-row. Idempotent — re-running
+/// does not duplicate the demo org or its sub-resources.
+async fn seed_tenancy_defaults(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<()> {
+    let (name, slug, contact_email, contact_phone, tier) = data::DEMO_TENANCY_ORG;
+
+    // ---- Organization (idempotent on slug) -------------------------------
+    let existing: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM organizations WHERE slug = $1")
+        .bind(slug)
+        .fetch_optional(&mut **tx)
+        .await?;
+    if existing.is_some() {
+        info!("  Tenancy demo org `{}` already exists — skipping", slug);
+        return Ok(());
+    }
+    let org_id = Uuid::new_v7(Timestamp::now(NoContext));
+    sqlx::query(
+        r#"
+        INSERT INTO organizations (
+            id, name, slug, contact_email, contact_phone, status,
+            created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, 'active', NOW(), NOW())
+        "#,
+    )
+    .bind(org_id)
+    .bind(name)
+    .bind(slug)
+    .bind(contact_email)
+    .bind(contact_phone)
+    .execute(&mut **tx)
+    .await?;
+    info!("  Tenancy org: {} (slug={}, tier={})", name, slug, tier);
+
+    // ---- Plan: pro tier with restaurant + booking enabled ---------------
+    let feature_flags = serde_json::json!({
+        "booking": true,
+        "restaurant": true,
+        "service_orders": false,
+        "loyalty": true,
+    });
+    sqlx::query(
+        r#"
+        INSERT INTO organization_plans (
+            id, organization_id, tier, feature_flags,
+            seat_limit, store_limit, starts_at, expires_at,
+            created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, NULL, NULL, NOW(), NULL, NOW(), NOW())
+        ON CONFLICT (organization_id) DO NOTHING
+        "#,
+    )
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+    .bind(org_id)
+    .bind(tier)
+    .bind(&feature_flags)
+    .execute(&mut **tx)
+    .await?;
+
+    // ---- Custom domain (verified upfront in v1.0) -----------------------
+    sqlx::query(
+        r#"
+        INSERT INTO organization_domains (
+            id, organization_id, domain, is_verified, is_primary,
+            verification_token, verified_at, created_at
+        )
+        VALUES ($1, $2, $3, TRUE, TRUE, NULL, NOW(), NOW())
+        ON CONFLICT (domain) DO NOTHING
+        "#,
+    )
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+    .bind(org_id)
+    .bind(data::DEMO_TENANCY_DOMAIN)
+    .execute(&mut **tx)
+    .await?;
+    info!(
+        "  Tenancy domain: {} (verified, primary)",
+        data::DEMO_TENANCY_DOMAIN
+    );
+
+    // ---- Branding: orange primary, dark theme ---------------------------
+    let (logo_url, primary, secondary, theme) = data::DEMO_TENANCY_BRANDING;
+    sqlx::query(
+        r#"
+        INSERT INTO organization_branding (
+            organization_id, logo_url, favicon_url,
+            primary_color, secondary_color, accent_color,
+            theme, custom_css, created_at, updated_at
+        )
+        VALUES ($1, $2, NULL, $3, $4, NULL, $5, NULL, NOW(), NOW())
+        ON CONFLICT (organization_id) DO NOTHING
+        "#,
+    )
+    .bind(org_id)
+    .bind(logo_url)
+    .bind(primary)
+    .bind(secondary)
+    .bind(theme)
+    .execute(&mut **tx)
+    .await?;
+    info!("  Tenancy branding: primary={} theme={}", primary, theme);
+
+    // ---- Demo org_admin user attached to the demo-resto org -------------
+    // Lets the smoke test verify the v1.1 enforcement: this user has
+    // tenancy:read/write_branding/domain perms but cannot see other orgs,
+    // mutate plans, or suspend their tenant. Idempotent on email.
+    let admin_email = "demo-resto-admin@example.com";
+    let already: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM users WHERE email = $1")
+        .bind(admin_email)
+        .fetch_optional(&mut **tx)
+        .await?;
+    if already.is_none() {
+        let admin_id = Uuid::new_v7(Timestamp::now(NoContext));
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+        let password_hash = argon2
+            .hash_password(b"OrgAdmin123!", &salt)
+            .expect("hash demo-resto-admin password")
+            .to_string();
+        sqlx::query(
+            r#"
+            INSERT INTO users (
+                id, email, username, first_name, last_name,
+                password_hash, is_active, organization_id
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, TRUE, $7)
+            "#,
+        )
+        .bind(admin_id)
+        .bind(admin_email)
+        .bind("demo_resto_admin")
+        .bind("Org")
+        .bind("Admin")
+        .bind(&password_hash)
+        .bind(org_id)
+        .execute(&mut **tx)
+        .await?;
+
+        // The org_admin user needs at least one user_stores row for the
+        // auth middleware to populate accessible_store_ids; we tie them to
+        // the default org's main store solely so they can call the admin
+        // endpoints. Cross-org enforcement still rejects requests targeting
+        // other orgs because organization_id is set on the user above.
+        let main_store_id: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM stores WHERE name = $1 LIMIT 1")
+                .bind(data::MAIN_STORE.0)
+                .fetch_optional(&mut **tx)
+                .await?;
+        if let Some((store_id,)) = main_store_id {
+            sqlx::query(
+                r#"
+                INSERT INTO user_stores (user_id, store_id)
+                VALUES ($1, $2)
+                ON CONFLICT (user_id, store_id) DO NOTHING
+                "#,
+            )
+            .bind(admin_id)
+            .bind(store_id)
+            .execute(&mut **tx)
+            .await?;
+            let role_id: (Uuid,) = sqlx::query_as("SELECT id FROM roles WHERE name = 'org_admin'")
+                .fetch_one(&mut **tx)
+                .await?;
+            sqlx::query(
+                r#"
+                INSERT INTO user_store_roles (user_id, store_id, role_id)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (user_id, store_id, role_id) DO NOTHING
+                "#,
+            )
+            .bind(admin_id)
+            .bind(store_id)
+            .bind(role_id.0)
+            .execute(&mut **tx)
+            .await?;
+        }
+        info!(
+            "  Tenancy demo user: {} (role=org_admin, password=OrgAdmin123!)",
+            admin_email
+        );
+    } else {
+        info!(
+            "  Tenancy demo user {} already exists — skipping",
+            admin_email
+        );
+    }
 
     Ok(())
 }

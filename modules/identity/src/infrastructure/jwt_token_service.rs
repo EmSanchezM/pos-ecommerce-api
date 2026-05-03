@@ -121,6 +121,7 @@ impl TokenService for JwtTokenService {
             exp.timestamp(),
             now.timestamp(),
             store_permissions.clone(),
+            user.organization_id(),
         );
 
         encode(
@@ -401,6 +402,7 @@ mod tests {
             past.timestamp(), // Already expired
             (past - Duration::minutes(15)).timestamp(),
             HashMap::new(),
+            None,
         );
 
         // Manually encode the expired token

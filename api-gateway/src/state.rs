@@ -85,6 +85,11 @@ use shipping::{
     PgShippingMethodRepository, PgShippingRateRepository, PgShippingZoneRepository, ShipmentDeps,
 };
 use sqlx::PgPool;
+use tenancy::{
+    OrganizationBrandingRepository, OrganizationDomainRepository, OrganizationPlanRepository,
+    OrganizationRepository, PgOrganizationBrandingRepository, PgOrganizationDomainRepository,
+    PgOrganizationPlanRepository, PgOrganizationRepository, TenancyEventSubscriber,
+};
 
 /// Application state shared across all HTTP handlers.
 ///
@@ -275,6 +280,13 @@ pub struct AppState {
     kds_ticket_item_repo: Arc<dyn KdsTicketItemRepository>,
     kds_broadcaster: Arc<dyn KdsBroadcaster>,
     kds_broadcaster_handle: Arc<TokioBroadcastKdsBroadcaster>,
+    // -------------------------------------------------------------------------
+    // Tenancy (organizations, plans, custom domains, branding)
+    // -------------------------------------------------------------------------
+    organization_repo: Arc<dyn OrganizationRepository>,
+    organization_plan_repo: Arc<dyn OrganizationPlanRepository>,
+    organization_domain_repo: Arc<dyn OrganizationDomainRepository>,
+    organization_branding_repo: Arc<dyn OrganizationBrandingRepository>,
 }
 
 impl AppState {
@@ -390,6 +402,10 @@ impl AppState {
         kds_ticket_item_repo: Arc<dyn KdsTicketItemRepository>,
         kds_broadcaster: Arc<dyn KdsBroadcaster>,
         kds_broadcaster_handle: Arc<TokioBroadcastKdsBroadcaster>,
+        organization_repo: Arc<dyn OrganizationRepository>,
+        organization_plan_repo: Arc<dyn OrganizationPlanRepository>,
+        organization_domain_repo: Arc<dyn OrganizationDomainRepository>,
+        organization_branding_repo: Arc<dyn OrganizationBrandingRepository>,
     ) -> Self {
         Self {
             pool,
@@ -482,6 +498,10 @@ impl AppState {
             kds_ticket_item_repo,
             kds_broadcaster,
             kds_broadcaster_handle,
+            organization_repo,
+            organization_plan_repo,
+            organization_domain_repo,
+            organization_branding_repo,
         }
     }
 
@@ -690,6 +710,17 @@ impl AppState {
         // One TokioBroadcastKdsBroadcaster shared as two views: trait-object
         // for use cases (publish) + concrete handle for the SSE handler
         // (subscribe).
+        // Tenancy repositories + register its outbox subscriber.
+        let organization_repo: Arc<dyn OrganizationRepository> =
+            Arc::new(PgOrganizationRepository::new((*pool_arc).clone()));
+        let organization_plan_repo: Arc<dyn OrganizationPlanRepository> =
+            Arc::new(PgOrganizationPlanRepository::new((*pool_arc).clone()));
+        let organization_domain_repo: Arc<dyn OrganizationDomainRepository> =
+            Arc::new(PgOrganizationDomainRepository::new((*pool_arc).clone()));
+        let organization_branding_repo: Arc<dyn OrganizationBrandingRepository> =
+            Arc::new(PgOrganizationBrandingRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(TenancyEventSubscriber::new()));
+
         let kds_broadcaster_handle = Arc::new(TokioBroadcastKdsBroadcaster::new());
         let kds_broadcaster: Arc<dyn KdsBroadcaster> = kds_broadcaster_handle.clone();
         subscriber_registry.register(Arc::new(RestaurantOperationsEventSubscriber::new()));
@@ -788,6 +819,10 @@ impl AppState {
             kds_ticket_item_repo,
             kds_broadcaster,
             kds_broadcaster_handle,
+            organization_repo,
+            organization_plan_repo,
+            organization_domain_repo,
+            organization_branding_repo,
         }
     }
 
@@ -1201,5 +1236,22 @@ impl AppState {
     /// Concrete handle for the SSE handler (calls `.subscribe(station_id)`).
     pub fn kds_broadcaster_handle(&self) -> Arc<TokioBroadcastKdsBroadcaster> {
         self.kds_broadcaster_handle.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Tenancy accessors
+    // -------------------------------------------------------------------------
+
+    pub fn organization_repo(&self) -> Arc<dyn OrganizationRepository> {
+        self.organization_repo.clone()
+    }
+    pub fn organization_plan_repo(&self) -> Arc<dyn OrganizationPlanRepository> {
+        self.organization_plan_repo.clone()
+    }
+    pub fn organization_domain_repo(&self) -> Arc<dyn OrganizationDomainRepository> {
+        self.organization_domain_repo.clone()
+    }
+    pub fn organization_branding_repo(&self) -> Arc<dyn OrganizationBrandingRepository> {
+        self.organization_branding_repo.clone()
     }
 }

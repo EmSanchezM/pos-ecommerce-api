@@ -108,6 +108,7 @@ dependencies = [
  "service_orders",
  "shipping",
  "sqlx",
+ "tenancy",
  "tokio",
  "tokio-stream",
  "tower",
@@ -2901,6 +2902,24 @@ dependencies = [
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "tenancy"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "common",
+ "events",
+ "identity",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
