@@ -8,6 +8,7 @@ pub mod catalog_routes;
 pub mod demand_planning_routes;
 pub mod fiscal_routes;
 pub mod inventory_routes;
+pub mod loyalty_routes;
 pub mod payments_routes;
 pub mod purchasing_routes;
 pub mod sales_routes;
@@ -34,6 +35,9 @@ pub use fiscal_routes::{invoices_router, tax_rates_router};
 pub use inventory_routes::{
     categories_router, inventory_router, products_router, recipes_router, reports_router,
     transfers_router,
+};
+pub use loyalty_routes::{
+    loyalty_members_router, loyalty_programs_router, loyalty_rewards_router, loyalty_tiers_router,
 };
 pub use payments_routes::{
     payment_gateways_router, payouts_router, transactions_router, webhooks_router,

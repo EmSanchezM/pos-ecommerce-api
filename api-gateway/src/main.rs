@@ -22,8 +22,9 @@ use routes::{
     catalog_reviews_router, catalog_storage_providers_router, catalog_wishlist_router,
     categories_router, credit_notes_router, customers_router, delivery_providers_router,
     delivery_webhooks_router, drivers_router, forecasts_router, goods_receipts_router,
-    inventory_router, invoices_router, orders_router, payment_gateways_router, payouts_router,
-    pos_sales_router, products_router, promotions_router, public_tracking_router,
+    inventory_router, invoices_router, loyalty_members_router, loyalty_programs_router,
+    loyalty_rewards_router, loyalty_tiers_router, orders_router, payment_gateways_router,
+    payouts_router, pos_sales_router, products_router, promotions_router, public_tracking_router,
     purchase_orders_router, recipes_router, reorder_policies_router,
     replenishment_suggestions_router, reports_router, shifts_router, shipments_router,
     shipping_calculate_router, shipping_methods_router, shipping_rates_router,
@@ -194,6 +195,23 @@ async fn main() {
         .nest(
             "/api/v1/bank-reconciliations",
             bank_reconciliations_router(app_state.clone()),
+        )
+        // Loyalty
+        .nest(
+            "/api/v1/loyalty/programs",
+            loyalty_programs_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/loyalty/tiers",
+            loyalty_tiers_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/loyalty/rewards",
+            loyalty_rewards_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/loyalty/members",
+            loyalty_members_router(app_state.clone()),
         )
         // Static file serving for the LocalServer image storage adapter.
         // The mount path matches IMAGE_STORAGE_PUBLIC_URL (default `/uploads`).

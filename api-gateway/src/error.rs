@@ -16,6 +16,7 @@ use demand_planning::DemandPlanningError;
 use fiscal::FiscalError;
 use identity::{AuthError, ErrorResponse, IdentityError};
 use inventory::InventoryError;
+use loyalty::LoyaltyError;
 use payments::PaymentsError;
 use pos_core::CoreError;
 use purchasing::PurchasingError;
@@ -2313,6 +2314,80 @@ impl From<CashManagementError> for AppError {
 
             // 500
             CashManagementError::Database(_) | CashManagementError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<LoyaltyError> Implementation
+// =============================================================================
+
+impl From<LoyaltyError> for AppError {
+    fn from(err: LoyaltyError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            LoyaltyError::ProgramNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "LOYALTY_PROGRAM_NOT_FOUND",
+                    format!("Loyalty program not found: {}", id),
+                ),
+            ),
+            LoyaltyError::TierNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("TIER_NOT_FOUND", format!("Member tier not found: {}", id)),
+            ),
+            LoyaltyError::MemberNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "LOYALTY_MEMBER_NOT_FOUND",
+                    format!("Loyalty member not found: {}", id),
+                ),
+            ),
+            LoyaltyError::RewardNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("REWARD_NOT_FOUND", format!("Reward not found: {}", id)),
+            ),
+            LoyaltyError::CustomerNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CUSTOMER_NOT_FOUND", format!("Customer not found: {}", id)),
+            ),
+
+            // 409
+            LoyaltyError::AlreadyEnrolled { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("ALREADY_ENROLLED", err.to_string()),
+            ),
+            LoyaltyError::InsufficientPoints { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INSUFFICIENT_POINTS", err.to_string()),
+            ),
+            LoyaltyError::RewardProgramMismatch { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("REWARD_PROGRAM_MISMATCH", err.to_string()),
+            ),
+
+            // 400 — validation
+            LoyaltyError::NegativeAmount(_)
+            | LoyaltyError::NegativeThreshold(_)
+            | LoyaltyError::InvalidTransactionType(_)
+            | LoyaltyError::InvalidRewardType(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502 — downstream
+            LoyaltyError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            LoyaltyError::Database(_) | LoyaltyError::Serialization(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
             ),
