@@ -394,6 +394,38 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
         "service_orders:transition_quote",
         "Send/approve/reject a quote",
     ),
+    // Restaurant operations module
+    ("restaurant:read_station", "List/read kitchen stations"),
+    (
+        "restaurant:write_station",
+        "Create/update/deactivate kitchen stations",
+    ),
+    ("restaurant:read_table", "List/read restaurant tables"),
+    (
+        "restaurant:write_table",
+        "Create/update tables and change their status",
+    ),
+    (
+        "restaurant:read_modifier",
+        "List/read menu modifier groups + modifiers",
+    ),
+    (
+        "restaurant:write_modifier",
+        "Create/update modifier groups, modifiers, product M2M",
+    ),
+    (
+        "restaurant:read_ticket",
+        "List/read KDS tickets and subscribe to the SSE stream",
+    ),
+    (
+        "restaurant:write_ticket",
+        "Create KDS tickets directly (v1.1 will auto-create from sales)",
+    ),
+    (
+        "restaurant:transition_ticket",
+        "Send/ready/serve a ticket or change item statuses",
+    ),
+    ("restaurant:cancel_ticket", "Cancel a KDS ticket"),
     // System permissions
     (
         "system:admin",
@@ -681,6 +713,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "service_orders:write_diagnostic",
             "service_orders:write_quote",
             "service_orders:transition_quote",
+            // Restaurant operations
+            "restaurant:read_station",
+            "restaurant:write_station",
+            "restaurant:read_table",
+            "restaurant:write_table",
+            "restaurant:read_modifier",
+            "restaurant:write_modifier",
+            "restaurant:read_ticket",
+            "restaurant:write_ticket",
+            "restaurant:transition_ticket",
+            "restaurant:cancel_ticket",
             // System
             "system:admin",
             "system:settings",
@@ -901,6 +944,17 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "service_orders:write_diagnostic",
             "service_orders:write_quote",
             "service_orders:transition_quote",
+            // Restaurant operations
+            "restaurant:read_station",
+            "restaurant:write_station",
+            "restaurant:read_table",
+            "restaurant:write_table",
+            "restaurant:read_modifier",
+            "restaurant:write_modifier",
+            "restaurant:read_ticket",
+            "restaurant:write_ticket",
+            "restaurant:transition_ticket",
+            "restaurant:cancel_ticket",
         ],
     ),
     // Store manager
@@ -1691,4 +1745,67 @@ pub const DEMO_SERVICE_ITEMS: &[(&str, &str, f64, f64, f64)] = &[
         0.15,
     ),
     ("labor", "Balanceo de ruedas delanteras", 1.0, 200.0, 0.15),
+];
+
+// =============================================================================
+// Restaurant operations demo data — gives the F&B endpoints a complete graph
+// on first boot. Two stations, four tables, two modifier groups (Cocción +
+// Extras) with 5 modifiers, and one in-progress KDS ticket on Mesa 1 with
+// two items in Pending so the SSE smoke test has something to react to.
+// =============================================================================
+
+/// Kitchen stations: (name, color, sort_order).
+pub const DEMO_KITCHEN_STATIONS: &[(&str, &str, i32)] =
+    &[("Hot Line", "#ef4444", 0), ("Bar", "#06b6d4", 1)];
+
+/// Restaurant tables: (label, capacity, notes).
+pub const DEMO_RESTAURANT_TABLES: &[(&str, i32, Option<&str>)] = &[
+    ("Mesa 1", 4, Some("Ventana")),
+    ("Mesa 2", 2, None),
+    ("Mesa 3", 6, Some("Esquina")),
+    ("Barra 1", 1, Some("Asiento alto")),
+];
+
+/// Modifier group + its modifiers.
+/// Group: (name, min_select, max_select, sort_order).
+/// Modifier: (name, price_delta, sort_order).
+pub struct DemoModifierGroup {
+    pub name: &'static str,
+    pub min_select: i32,
+    pub max_select: i32,
+    pub sort_order: i32,
+    pub modifiers: &'static [(&'static str, f64, i32)],
+}
+
+pub const DEMO_MODIFIER_GROUPS: &[DemoModifierGroup] = &[
+    DemoModifierGroup {
+        name: "Cocción",
+        min_select: 1,
+        max_select: 1,
+        sort_order: 0,
+        modifiers: &[
+            ("Término rojo", 0.0, 0),
+            ("Término medio", 0.0, 1),
+            ("Bien cocido", 0.0, 2),
+        ],
+    },
+    DemoModifierGroup {
+        name: "Extras",
+        min_select: 0,
+        max_select: 5,
+        sort_order: 1,
+        modifiers: &[("Extra queso", 25.0, 0), ("Sin cebolla", 0.0, 1)],
+    },
+];
+
+/// Demo KDS ticket landed on Mesa 1, station Hot Line, status pending.
+/// Format: (course, notes_or_none).
+pub const DEMO_KDS_TICKET: (&str, Option<&str>) = ("main", Some("Cliente alérgico al maní"));
+
+/// Two items already attached to the demo ticket (status=pending, no
+/// modifiers — easy smoke test).
+/// Format: (description, quantity, special_instructions).
+pub const DEMO_KDS_TICKET_ITEMS: &[(&str, f64, Option<&str>)] = &[
+    ("Hamburguesa clásica con papas", 2.0, Some("Una sin tomate")),
+    ("Limonada natural grande", 2.0, None),
 ];

@@ -13,6 +13,7 @@ pub mod inventory;
 pub mod loyalty;
 pub mod payments;
 pub mod purchasing;
+pub mod restaurant;
 pub mod sales;
 pub mod service_orders;
 pub mod shipping;

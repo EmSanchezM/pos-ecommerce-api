@@ -149,6 +149,12 @@ async fn main() -> Result<()> {
     info!("Seeding service orders defaults...");
     seed_service_orders_defaults(&mut tx, store_id, super_admin_id).await?;
 
+    // Seed restaurant operations demo: 2 stations (Hot Line, Bar), 4 tables,
+    // 2 modifier groups (Cocción + Extras), and one in-progress KDS ticket
+    // on Mesa 1 with two items so the SSE smoke test has data to react to.
+    info!("Seeding restaurant operations defaults...");
+    seed_restaurant_defaults(&mut tx, store_id, super_admin_id).await?;
+
     tx.commit().await?;
 
     info!("Seed completed successfully!");
@@ -1648,6 +1654,240 @@ async fn seed_service_orders_defaults(
         "  Service items: {} (running total L {:.2})",
         data::DEMO_SERVICE_ITEMS.len(),
         running_total
+    );
+
+    Ok(())
+}
+
+/// Seeds the restaurant_operations module: kitchen stations, dining tables,
+/// menu modifier groups + modifiers, and one in-progress KDS ticket on
+/// Mesa 1 (Hot Line). Idempotent — re-running does not create duplicates.
+async fn seed_restaurant_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+    actor_user_id: Uuid,
+) -> Result<()> {
+    use std::collections::HashMap;
+
+    // ---- Kitchen stations (idempotent on (store_id, name)) ----------------
+    let mut station_ids: HashMap<&str, Uuid> = HashMap::new();
+    for (name, color, sort_order) in data::DEMO_KITCHEN_STATIONS {
+        let existing: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM kitchen_stations WHERE store_id = $1 AND name = $2")
+                .bind(store_id)
+                .bind(name)
+                .fetch_optional(&mut **tx)
+                .await?;
+        let id = match existing {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                    INSERT INTO kitchen_stations (
+                        id, store_id, name, color, sort_order, is_active
+                    )
+                    VALUES ($1, $2, $3, $4, $5, TRUE)
+                    "#,
+                )
+                .bind(id)
+                .bind(store_id)
+                .bind(*name)
+                .bind(*color)
+                .bind(*sort_order)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+        station_ids.insert(*name, id);
+    }
+    info!("  Kitchen stations: {}", data::DEMO_KITCHEN_STATIONS.len());
+
+    // ---- Restaurant tables (idempotent on (store_id, label)) --------------
+    let mut table_ids: HashMap<&str, Uuid> = HashMap::new();
+    for (label, capacity, notes) in data::DEMO_RESTAURANT_TABLES {
+        let existing: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM restaurant_tables WHERE store_id = $1 AND label = $2")
+                .bind(store_id)
+                .bind(label)
+                .fetch_optional(&mut **tx)
+                .await?;
+        let id = match existing {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                    INSERT INTO restaurant_tables (
+                        id, store_id, label, capacity, status,
+                        current_ticket_id, notes, is_active
+                    )
+                    VALUES ($1, $2, $3, $4, 'free', NULL, $5, TRUE)
+                    "#,
+                )
+                .bind(id)
+                .bind(store_id)
+                .bind(*label)
+                .bind(*capacity)
+                .bind(*notes)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+        table_ids.insert(*label, id);
+    }
+    info!(
+        "  Restaurant tables: {}",
+        data::DEMO_RESTAURANT_TABLES.len()
+    );
+
+    // ---- Modifier groups + modifiers --------------------------------------
+    let mut modifiers_added = 0;
+    for group in data::DEMO_MODIFIER_GROUPS {
+        let existing: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM menu_modifier_groups WHERE store_id = $1 AND name = $2")
+                .bind(store_id)
+                .bind(group.name)
+                .fetch_optional(&mut **tx)
+                .await?;
+        let group_id = match existing {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                    INSERT INTO menu_modifier_groups (
+                        id, store_id, name, min_select, max_select,
+                        sort_order, is_active
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+                    "#,
+                )
+                .bind(id)
+                .bind(store_id)
+                .bind(group.name)
+                .bind(group.min_select)
+                .bind(group.max_select)
+                .bind(group.sort_order)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+        for (m_name, m_delta, m_sort) in group.modifiers {
+            let m_existing: Option<(Uuid,)> =
+                sqlx::query_as("SELECT id FROM menu_modifiers WHERE group_id = $1 AND name = $2")
+                    .bind(group_id)
+                    .bind(m_name)
+                    .fetch_optional(&mut **tx)
+                    .await?;
+            if m_existing.is_some() {
+                continue;
+            }
+            let delta = Decimal::from_f64(*m_delta)
+                .unwrap_or(Decimal::ZERO)
+                .round_dp(4);
+            sqlx::query(
+                r#"
+                INSERT INTO menu_modifiers (
+                    id, group_id, name, price_delta, sort_order, is_active
+                )
+                VALUES ($1, $2, $3, $4, $5, TRUE)
+                "#,
+            )
+            .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+            .bind(group_id)
+            .bind(*m_name)
+            .bind(delta)
+            .bind(*m_sort)
+            .execute(&mut **tx)
+            .await?;
+            modifiers_added += 1;
+        }
+    }
+    info!(
+        "  Modifier groups: {} ({} modifiers added)",
+        data::DEMO_MODIFIER_GROUPS.len(),
+        modifiers_added
+    );
+
+    // ---- KDS ticket on Mesa 1, station Hot Line, status pending -----------
+    let hot_line_id = station_ids
+        .get("Hot Line")
+        .copied()
+        .expect("Hot Line station seeded above");
+    let mesa_1_id = table_ids
+        .get("Mesa 1")
+        .copied()
+        .expect("Mesa 1 seeded above");
+
+    let existing_ticket: Option<(Uuid,)> =
+        sqlx::query_as("SELECT id FROM kds_tickets WHERE store_id = $1 AND ticket_number = 1")
+            .bind(store_id)
+            .fetch_optional(&mut **tx)
+            .await?;
+    if existing_ticket.is_some() {
+        info!("  KDS ticket #1 already exists — skipping");
+        return Ok(());
+    }
+
+    let ticket_id = Uuid::new_v7(Timestamp::now(NoContext));
+    let (course, notes) = data::DEMO_KDS_TICKET;
+    sqlx::query(
+        r#"
+        INSERT INTO kds_tickets (
+            id, store_id, station_id, table_id, sale_id, ticket_number,
+            status, course, notes, sent_at, ready_at, served_at,
+            canceled_reason, created_by, created_at, updated_at
+        )
+        VALUES (
+            $1, $2, $3, $4, NULL, 1,
+            'pending', $5, $6, NULL, NULL, NULL,
+            NULL, $7, NOW(), NOW()
+        )
+        "#,
+    )
+    .bind(ticket_id)
+    .bind(store_id)
+    .bind(hot_line_id)
+    .bind(mesa_1_id)
+    .bind(course)
+    .bind(notes)
+    .bind(actor_user_id)
+    .execute(&mut **tx)
+    .await?;
+
+    for (description, quantity, instructions) in data::DEMO_KDS_TICKET_ITEMS {
+        let qty = Decimal::from_f64(*quantity)
+            .unwrap_or(Decimal::ONE)
+            .round_dp(4);
+        sqlx::query(
+            r#"
+            INSERT INTO kds_ticket_items (
+                id, ticket_id, sale_item_id, product_id,
+                description, quantity, modifiers_summary, special_instructions,
+                status, ready_at, served_at, created_at
+            )
+            VALUES (
+                $1, $2, NULL, NULL,
+                $3, $4, '', $5,
+                'pending', NULL, NULL, NOW()
+            )
+            "#,
+        )
+        .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+        .bind(ticket_id)
+        .bind(*description)
+        .bind(qty)
+        .bind(*instructions)
+        .execute(&mut **tx)
+        .await?;
+    }
+    info!(
+        "  KDS ticket #1 on Mesa 1 / Hot Line, {} items pending",
+        data::DEMO_KDS_TICKET_ITEMS.len()
     );
 
     Ok(())
