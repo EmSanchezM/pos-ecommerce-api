@@ -12,6 +12,7 @@ pub mod inventory_routes;
 pub mod loyalty_routes;
 pub mod payments_routes;
 pub mod purchasing_routes;
+pub mod restaurant_routes;
 pub mod sales_routes;
 pub mod service_orders_routes;
 pub mod shipping_routes;
@@ -49,6 +50,10 @@ pub use payments_routes::{
     payment_gateways_router, payouts_router, transactions_router, webhooks_router,
 };
 pub use purchasing_routes::{goods_receipts_router, purchase_orders_router, vendors_router};
+pub use restaurant_routes::{
+    kds_stream_router, kds_tickets_router, restaurant_modifier_groups_router,
+    restaurant_product_modifiers_router, restaurant_stations_router, restaurant_tables_router,
+};
 pub use sales_routes::{
     cart_router, credit_notes_router, customers_router, orders_router, pos_sales_router,
     promotions_router, shifts_router,

@@ -21,6 +21,7 @@ use loyalty::LoyaltyError;
 use payments::PaymentsError;
 use pos_core::CoreError;
 use purchasing::PurchasingError;
+use restaurant_operations::RestaurantOperationsError;
 use sales::SalesError;
 use service_orders::ServiceOrdersError;
 use shipping::ShippingError;
@@ -2587,6 +2588,108 @@ impl From<ServiceOrdersError> for AppError {
 
             // 500
             ServiceOrdersError::Database(_) | ServiceOrdersError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<RestaurantOperationsError> Implementation
+// =============================================================================
+
+impl From<RestaurantOperationsError> for AppError {
+    fn from(err: RestaurantOperationsError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            RestaurantOperationsError::StationNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "KITCHEN_STATION_NOT_FOUND",
+                    format!("Kitchen station not found: {}", id),
+                ),
+            ),
+            RestaurantOperationsError::TableNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "RESTAURANT_TABLE_NOT_FOUND",
+                    format!("Restaurant table not found: {}", id),
+                ),
+            ),
+            RestaurantOperationsError::ModifierGroupNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "MODIFIER_GROUP_NOT_FOUND",
+                    format!("Modifier group not found: {}", id),
+                ),
+            ),
+            RestaurantOperationsError::ModifierNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("MODIFIER_NOT_FOUND", format!("Modifier not found: {}", id)),
+            ),
+            RestaurantOperationsError::ProductNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PRODUCT_NOT_FOUND", format!("Product not found: {}", id)),
+            ),
+            RestaurantOperationsError::TicketNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "KDS_TICKET_NOT_FOUND",
+                    format!("KDS ticket not found: {}", id),
+                ),
+            ),
+            RestaurantOperationsError::ItemNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "KDS_TICKET_ITEM_NOT_FOUND",
+                    format!("KDS ticket item not found: {}", id),
+                ),
+            ),
+
+            // 409
+            RestaurantOperationsError::InvalidTicketStateTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATE_TRANSITION", err.to_string()),
+            ),
+            RestaurantOperationsError::InvalidItemStateTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATE_TRANSITION", err.to_string()),
+            ),
+            RestaurantOperationsError::InvalidTableStatusTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_TABLE_STATUS_TRANSITION", err.to_string()),
+            ),
+            RestaurantOperationsError::CannotModifyTerminalTicket => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CANNOT_MODIFY_TERMINAL_TICKET", err.to_string()),
+            ),
+            RestaurantOperationsError::ModifierSelectionOutOfBounds { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("MODIFIER_SELECTION_OUT_OF_BOUNDS", err.to_string()),
+            ),
+
+            // 400
+            RestaurantOperationsError::InvalidStationStatus(_)
+            | RestaurantOperationsError::InvalidTableStatus(_)
+            | RestaurantOperationsError::InvalidTicketStatus(_)
+            | RestaurantOperationsError::InvalidItemStatus(_)
+            | RestaurantOperationsError::InvalidCourse(_)
+            | RestaurantOperationsError::Validation(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502
+            RestaurantOperationsError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            RestaurantOperationsError::Database(_)
+            | RestaurantOperationsError::Serialization(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
             ),

@@ -61,6 +61,12 @@ use payments::{
 };
 use pos_core::PgTerminalRepository;
 use purchasing::{PgGoodsReceiptRepository, PgPurchaseOrderRepository, PgVendorRepository};
+use restaurant_operations::{
+    KdsBroadcaster, KdsTicketItemRepository, KdsTicketRepository, KitchenStationRepository,
+    MenuModifierRepository, PgKdsTicketItemRepository, PgKdsTicketRepository,
+    PgKitchenStationRepository, PgMenuModifierRepository, PgRestaurantTableRepository,
+    RestaurantOperationsEventSubscriber, RestaurantTableRepository, TokioBroadcastKdsBroadcaster,
+};
 use sales::{
     PgCartRepository, PgCreditNoteRepository, PgCustomerRepository, PgPromotionRepository,
     PgSaleRepository, PgShiftRepository,
@@ -255,6 +261,20 @@ pub struct AppState {
     service_order_item_repo: Arc<dyn ServiceOrderItemRepository>,
     service_diagnostic_repo: Arc<dyn ServiceDiagnosticRepository>,
     service_quote_repo: Arc<dyn ServiceQuoteRepository>,
+    // -------------------------------------------------------------------------
+    // Restaurant operations (stations, tables, modifiers, KDS tickets) + SSE
+    // broadcaster. We keep both a trait-object view (for use cases that just
+    // publish) and the concrete TokioBroadcastKdsBroadcaster handle so the
+    // SSE handler can call `subscribe(station_id)` to obtain a fresh
+    // `broadcast::Receiver`.
+    // -------------------------------------------------------------------------
+    kitchen_station_repo: Arc<dyn KitchenStationRepository>,
+    restaurant_table_repo: Arc<dyn RestaurantTableRepository>,
+    menu_modifier_repo: Arc<dyn MenuModifierRepository>,
+    kds_ticket_repo: Arc<dyn KdsTicketRepository>,
+    kds_ticket_item_repo: Arc<dyn KdsTicketItemRepository>,
+    kds_broadcaster: Arc<dyn KdsBroadcaster>,
+    kds_broadcaster_handle: Arc<TokioBroadcastKdsBroadcaster>,
 }
 
 impl AppState {
@@ -363,6 +383,13 @@ impl AppState {
         service_order_item_repo: Arc<dyn ServiceOrderItemRepository>,
         service_diagnostic_repo: Arc<dyn ServiceDiagnosticRepository>,
         service_quote_repo: Arc<dyn ServiceQuoteRepository>,
+        kitchen_station_repo: Arc<dyn KitchenStationRepository>,
+        restaurant_table_repo: Arc<dyn RestaurantTableRepository>,
+        menu_modifier_repo: Arc<dyn MenuModifierRepository>,
+        kds_ticket_repo: Arc<dyn KdsTicketRepository>,
+        kds_ticket_item_repo: Arc<dyn KdsTicketItemRepository>,
+        kds_broadcaster: Arc<dyn KdsBroadcaster>,
+        kds_broadcaster_handle: Arc<TokioBroadcastKdsBroadcaster>,
     ) -> Self {
         Self {
             pool,
@@ -448,6 +475,13 @@ impl AppState {
             service_order_item_repo,
             service_diagnostic_repo,
             service_quote_repo,
+            kitchen_station_repo,
+            restaurant_table_repo,
+            menu_modifier_repo,
+            kds_ticket_repo,
+            kds_ticket_item_repo,
+            kds_broadcaster,
+            kds_broadcaster_handle,
         }
     }
 
@@ -642,6 +676,24 @@ impl AppState {
             Arc::new(PgServiceQuoteRepository::new((*pool_arc).clone()));
         subscriber_registry.register(Arc::new(ServiceOrdersEventSubscriber::new()));
 
+        // Restaurant operations repositories + SSE broadcaster.
+        let kitchen_station_repo: Arc<dyn KitchenStationRepository> =
+            Arc::new(PgKitchenStationRepository::new((*pool_arc).clone()));
+        let restaurant_table_repo: Arc<dyn RestaurantTableRepository> =
+            Arc::new(PgRestaurantTableRepository::new((*pool_arc).clone()));
+        let menu_modifier_repo: Arc<dyn MenuModifierRepository> =
+            Arc::new(PgMenuModifierRepository::new((*pool_arc).clone()));
+        let kds_ticket_repo: Arc<dyn KdsTicketRepository> =
+            Arc::new(PgKdsTicketRepository::new((*pool_arc).clone()));
+        let kds_ticket_item_repo: Arc<dyn KdsTicketItemRepository> =
+            Arc::new(PgKdsTicketItemRepository::new((*pool_arc).clone()));
+        // One TokioBroadcastKdsBroadcaster shared as two views: trait-object
+        // for use cases (publish) + concrete handle for the SSE handler
+        // (subscribe).
+        let kds_broadcaster_handle = Arc::new(TokioBroadcastKdsBroadcaster::new());
+        let kds_broadcaster: Arc<dyn KdsBroadcaster> = kds_broadcaster_handle.clone();
+        subscriber_registry.register(Arc::new(RestaurantOperationsEventSubscriber::new()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -729,6 +781,13 @@ impl AppState {
             service_order_item_repo,
             service_diagnostic_repo,
             service_quote_repo,
+            kitchen_station_repo,
+            restaurant_table_repo,
+            menu_modifier_repo,
+            kds_ticket_repo,
+            kds_ticket_item_repo,
+            kds_broadcaster,
+            kds_broadcaster_handle,
         }
     }
 
@@ -1114,5 +1173,33 @@ impl AppState {
     }
     pub fn service_quote_repo(&self) -> Arc<dyn ServiceQuoteRepository> {
         self.service_quote_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Restaurant operations accessors
+    // -------------------------------------------------------------------------
+
+    pub fn kitchen_station_repo(&self) -> Arc<dyn KitchenStationRepository> {
+        self.kitchen_station_repo.clone()
+    }
+    pub fn restaurant_table_repo(&self) -> Arc<dyn RestaurantTableRepository> {
+        self.restaurant_table_repo.clone()
+    }
+    pub fn menu_modifier_repo(&self) -> Arc<dyn MenuModifierRepository> {
+        self.menu_modifier_repo.clone()
+    }
+    pub fn kds_ticket_repo(&self) -> Arc<dyn KdsTicketRepository> {
+        self.kds_ticket_repo.clone()
+    }
+    pub fn kds_ticket_item_repo(&self) -> Arc<dyn KdsTicketItemRepository> {
+        self.kds_ticket_item_repo.clone()
+    }
+    /// Trait-object view for use cases that publish events.
+    pub fn kds_broadcaster(&self) -> Arc<dyn KdsBroadcaster> {
+        self.kds_broadcaster.clone()
+    }
+    /// Concrete handle for the SSE handler (calls `.subscribe(station_id)`).
+    pub fn kds_broadcaster_handle(&self) -> Arc<TokioBroadcastKdsBroadcaster> {
+        self.kds_broadcaster_handle.clone()
     }
 }

@@ -24,11 +24,13 @@ use routes::{
     catalog_storage_providers_router, catalog_wishlist_router, categories_router,
     credit_notes_router, customers_router, delivery_providers_router, delivery_webhooks_router,
     drivers_router, forecasts_router, goods_receipts_router, inventory_router, invoices_router,
-    loyalty_members_router, loyalty_programs_router, loyalty_rewards_router, loyalty_tiers_router,
-    orders_router, payment_gateways_router, payouts_router, pos_sales_router, products_router,
-    promotions_router, public_booking_router, public_service_orders_router, public_tracking_router,
-    purchase_orders_router, recipes_router, reorder_policies_router,
-    replenishment_suggestions_router, reports_router, service_orders_assets_router,
+    kds_stream_router, kds_tickets_router, loyalty_members_router, loyalty_programs_router,
+    loyalty_rewards_router, loyalty_tiers_router, orders_router, payment_gateways_router,
+    payouts_router, pos_sales_router, products_router, promotions_router, public_booking_router,
+    public_service_orders_router, public_tracking_router, purchase_orders_router, recipes_router,
+    reorder_policies_router, replenishment_suggestions_router, reports_router,
+    restaurant_modifier_groups_router, restaurant_product_modifiers_router,
+    restaurant_stations_router, restaurant_tables_router, service_orders_assets_router,
     service_orders_router, shifts_router, shipments_router, shipping_calculate_router,
     shipping_methods_router, shipping_rates_router, shipping_zones_router, store_router,
     store_terminals_router, tax_rates_router, terminals_router, transactions_router,
@@ -246,6 +248,31 @@ async fn main() {
         .nest(
             "/api/v1/public/service-orders",
             public_service_orders_router(),
+        )
+        // Restaurant operations
+        .nest(
+            "/api/v1/restaurant/stations",
+            restaurant_stations_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/restaurant/tables",
+            restaurant_tables_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/restaurant/modifier-groups",
+            restaurant_modifier_groups_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/restaurant/products",
+            restaurant_product_modifiers_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/restaurant/kds/tickets",
+            kds_tickets_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/restaurant/kds/stations",
+            kds_stream_router(app_state.clone()),
         )
         // Static file serving for the LocalServer image storage adapter.
         // The mount path matches IMAGE_STORAGE_PUBLIC_URL (default `/uploads`).
