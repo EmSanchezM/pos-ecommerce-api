@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::{require_permission, require_super_admin};
 use crate::state::AppState;
 use catalog::{
@@ -44,6 +45,7 @@ pub async fn list_storage_providers_handler(
     Query(q): Query<StoreScopedQuery>,
 ) -> Result<Json<Vec<StorageProviderResponse>>, Response> {
     require_permission(&ctx, "image_storage_providers:read")?;
+    verify_store_in_org(state.pool(), &ctx, q.store_id).await?;
     let uc = ListStorageProvidersUseCase::new(state.image_storage_provider_repo());
     let resp = uc
         .execute(q.store_id)

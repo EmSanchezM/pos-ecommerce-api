@@ -27,6 +27,7 @@ use pos_core::{
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_super_admin;
 use crate::state::AppState;
 
@@ -71,6 +72,7 @@ pub async fn create_terminal_handler(
 ) -> Result<(StatusCode, Json<TerminalResponse>), Response> {
     // Check super_admin permission (Requirement 2.4)
     require_super_admin(&ctx)?;
+    verify_store_in_org(state.pool(), &ctx, store_id).await?;
 
     // Build the full command with store_id from path
     let full_command = CreateTerminalCommand {
@@ -127,10 +129,11 @@ pub struct CreateTerminalCommandRequest {
 /// - List terminals with CAI status
 pub async fn list_terminals_handler(
     State(state): State<AppState>,
-    CurrentUser(_ctx): CurrentUser,
+    CurrentUser(ctx): CurrentUser,
     Path(store_id): Path<Uuid>,
     Query(query): Query<ListTerminalsQuery>,
 ) -> Result<Json<PaginatedTerminalsResponse>, Response> {
+    verify_store_in_org(state.pool(), &ctx, store_id).await?;
     let use_case = ListTerminalsUseCase::new(state.terminal_repo());
 
     let store_id = StoreId::from_uuid(store_id);

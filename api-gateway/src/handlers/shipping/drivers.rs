@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use shipping::{
@@ -31,6 +32,7 @@ pub async fn create_driver_handler(
     JsonBody(cmd): JsonBody<CreateDriverCommand>,
 ) -> Result<(StatusCode, Json<DriverResponse>), Response> {
     require_permission(&ctx, "drivers:create")?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let uc = CreateDriverUseCase::new(state.driver_repo());
     let resp = uc
         .execute(cmd)
@@ -45,6 +47,7 @@ pub async fn list_drivers_handler(
     Query(q): Query<ListDriversQuery>,
 ) -> Result<Json<Vec<DriverResponse>>, Response> {
     require_permission(&ctx, "drivers:read")?;
+    verify_store_in_org(state.pool(), &ctx, q.store_id).await?;
     let uc = ListDriversUseCase::new(state.driver_repo());
     let resp = uc
         .execute(q.store_id, q.only_available)

@@ -31,17 +31,24 @@ pub struct UserContext {
     permissions: HashSet<PermissionCode>,
     accessible_store_ids: Vec<Uuid>,
     is_super_admin: bool,
+    /// The user's tenant. Added in tenancy v1.1; `None` if the JWT predates
+    /// the field — every org-scoped check must reject the request in that
+    /// case (treat absent org as no scope, never as "all orgs").
+    organization_id: Option<Uuid>,
 }
 
 impl UserContext {
     /// Creates a new UserContext with the given user_id, store_id, permissions,
-    /// the full list of accessible store IDs from the JWT, and super-admin flag.
+    /// the full list of accessible store IDs from the JWT, super-admin flag,
+    /// and the user's organization id (None if the JWT predates v1.1).
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_id: UserId,
         store_id: StoreId,
         permissions: HashSet<PermissionCode>,
         accessible_store_ids: Vec<Uuid>,
         is_super_admin: bool,
+        organization_id: Option<Uuid>,
     ) -> Self {
         Self {
             user_id,
@@ -49,6 +56,7 @@ impl UserContext {
             permissions,
             accessible_store_ids,
             is_super_admin,
+            organization_id,
         }
     }
 
@@ -75,6 +83,12 @@ impl UserContext {
     /// Returns true if this user is a super admin.
     pub fn is_super_admin(&self) -> bool {
         self.is_super_admin
+    }
+
+    /// Returns the user's organization id, or `None` if the JWT predates
+    /// tenancy v1.1.
+    pub fn organization_id(&self) -> Option<Uuid> {
+        self.organization_id
     }
 
     /// Checks if the user has a specific permission.
@@ -194,7 +208,7 @@ mod tests {
             .iter()
             .filter_map(|p| PermissionCode::new(p).ok())
             .collect();
-        UserContext::new(UserId::new(), StoreId::new(), perms, vec![], false)
+        UserContext::new(UserId::new(), StoreId::new(), perms, vec![], false, None)
     }
 
     #[test]
@@ -203,7 +217,7 @@ mod tests {
         let store_id = StoreId::new();
         let permissions = HashSet::new();
 
-        let ctx = UserContext::new(user_id, store_id, permissions, vec![], false);
+        let ctx = UserContext::new(user_id, store_id, permissions, vec![], false, None);
 
         assert_eq!(*ctx.user_id(), user_id);
         assert_eq!(*ctx.store_id(), store_id);
@@ -222,6 +236,7 @@ mod tests {
             HashSet::new(),
             vec![store1, store2],
             false,
+            None,
         );
         assert_eq!(ctx.accessible_store_ids(), &[store1, store2]);
         assert!(!ctx.is_super_admin());
@@ -229,7 +244,14 @@ mod tests {
 
     #[test]
     fn test_user_context_super_admin() {
-        let ctx = UserContext::new(UserId::new(), StoreId::new(), HashSet::new(), vec![], true);
+        let ctx = UserContext::new(
+            UserId::new(),
+            StoreId::new(),
+            HashSet::new(),
+            vec![],
+            true,
+            None,
+        );
         assert!(ctx.is_super_admin());
     }
 

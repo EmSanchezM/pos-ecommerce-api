@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use catalog::{
@@ -29,6 +30,7 @@ pub async fn get_wishlist_handler(
     Query(q): Query<WishlistQuery>,
 ) -> Result<Json<WishlistResponse>, Response> {
     require_permission(&ctx, "catalog:read")?;
+    verify_store_in_org(state.pool(), &ctx, q.store_id).await?;
     let uc = GetWishlistUseCase::new(state.wishlist_repo());
     let resp = uc
         .execute(q.customer_id, q.store_id)
@@ -43,6 +45,7 @@ pub async fn add_to_wishlist_handler(
     JsonBody(cmd): JsonBody<AddWishlistItemCommand>,
 ) -> Result<Json<WishlistResponse>, Response> {
     require_permission(&ctx, "catalog:read")?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let uc = AddToWishlistUseCase::new(state.wishlist_repo());
     let resp = uc
         .execute(cmd)
@@ -57,6 +60,7 @@ pub async fn remove_from_wishlist_handler(
     JsonBody(cmd): JsonBody<RemoveWishlistItemCommand>,
 ) -> Result<Json<WishlistResponse>, Response> {
     require_permission(&ctx, "catalog:read")?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let uc = RemoveFromWishlistUseCase::new(state.wishlist_repo());
     let resp = uc
         .execute(cmd)

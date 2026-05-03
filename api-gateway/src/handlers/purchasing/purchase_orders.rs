@@ -33,6 +33,7 @@ use purchasing::{
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -127,6 +128,7 @@ pub async fn create_purchase_order_handler(
     JsonBody(command): JsonBody<CreatePurchaseOrderCommand>,
 ) -> Result<(StatusCode, Json<PurchaseOrderDetailResponse>), Response> {
     require_permission(&ctx, "purchase_orders:create")?;
+    verify_store_in_org(state.pool(), &ctx, command.store_id).await?;
 
     let use_case =
         CreatePurchaseOrderUseCase::new(state.purchase_order_repo(), state.vendor_repo());
@@ -168,6 +170,9 @@ pub async fn list_purchase_orders_handler(
     Query(params): Query<ListPurchaseOrdersQueryParams>,
 ) -> Result<Json<PaginatedResponse<PurchaseOrderResponse>>, Response> {
     require_permission(&ctx, "purchase_orders:read")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = ListPurchaseOrdersUseCase::new(state.purchase_order_repo());
 

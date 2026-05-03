@@ -3,7 +3,9 @@ use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
-use chrono::{Datelike, NaiveDate, TimeZone, Utc};
+use chrono::{Datelike, Duration, NaiveDate, NaiveTime, TimeZone, Utc};
+use rust_decimal::Decimal;
+use rust_decimal::prelude::FromPrimitive;
 use sqlx::postgres::PgPoolOptions;
 use tracing::{Level, info};
 use tracing_subscriber::FmtSubscriber;
@@ -25,10 +27,36 @@ async fn main() -> Result<()> {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     info!("Connecting to database...");
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url)
-        .await?;
+    // Retry connect a few times — when launched by docker-compose, postgres
+    // may still be coming up even after the healthcheck passed.
+    let pool = {
+        let mut attempts = 0;
+        loop {
+            match PgPoolOptions::new()
+                .max_connections(5)
+                .acquire_timeout(std::time::Duration::from_secs(3))
+                .connect(&database_url)
+                .await
+            {
+                Ok(p) => break p,
+                Err(e) if attempts < 30 => {
+                    attempts += 1;
+                    info!(
+                        "  database not ready ({}); retrying in 2s ({}/30)",
+                        e, attempts
+                    );
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                }
+                Err(e) => return Err(e.into()),
+            }
+        }
+    };
+
+    // Run migrations embedded at compile time. Idempotent: sqlx tracks applied
+    // versions in `_sqlx_migrations`. Putting this here means the seed binary
+    // is the single boot-time entry point — no separate sqlx-cli step.
+    info!("Running migrations...");
+    sqlx::migrate!("../migrations").run(&pool).await?;
 
     info!("Starting seed process...");
 
@@ -92,6 +120,47 @@ async fn main() -> Result<()> {
     // open period for the current month.
     info!("Seeding accounting defaults...");
     seed_accounting_defaults(&mut tx).await?;
+
+    // Seed demand-planning demo: a vendor, ~9 grocery products with stock,
+    // reorder policies, and 120 days of synthetic completed sales so the
+    // recompute job has signal on first run.
+    info!("Seeding demand planning demo data...");
+    seed_demand_planning_demo(&mut tx, store_id, super_admin_id).await?;
+
+    // Seed a default bank account so cash_management endpoints have somewhere
+    // to record deposits/transactions on first boot.
+    info!("Seeding cash management defaults...");
+    seed_cash_management_defaults(&mut tx, store_id).await?;
+
+    // Seed a loyalty program (Bronze/Silver/Gold + 2 rewards) for the main
+    // store so the loyalty endpoints have a complete graph on first boot.
+    info!("Seeding loyalty defaults...");
+    seed_loyalty_defaults(&mut tx, store_id).await?;
+
+    // Seed booking demo: 3 resources (2 stylists + 1 room), shared weekly
+    // calendar, 3 bookable services with M2M assignments, and a default
+    // per-store policy. Public booking endpoints work end-to-end on first boot.
+    info!("Seeding booking defaults...");
+    seed_booking_defaults(&mut tx, store_id).await?;
+
+    // Seed service-orders demo: 1 customer, 2 assets (car + laptop), one
+    // intake on the car already advanced to Diagnosis with a diagnostic and
+    // 3 items (labor + parts) so staff can immediately draft a quote.
+    info!("Seeding service orders defaults...");
+    seed_service_orders_defaults(&mut tx, store_id, super_admin_id).await?;
+
+    // Seed restaurant operations demo: 2 stations (Hot Line, Bar), 4 tables,
+    // 2 modifier groups (Cocción + Extras), and one in-progress KDS ticket
+    // on Mesa 1 with two items so the SSE smoke test has data to react to.
+    info!("Seeding restaurant operations defaults...");
+    seed_restaurant_defaults(&mut tx, store_id, super_admin_id).await?;
+
+    // Seed tenancy demo: a second org "Restaurante Demo" with Pro plan,
+    // one verified custom domain, and dark-themed branding. The default
+    // org (id `00000000-...0001`) is created by migration 50 — we don't
+    // touch it here.
+    info!("Seeding tenancy defaults...");
+    seed_tenancy_defaults(&mut tx).await?;
 
     tx.commit().await?;
 
@@ -206,11 +275,17 @@ async fn seed_role_permissions(
 
 async fn seed_main_store(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<Uuid> {
     let id = Uuid::now_v7();
+    // Hard-coded id of the default org created by migration
+    // 20260501000050_create_default_organization.sql. Pinning the seed's new
+    // store to it keeps tenancy v1.0 backward-compatible: every existing
+    // single-tenant install (and every fresh seed) lands inside one well-
+    // known org, so the future scope-by-org middleware sees consistent data.
+    let default_org_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
 
     sqlx::query(
         r#"
-        INSERT INTO stores (id, name, address, is_ecommerce, is_active)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO stores (id, name, address, is_ecommerce, is_active, organization_id)
+        VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT DO NOTHING
         "#,
     )
@@ -219,6 +294,7 @@ async fn seed_main_store(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Resu
     .bind(data::MAIN_STORE.1)
     .bind(data::MAIN_STORE.2)
     .bind(data::MAIN_STORE.3)
+    .bind(default_org_id)
     .execute(&mut **tx)
     .await?;
 
@@ -244,10 +320,14 @@ async fn seed_super_admin_user(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -
         .expect("Failed to hash password")
         .to_string();
 
+    let default_org_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
     sqlx::query(
         r#"
-        INSERT INTO users (id, email, username, first_name, last_name, password_hash, is_active)
-        VALUES ($1, $2, $3, $4, $5, $6, true)
+        INSERT INTO users (
+            id, email, username, first_name, last_name,
+            password_hash, is_active, organization_id
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, true, $7)
         ON CONFLICT (email) DO NOTHING
         "#,
     )
@@ -257,6 +337,7 @@ async fn seed_super_admin_user(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -
     .bind(data::SUPER_ADMIN_USER.2) // first_name
     .bind(data::SUPER_ADMIN_USER.3) // last_name
     .bind(&password_hash)
+    .bind(default_org_id)
     .execute(&mut **tx)
     .await?;
 
@@ -706,6 +787,1316 @@ async fn seed_accounting_defaults(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>
             year,
             starts_at.format("%Y-%m-%d"),
             ends_at.format("%Y-%m-%d")
+        );
+    }
+
+    Ok(())
+}
+
+/// Number of days of synthetic history to generate. 120 covers two seasonal
+/// cycles (m=7) so Holt-Winters has a fair shot.
+const DEMAND_HISTORY_DAYS: i64 = 120;
+
+/// Deterministic pseudo-random in [0, 1). Avoids pulling a `rand` dependency
+/// for what is genuinely deterministic seed data.
+fn pseudo_unit(seed: u64) -> f64 {
+    // Splitmix64 — short, fast, good enough for "shake the data a bit".
+    let mut z = seed.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^= z >> 31;
+    (z >> 11) as f64 / (1u64 << 53) as f64
+}
+
+fn dec(value: f64) -> Decimal {
+    Decimal::from_f64(value)
+        .unwrap_or(Decimal::ZERO)
+        .round_dp(4)
+}
+
+async fn seed_demand_planning_demo(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+    cashier_id: Uuid,
+) -> Result<()> {
+    // ---- Category ----------------------------------------------------------
+    let (cat_slug, cat_name) = data::DEMAND_DEFAULT_CATEGORY;
+    let category_id: Uuid =
+        match sqlx::query_as::<_, (Uuid,)>("SELECT id FROM product_categories WHERE slug = $1")
+            .bind(cat_slug)
+            .fetch_optional(&mut **tx)
+            .await?
+        {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                INSERT INTO product_categories (id, parent_id, name, slug, is_active)
+                VALUES ($1, NULL, $2, $3, TRUE)
+                "#,
+                )
+                .bind(id)
+                .bind(cat_name)
+                .bind(cat_slug)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+    info!("  Category: {}", cat_slug);
+
+    // ---- Vendor ------------------------------------------------------------
+    let (v_code, v_name, v_legal, v_tax, v_terms) = data::DEMAND_DEFAULT_VENDOR;
+    let vendor_id: Uuid =
+        match sqlx::query_as::<_, (Uuid,)>("SELECT id FROM vendors WHERE code = $1")
+            .bind(v_code)
+            .fetch_optional(&mut **tx)
+            .await?
+        {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                    INSERT INTO vendors (
+                        id, code, name, legal_name, tax_id,
+                        payment_terms_days, currency, is_active
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, 'HNL', TRUE)
+                    "#,
+                )
+                .bind(id)
+                .bind(v_code)
+                .bind(v_name)
+                .bind(v_legal)
+                .bind(v_tax)
+                .bind(v_terms)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+    info!("  Vendor: {} ({})", v_name, v_code);
+
+    // ---- Products + stock + policies + sales history -----------------------
+    let today = Utc::now().date_naive();
+    let mut total_sales = 0i64;
+
+    for (item_idx, item) in data::DEMAND_SEED_ITEMS.iter().enumerate() {
+        // Product (skip insert if SKU already there).
+        let product_id: Uuid =
+            match sqlx::query_as::<_, (Uuid,)>("SELECT id FROM products WHERE sku = $1")
+                .bind(item.sku)
+                .fetch_optional(&mut **tx)
+                .await?
+            {
+                Some((id,)) => id,
+                None => {
+                    let id = Uuid::new_v7(Timestamp::now(NoContext));
+                    sqlx::query(
+                        r#"
+                        INSERT INTO products (
+                            id, sku, name, category_id, unit_of_measure,
+                            base_price, cost_price, currency,
+                            is_perishable, is_trackable, has_variants,
+                            tax_rate, tax_included, attributes, is_active
+                        )
+                        VALUES (
+                            $1, $2, $3, $4, $5,
+                            $6, $7, 'HNL',
+                            FALSE, TRUE, FALSE,
+                            0, FALSE, '{}'::jsonb, TRUE
+                        )
+                        "#,
+                    )
+                    .bind(id)
+                    .bind(item.sku)
+                    .bind(item.name)
+                    .bind(category_id)
+                    .bind(item.uom)
+                    .bind(dec(item.base_price))
+                    .bind(dec(item.cost_price))
+                    .execute(&mut **tx)
+                    .await?;
+                    id
+                }
+            };
+
+        // Stock (one row per (store, product)). Skip if already initialised.
+        let stock_exists = sqlx::query_as::<_, (Uuid,)>(
+            "SELECT id FROM inventory_stock WHERE store_id = $1 AND product_id = $2",
+        )
+        .bind(store_id)
+        .bind(product_id)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if stock_exists.is_none() {
+            sqlx::query(
+                r#"
+                INSERT INTO inventory_stock (
+                    id, store_id, product_id, variant_id,
+                    quantity, reserved_quantity, min_stock_level
+                )
+                VALUES ($1, $2, $3, NULL, $4, 0, $5)
+                "#,
+            )
+            .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+            .bind(store_id)
+            .bind(product_id)
+            .bind(dec(item.on_hand_qty))
+            .bind(dec(item.min_qty))
+            .execute(&mut **tx)
+            .await?;
+        }
+
+        // Reorder policy (one row per (variant_id, store_id) — we use
+        // product_id as the "variant id" per the demand_planning convention).
+        let policy_exists = sqlx::query_as::<_, (Uuid,)>(
+            "SELECT id FROM reorder_policies WHERE product_variant_id = $1 AND store_id = $2",
+        )
+        .bind(product_id)
+        .bind(store_id)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if policy_exists.is_none() {
+            sqlx::query(
+                r#"
+                INSERT INTO reorder_policies (
+                    id, product_variant_id, store_id,
+                    min_qty, max_qty, lead_time_days,
+                    safety_stock_qty, review_cycle_days,
+                    preferred_vendor_id, is_active, version
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, 0)
+                "#,
+            )
+            .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+            .bind(product_id)
+            .bind(store_id)
+            .bind(dec(item.min_qty))
+            .bind(dec(item.max_qty))
+            .bind(item.lead_time_days)
+            .bind(dec(item.safety_stock_qty))
+            .bind(item.review_cycle_days)
+            .bind(vendor_id)
+            .execute(&mut **tx)
+            .await?;
+        }
+
+        // ---- Synthetic 120-day sales history -------------------------------
+        // Skip if we already seeded sales for this SKU.
+        let already_seeded: (i64,) = sqlx::query_as(
+            r#"
+            SELECT COUNT(*)::BIGINT
+            FROM sale_items
+            WHERE product_id = $1 AND sku LIKE 'DP-DEMO-%'
+            "#,
+        )
+        .bind(product_id)
+        .fetch_one(&mut **tx)
+        .await?;
+        if already_seeded.0 > 0 {
+            continue;
+        }
+
+        for d in 0..DEMAND_HISTORY_DAYS {
+            // Day shifted from `today - 120` toward today.
+            let day = today - Duration::days(DEMAND_HISTORY_DAYS - d);
+            let weekday = day.weekday().num_days_from_monday() as f64;
+            // Sinusoidal weekly pattern + small deterministic jitter in [-1, +1].
+            let seasonal = (2.0 * std::f64::consts::PI * weekday / 7.0).sin();
+            let seed = (item_idx as u64) * 131_071 + d as u64;
+            let jitter = (pseudo_unit(seed) * 2.0) - 1.0;
+            let raw = item.daily_demand_mean + item.weekly_amplitude * seasonal + jitter;
+            let qty = raw.max(0.0).round();
+            if qty <= 0.0 {
+                continue;
+            }
+
+            let sale_id = Uuid::new_v7(Timestamp::now(NoContext));
+            // Sale completed at noon local — collapse to UTC for simplicity.
+            let completed_at = Utc
+                .with_ymd_and_hms(day.year(), day.month(), day.day(), 18, 0, 0)
+                .single()
+                .unwrap_or_else(Utc::now);
+            let line_total = dec(item.base_price * qty);
+
+            sqlx::query(
+                r#"
+                INSERT INTO sales (
+                    id, sale_number, store_id, sale_type, status,
+                    cashier_id, currency,
+                    subtotal, discount_value, discount_amount, tax_amount,
+                    total, amount_paid, amount_due, change_given,
+                    completed_at, created_at, updated_at
+                )
+                VALUES (
+                    $1, $2, $3, 'pos', 'completed',
+                    $4, 'HNL',
+                    $5, 0, 0, 0,
+                    $5, $5, 0, 0,
+                    $6, $6, $6
+                )
+                "#,
+            )
+            .bind(sale_id)
+            .bind(format!("DP-DEMO-{}-{:03}", &item.sku[3..], d))
+            .bind(store_id)
+            .bind(cashier_id)
+            .bind(line_total)
+            .bind(completed_at)
+            .execute(&mut **tx)
+            .await?;
+
+            sqlx::query(
+                r#"
+                INSERT INTO sale_items (
+                    id, sale_id, line_number, product_id, variant_id,
+                    sku, description, quantity, unit_of_measure,
+                    unit_price, unit_cost,
+                    discount_value, discount_amount, tax_rate, tax_amount,
+                    subtotal, total
+                )
+                VALUES (
+                    $1, $2, 1, $3, NULL,
+                    $4, $5, $6, $7,
+                    $8, $9,
+                    0, 0, 0, 0,
+                    $10, $10
+                )
+                "#,
+            )
+            .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+            .bind(sale_id)
+            .bind(product_id)
+            .bind(item.sku)
+            .bind(item.name)
+            .bind(dec(qty))
+            .bind(item.uom)
+            .bind(dec(item.base_price))
+            .bind(dec(item.cost_price))
+            .bind(line_total)
+            .execute(&mut **tx)
+            .await?;
+
+            total_sales += 1;
+        }
+    }
+
+    info!(
+        "  Demand planning: {} products, vendor + reorder policies seeded, {} synthetic sales over {} days",
+        data::DEMAND_SEED_ITEMS.len(),
+        total_sales,
+        DEMAND_HISTORY_DAYS
+    );
+    Ok(())
+}
+
+async fn seed_cash_management_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    let (bank_name, account_number, account_type, currency, opening_balance) =
+        data::DEMO_BANK_ACCOUNT;
+    let opening = Decimal::from_f64(opening_balance)
+        .unwrap_or(Decimal::ZERO)
+        .round_dp(4);
+
+    let exists: Option<(Uuid,)> =
+        sqlx::query_as("SELECT id FROM bank_accounts WHERE account_number = $1")
+            .bind(account_number)
+            .fetch_optional(&mut **tx)
+            .await?;
+    if exists.is_some() {
+        info!(
+            "  Bank account {} already exists — skipping",
+            account_number
+        );
+        return Ok(());
+    }
+
+    sqlx::query(
+        r#"
+        INSERT INTO bank_accounts (
+            id, store_id, bank_name, account_number, account_type,
+            currency, current_balance, is_active, version
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, 0)
+        "#,
+    )
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+    .bind(store_id)
+    .bind(bank_name)
+    .bind(account_number)
+    .bind(account_type)
+    .bind(currency)
+    .bind(opening)
+    .execute(&mut **tx)
+    .await?;
+
+    info!(
+        "  Bank account: {} {} ({}, opening L {:.2})",
+        bank_name, account_number, account_type, opening_balance
+    );
+    Ok(())
+}
+
+async fn seed_loyalty_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    let (program_name, program_desc, rate, expiration_days) = data::DEMO_LOYALTY_PROGRAM;
+
+    // Program (idempotent on (store_id, name)).
+    let program_id: Uuid = match sqlx::query_as::<_, (Uuid,)>(
+        "SELECT id FROM loyalty_programs WHERE store_id = $1 AND name = $2",
+    )
+    .bind(store_id)
+    .bind(program_name)
+    .fetch_optional(&mut **tx)
+    .await?
+    {
+        Some((id,)) => {
+            info!(
+                "  Loyalty program {} already exists — skipping",
+                program_name
+            );
+            id
+        }
+        None => {
+            let id = Uuid::new_v7(Timestamp::now(NoContext));
+            let rate_dec = Decimal::from_f64(rate).unwrap_or(Decimal::ONE);
+            sqlx::query(
+                r#"
+                INSERT INTO loyalty_programs (
+                    id, store_id, name, description,
+                    points_per_currency_unit, expiration_days, is_active
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+                "#,
+            )
+            .bind(id)
+            .bind(store_id)
+            .bind(program_name)
+            .bind(program_desc)
+            .bind(rate_dec)
+            .bind(expiration_days)
+            .execute(&mut **tx)
+            .await?;
+            info!(
+                "  Loyalty program: {} (rate {} pt/L 1, expires after {} days)",
+                program_name, rate, expiration_days
+            );
+            id
+        }
+    };
+
+    // Tiers (idempotent on (program_id, name)).
+    for (name, threshold, benefits_json, sort_order) in data::DEMO_LOYALTY_TIERS {
+        let exists: Option<(Uuid,)> = sqlx::query_as(
+            "SELECT id FROM loyalty_member_tiers WHERE program_id = $1 AND name = $2",
+        )
+        .bind(program_id)
+        .bind(*name)
+        .fetch_optional(&mut **tx)
+        .await?;
+        if exists.is_some() {
+            continue;
+        }
+        let benefits: serde_json::Value =
+            serde_json::from_str(benefits_json).unwrap_or_else(|_| serde_json::json!({}));
+        sqlx::query(
+            r#"
+            INSERT INTO loyalty_member_tiers (
+                id, program_id, name, threshold_points, benefits, sort_order, is_active
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+            "#,
+        )
+        .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+        .bind(program_id)
+        .bind(*name)
+        .bind(*threshold)
+        .bind(benefits)
+        .bind(*sort_order)
+        .execute(&mut **tx)
+        .await?;
+    }
+    info!(
+        "  Loyalty tiers: {} (Bronze/Silver/Gold)",
+        data::DEMO_LOYALTY_TIERS.len()
+    );
+
+    // Rewards (idempotent — we look up by (program_id, name)).
+    for reward in data::DEMO_LOYALTY_REWARDS {
+        let exists: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM loyalty_rewards WHERE program_id = $1 AND name = $2")
+                .bind(program_id)
+                .bind(reward.name)
+                .fetch_optional(&mut **tx)
+                .await?;
+        if exists.is_some() {
+            continue;
+        }
+        let value_dec = Decimal::from_f64(reward.reward_value).unwrap_or(Decimal::ZERO);
+        sqlx::query(
+            r#"
+            INSERT INTO loyalty_rewards (
+                id, program_id, name, description,
+                cost_points, reward_type, reward_value,
+                max_redemptions_per_member, is_active
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+            "#,
+        )
+        .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+        .bind(program_id)
+        .bind(reward.name)
+        .bind(reward.description)
+        .bind(reward.cost_points)
+        .bind(reward.reward_type)
+        .bind(value_dec)
+        .bind(reward.max_per_member)
+        .execute(&mut **tx)
+        .await?;
+    }
+    info!(
+        "  Loyalty rewards: {} catalog entries",
+        data::DEMO_LOYALTY_REWARDS.len()
+    );
+
+    Ok(())
+}
+
+/// Seeds the booking module: resources (stylists + room), shared weekly
+/// calendar, bookable services with eligible-resource M2M, and a default
+/// per-store policy. Idempotent — re-running does not create duplicates.
+async fn seed_booking_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    use std::collections::HashMap;
+
+    // ---- Resources (idempotent on (store_id, name)) -----------------------
+    let mut resource_ids: HashMap<&str, Uuid> = HashMap::new();
+    for (resource_type, name, color) in data::DEMO_BOOKING_RESOURCES {
+        let existing: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM booking_resources WHERE store_id = $1 AND name = $2")
+                .bind(store_id)
+                .bind(name)
+                .fetch_optional(&mut **tx)
+                .await?;
+        let id = match existing {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                    INSERT INTO booking_resources (
+                        id, store_id, resource_type, name, color, is_active
+                    )
+                    VALUES ($1, $2, $3, $4, $5, TRUE)
+                    "#,
+                )
+                .bind(id)
+                .bind(store_id)
+                .bind(*resource_type)
+                .bind(*name)
+                .bind(*color)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+        resource_ids.insert(*name, id);
+    }
+    info!(
+        "  Booking resources: {} ({} types)",
+        data::DEMO_BOOKING_RESOURCES.len(),
+        data::DEMO_BOOKING_RESOURCES
+            .iter()
+            .map(|(t, _, _)| *t)
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+    );
+
+    // ---- Calendars: replace-and-insert if the resource has none yet ------
+    for (_, name, _) in data::DEMO_BOOKING_RESOURCES {
+        let resource_id = resource_ids.get(name).copied().expect("resource id");
+        let existing_count: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*)::BIGINT FROM booking_resource_calendars WHERE resource_id = $1",
+        )
+        .bind(resource_id)
+        .fetch_one(&mut **tx)
+        .await?;
+        if existing_count.0 > 0 {
+            continue;
+        }
+        for (dow, start, end) in data::DEMO_BOOKING_CALENDAR {
+            let start_t = NaiveTime::parse_from_str(start, "%H:%M")?;
+            let end_t = NaiveTime::parse_from_str(end, "%H:%M")?;
+            sqlx::query(
+                r#"
+                INSERT INTO booking_resource_calendars (
+                    id, resource_id, day_of_week, start_time, end_time, is_active
+                )
+                VALUES ($1, $2, $3, $4, $5, TRUE)
+                "#,
+            )
+            .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+            .bind(resource_id)
+            .bind(*dow)
+            .bind(start_t)
+            .bind(end_t)
+            .execute(&mut **tx)
+            .await?;
+        }
+    }
+    info!(
+        "  Booking calendars: {} weekly windows × {} resources",
+        data::DEMO_BOOKING_CALENDAR.len(),
+        data::DEMO_BOOKING_RESOURCES.len()
+    );
+
+    // ---- Services + service_resources M2M --------------------------------
+    let mut services_added = 0;
+    for svc in data::DEMO_BOOKING_SERVICES {
+        let existing: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM booking_services WHERE store_id = $1 AND name = $2")
+                .bind(store_id)
+                .bind(svc.name)
+                .fetch_optional(&mut **tx)
+                .await?;
+        let service_id = match existing {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                let price_dec = Decimal::from_f64(svc.price).unwrap_or(Decimal::ZERO);
+                let deposit_dec = svc
+                    .deposit_amount
+                    .and_then(Decimal::from_f64)
+                    .map(|d| d.round_dp(4));
+                sqlx::query(
+                    r#"
+                    INSERT INTO booking_services (
+                        id, store_id, name, description, duration_minutes, price,
+                        buffer_minutes_before, buffer_minutes_after,
+                        requires_deposit, deposit_amount, is_active
+                    )
+                    VALUES (
+                        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE
+                    )
+                    "#,
+                )
+                .bind(id)
+                .bind(store_id)
+                .bind(svc.name)
+                .bind(svc.description)
+                .bind(svc.duration_minutes)
+                .bind(price_dec)
+                .bind(svc.buffer_minutes_before)
+                .bind(svc.buffer_minutes_after)
+                .bind(svc.requires_deposit)
+                .bind(deposit_dec)
+                .execute(&mut **tx)
+                .await?;
+                services_added += 1;
+                id
+            }
+        };
+
+        for resource_name in svc.eligible_resource_names {
+            let resource_id = match resource_ids.get(resource_name) {
+                Some(id) => *id,
+                None => continue,
+            };
+            sqlx::query(
+                r#"
+                INSERT INTO booking_service_resources (service_id, resource_id)
+                VALUES ($1, $2)
+                ON CONFLICT DO NOTHING
+                "#,
+            )
+            .bind(service_id)
+            .bind(resource_id)
+            .execute(&mut **tx)
+            .await?;
+        }
+    }
+    info!(
+        "  Booking services: {} ({} new), M2M assignments synced",
+        data::DEMO_BOOKING_SERVICES.len(),
+        services_added
+    );
+
+    // ---- Per-store policy (one row per store) ----------------------------
+    let (
+        requires_deposit,
+        deposit_pct,
+        cancellation_hours,
+        no_show_fee,
+        default_buffer,
+        advance_max,
+    ) = data::DEMO_BOOKING_POLICY;
+    let pct_dec = deposit_pct.and_then(Decimal::from_f64);
+    let fee_dec = no_show_fee
+        .and_then(Decimal::from_f64)
+        .map(|d| d.round_dp(4));
+    sqlx::query(
+        r#"
+        INSERT INTO booking_policies (
+            id, store_id, requires_deposit, deposit_percentage,
+            cancellation_window_hours, no_show_fee_amount,
+            default_buffer_minutes, advance_booking_days_max
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT (store_id) DO NOTHING
+        "#,
+    )
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+    .bind(store_id)
+    .bind(requires_deposit)
+    .bind(pct_dec)
+    .bind(cancellation_hours)
+    .bind(fee_dec)
+    .bind(default_buffer)
+    .bind(advance_max)
+    .execute(&mut **tx)
+    .await?;
+    info!(
+        "  Booking policy: cancel window {}h, advance booking ≤{}d, default buffer {}min",
+        cancellation_hours, advance_max, default_buffer
+    );
+
+    Ok(())
+}
+
+/// Seeds the service_orders module: a demo customer, two assets (car +
+/// laptop), and one in-progress service order on the car with a diagnostic
+/// and three line items, already advanced to status='diagnosis'.
+/// Idempotent — re-running does not create duplicates (skips when the demo
+/// customer already exists, since it's the anchor for everything else).
+async fn seed_service_orders_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+    intake_user_id: Uuid,
+) -> Result<()> {
+    use std::collections::HashMap;
+
+    // ---- Customer (idempotent on (store_id, code)) -----------------------
+    let (cust_code, cust_first, cust_last, cust_email, cust_phone, cust_type, cust_tax_id) =
+        data::DEMO_SERVICE_CUSTOMER;
+    let existing: Option<(Uuid,)> =
+        sqlx::query_as("SELECT id FROM customers WHERE store_id = $1 AND code = $2")
+            .bind(store_id)
+            .bind(cust_code)
+            .fetch_optional(&mut **tx)
+            .await?;
+    if existing.is_some() {
+        info!(
+            "  Service orders demo customer {} already exists — skipping",
+            cust_code
+        );
+        return Ok(());
+    }
+    let customer_id = Uuid::new_v7(Timestamp::now(NoContext));
+    sqlx::query(
+        r#"
+        INSERT INTO customers (
+            id, store_id, customer_type, code,
+            first_name, last_name, email, phone, tax_id,
+            is_active, total_purchases, purchase_count, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, 0, 0, NOW(), NOW())
+        "#,
+    )
+    .bind(customer_id)
+    .bind(store_id)
+    .bind(cust_type)
+    .bind(cust_code)
+    .bind(cust_first)
+    .bind(cust_last)
+    .bind(cust_email)
+    .bind(cust_phone)
+    .bind(cust_tax_id)
+    .execute(&mut **tx)
+    .await?;
+    let cust_full = format!("{} {}", cust_first, cust_last);
+    info!("  Service customer: {} ({})", cust_full, cust_email);
+
+    // ---- Assets ----------------------------------------------------------
+    let mut asset_ids: HashMap<&str, Uuid> = HashMap::new();
+    for (asset_type, brand, model, identifier, year, color, description) in
+        data::DEMO_SERVICE_ASSETS
+    {
+        let id = Uuid::new_v7(Timestamp::now(NoContext));
+        sqlx::query(
+            r#"
+            INSERT INTO service_assets (
+                id, store_id, customer_id, asset_type,
+                brand, model, identifier, year, color, description,
+                attributes, is_active, created_at, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                    '{}'::jsonb, TRUE, NOW(), NOW())
+            "#,
+        )
+        .bind(id)
+        .bind(store_id)
+        .bind(customer_id)
+        .bind(*asset_type)
+        .bind(*brand)
+        .bind(*model)
+        .bind(*identifier)
+        .bind(*year)
+        .bind(*color)
+        .bind(*description)
+        .execute(&mut **tx)
+        .await?;
+        asset_ids.insert(*identifier, id);
+    }
+    info!(
+        "  Service assets: {} ({} for customer {})",
+        data::DEMO_SERVICE_ASSETS.len(),
+        data::DEMO_SERVICE_ASSETS.len(),
+        cust_email
+    );
+
+    // ---- Service order on the car (PEC-1234) -----------------------------
+    let car_asset_id = asset_ids
+        .get("PEC-1234")
+        .copied()
+        .expect("car asset should be present");
+    let order_id = Uuid::new_v7(Timestamp::now(NoContext));
+    let public_token = Uuid::new_v7(Timestamp::now(NoContext)).simple().to_string();
+    let (priority, intake_notes) = data::DEMO_SERVICE_ORDER_INTAKE;
+    sqlx::query(
+        r#"
+        INSERT INTO service_orders (
+            id, store_id, asset_id, customer_id,
+            customer_name, customer_email, customer_phone,
+            status, priority, intake_notes, intake_at, intake_by_user_id,
+            promised_at, public_token, total_amount, created_at, updated_at
+        )
+        VALUES (
+            $1, $2, $3, $4, $5, $6, $7, 'diagnosis', $8, $9,
+            NOW(), $10, NULL, $11, 0, NOW(), NOW()
+        )
+        "#,
+    )
+    .bind(order_id)
+    .bind(store_id)
+    .bind(car_asset_id)
+    .bind(customer_id)
+    .bind(cust_full.clone())
+    .bind(cust_email)
+    .bind(cust_phone)
+    .bind(priority)
+    .bind(intake_notes)
+    .bind(intake_user_id)
+    .bind(&public_token)
+    .execute(&mut **tx)
+    .await?;
+    info!(
+        "  Service order: status=diagnosis priority={} on asset PEC-1234 (token={})",
+        priority,
+        &public_token[..8]
+    );
+
+    // ---- Diagnostic ------------------------------------------------------
+    let (findings, recommended, severity) = data::DEMO_SERVICE_DIAGNOSTIC;
+    sqlx::query(
+        r#"
+        INSERT INTO service_diagnostics (
+            id, service_order_id, technician_user_id,
+            findings, recommended_actions, severity, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        "#,
+    )
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+    .bind(order_id)
+    .bind(intake_user_id)
+    .bind(findings)
+    .bind(recommended)
+    .bind(severity)
+    .execute(&mut **tx)
+    .await?;
+    info!("  Service diagnostic: severity={}", severity);
+
+    // ---- Items + recompute total -----------------------------------------
+    let mut running_total = Decimal::ZERO;
+    for (item_type, description, quantity, unit_price, tax_rate) in data::DEMO_SERVICE_ITEMS {
+        let qty = Decimal::from_f64(*quantity)
+            .unwrap_or(Decimal::ZERO)
+            .round_dp(4);
+        let price = Decimal::from_f64(*unit_price)
+            .unwrap_or(Decimal::ZERO)
+            .round_dp(4);
+        let rate = Decimal::from_f64(*tax_rate)
+            .unwrap_or(Decimal::ZERO)
+            .round_dp(4);
+        let subtotal = (qty * price).round_dp(4);
+        let tax_amount = (subtotal * rate).round_dp(4);
+        let total = subtotal + tax_amount;
+        running_total += total;
+
+        sqlx::query(
+            r#"
+            INSERT INTO service_order_items (
+                id, service_order_id, item_type, description,
+                quantity, unit_price, total,
+                product_id, variant_id, tax_rate, tax_amount, created_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, NULL, $8, $9, NOW())
+            "#,
+        )
+        .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+        .bind(order_id)
+        .bind(*item_type)
+        .bind(*description)
+        .bind(qty)
+        .bind(price)
+        .bind(total)
+        .bind(rate)
+        .bind(tax_amount)
+        .execute(&mut **tx)
+        .await?;
+    }
+    sqlx::query("UPDATE service_orders SET total_amount = $2, updated_at = NOW() WHERE id = $1")
+        .bind(order_id)
+        .bind(running_total.round_dp(4))
+        .execute(&mut **tx)
+        .await?;
+    info!(
+        "  Service items: {} (running total L {:.2})",
+        data::DEMO_SERVICE_ITEMS.len(),
+        running_total
+    );
+
+    Ok(())
+}
+
+/// Seeds the restaurant_operations module: kitchen stations, dining tables,
+/// menu modifier groups + modifiers, and one in-progress KDS ticket on
+/// Mesa 1 (Hot Line). Idempotent — re-running does not create duplicates.
+async fn seed_restaurant_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+    actor_user_id: Uuid,
+) -> Result<()> {
+    use std::collections::HashMap;
+
+    // ---- Kitchen stations (idempotent on (store_id, name)) ----------------
+    let mut station_ids: HashMap<&str, Uuid> = HashMap::new();
+    for (name, color, sort_order) in data::DEMO_KITCHEN_STATIONS {
+        let existing: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM kitchen_stations WHERE store_id = $1 AND name = $2")
+                .bind(store_id)
+                .bind(name)
+                .fetch_optional(&mut **tx)
+                .await?;
+        let id = match existing {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                    INSERT INTO kitchen_stations (
+                        id, store_id, name, color, sort_order, is_active
+                    )
+                    VALUES ($1, $2, $3, $4, $5, TRUE)
+                    "#,
+                )
+                .bind(id)
+                .bind(store_id)
+                .bind(*name)
+                .bind(*color)
+                .bind(*sort_order)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+        station_ids.insert(*name, id);
+    }
+    info!("  Kitchen stations: {}", data::DEMO_KITCHEN_STATIONS.len());
+
+    // ---- Restaurant tables (idempotent on (store_id, label)) --------------
+    let mut table_ids: HashMap<&str, Uuid> = HashMap::new();
+    for (label, capacity, notes) in data::DEMO_RESTAURANT_TABLES {
+        let existing: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM restaurant_tables WHERE store_id = $1 AND label = $2")
+                .bind(store_id)
+                .bind(label)
+                .fetch_optional(&mut **tx)
+                .await?;
+        let id = match existing {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                    INSERT INTO restaurant_tables (
+                        id, store_id, label, capacity, status,
+                        current_ticket_id, notes, is_active
+                    )
+                    VALUES ($1, $2, $3, $4, 'free', NULL, $5, TRUE)
+                    "#,
+                )
+                .bind(id)
+                .bind(store_id)
+                .bind(*label)
+                .bind(*capacity)
+                .bind(*notes)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+        table_ids.insert(*label, id);
+    }
+    info!(
+        "  Restaurant tables: {}",
+        data::DEMO_RESTAURANT_TABLES.len()
+    );
+
+    // ---- Modifier groups + modifiers --------------------------------------
+    let mut modifiers_added = 0;
+    for group in data::DEMO_MODIFIER_GROUPS {
+        let existing: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM menu_modifier_groups WHERE store_id = $1 AND name = $2")
+                .bind(store_id)
+                .bind(group.name)
+                .fetch_optional(&mut **tx)
+                .await?;
+        let group_id = match existing {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                    INSERT INTO menu_modifier_groups (
+                        id, store_id, name, min_select, max_select,
+                        sort_order, is_active
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, TRUE)
+                    "#,
+                )
+                .bind(id)
+                .bind(store_id)
+                .bind(group.name)
+                .bind(group.min_select)
+                .bind(group.max_select)
+                .bind(group.sort_order)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+        for (m_name, m_delta, m_sort) in group.modifiers {
+            let m_existing: Option<(Uuid,)> =
+                sqlx::query_as("SELECT id FROM menu_modifiers WHERE group_id = $1 AND name = $2")
+                    .bind(group_id)
+                    .bind(m_name)
+                    .fetch_optional(&mut **tx)
+                    .await?;
+            if m_existing.is_some() {
+                continue;
+            }
+            let delta = Decimal::from_f64(*m_delta)
+                .unwrap_or(Decimal::ZERO)
+                .round_dp(4);
+            sqlx::query(
+                r#"
+                INSERT INTO menu_modifiers (
+                    id, group_id, name, price_delta, sort_order, is_active
+                )
+                VALUES ($1, $2, $3, $4, $5, TRUE)
+                "#,
+            )
+            .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+            .bind(group_id)
+            .bind(*m_name)
+            .bind(delta)
+            .bind(*m_sort)
+            .execute(&mut **tx)
+            .await?;
+            modifiers_added += 1;
+        }
+    }
+    info!(
+        "  Modifier groups: {} ({} modifiers added)",
+        data::DEMO_MODIFIER_GROUPS.len(),
+        modifiers_added
+    );
+
+    // ---- KDS ticket on Mesa 1, station Hot Line, status pending -----------
+    let hot_line_id = station_ids
+        .get("Hot Line")
+        .copied()
+        .expect("Hot Line station seeded above");
+    let mesa_1_id = table_ids
+        .get("Mesa 1")
+        .copied()
+        .expect("Mesa 1 seeded above");
+
+    let existing_ticket: Option<(Uuid,)> =
+        sqlx::query_as("SELECT id FROM kds_tickets WHERE store_id = $1 AND ticket_number = 1")
+            .bind(store_id)
+            .fetch_optional(&mut **tx)
+            .await?;
+    if existing_ticket.is_some() {
+        info!("  KDS ticket #1 already exists — skipping");
+        return Ok(());
+    }
+
+    let ticket_id = Uuid::new_v7(Timestamp::now(NoContext));
+    let (course, notes) = data::DEMO_KDS_TICKET;
+    sqlx::query(
+        r#"
+        INSERT INTO kds_tickets (
+            id, store_id, station_id, table_id, sale_id, ticket_number,
+            status, course, notes, sent_at, ready_at, served_at,
+            canceled_reason, created_by, created_at, updated_at
+        )
+        VALUES (
+            $1, $2, $3, $4, NULL, 1,
+            'pending', $5, $6, NULL, NULL, NULL,
+            NULL, $7, NOW(), NOW()
+        )
+        "#,
+    )
+    .bind(ticket_id)
+    .bind(store_id)
+    .bind(hot_line_id)
+    .bind(mesa_1_id)
+    .bind(course)
+    .bind(notes)
+    .bind(actor_user_id)
+    .execute(&mut **tx)
+    .await?;
+
+    for (description, quantity, instructions) in data::DEMO_KDS_TICKET_ITEMS {
+        let qty = Decimal::from_f64(*quantity)
+            .unwrap_or(Decimal::ONE)
+            .round_dp(4);
+        sqlx::query(
+            r#"
+            INSERT INTO kds_ticket_items (
+                id, ticket_id, sale_item_id, product_id,
+                description, quantity, modifiers_summary, special_instructions,
+                status, ready_at, served_at, created_at
+            )
+            VALUES (
+                $1, $2, NULL, NULL,
+                $3, $4, '', $5,
+                'pending', NULL, NULL, NOW()
+            )
+            "#,
+        )
+        .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+        .bind(ticket_id)
+        .bind(*description)
+        .bind(qty)
+        .bind(*instructions)
+        .execute(&mut **tx)
+        .await?;
+    }
+    info!(
+        "  KDS ticket #1 on Mesa 1 / Hot Line, {} items pending",
+        data::DEMO_KDS_TICKET_ITEMS.len()
+    );
+
+    Ok(())
+}
+
+/// Seeds an additional demo organization (besides the default org created by
+/// migration 50) so the by-slug / by-domain endpoints have multiple rows to
+/// query and the dashboard list isn't single-row. Idempotent — re-running
+/// does not duplicate the demo org or its sub-resources.
+async fn seed_tenancy_defaults(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<()> {
+    let (name, slug, contact_email, contact_phone, tier) = data::DEMO_TENANCY_ORG;
+
+    // ---- Organization (idempotent on slug) -------------------------------
+    let existing: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM organizations WHERE slug = $1")
+        .bind(slug)
+        .fetch_optional(&mut **tx)
+        .await?;
+    if existing.is_some() {
+        info!("  Tenancy demo org `{}` already exists — skipping", slug);
+        return Ok(());
+    }
+    let org_id = Uuid::new_v7(Timestamp::now(NoContext));
+    sqlx::query(
+        r#"
+        INSERT INTO organizations (
+            id, name, slug, contact_email, contact_phone, status,
+            created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, 'active', NOW(), NOW())
+        "#,
+    )
+    .bind(org_id)
+    .bind(name)
+    .bind(slug)
+    .bind(contact_email)
+    .bind(contact_phone)
+    .execute(&mut **tx)
+    .await?;
+    info!("  Tenancy org: {} (slug={}, tier={})", name, slug, tier);
+
+    // ---- Plan: pro tier with restaurant + booking enabled ---------------
+    let feature_flags = serde_json::json!({
+        "booking": true,
+        "restaurant": true,
+        "service_orders": false,
+        "loyalty": true,
+    });
+    sqlx::query(
+        r#"
+        INSERT INTO organization_plans (
+            id, organization_id, tier, feature_flags,
+            seat_limit, store_limit, starts_at, expires_at,
+            created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, NULL, NULL, NOW(), NULL, NOW(), NOW())
+        ON CONFLICT (organization_id) DO NOTHING
+        "#,
+    )
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+    .bind(org_id)
+    .bind(tier)
+    .bind(&feature_flags)
+    .execute(&mut **tx)
+    .await?;
+
+    // ---- Custom domain (verified upfront in v1.0) -----------------------
+    sqlx::query(
+        r#"
+        INSERT INTO organization_domains (
+            id, organization_id, domain, is_verified, is_primary,
+            verification_token, verified_at, created_at
+        )
+        VALUES ($1, $2, $3, TRUE, TRUE, NULL, NOW(), NOW())
+        ON CONFLICT (domain) DO NOTHING
+        "#,
+    )
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+    .bind(org_id)
+    .bind(data::DEMO_TENANCY_DOMAIN)
+    .execute(&mut **tx)
+    .await?;
+    info!(
+        "  Tenancy domain: {} (verified, primary)",
+        data::DEMO_TENANCY_DOMAIN
+    );
+
+    // ---- Branding: orange primary, dark theme ---------------------------
+    let (logo_url, primary, secondary, theme) = data::DEMO_TENANCY_BRANDING;
+    sqlx::query(
+        r#"
+        INSERT INTO organization_branding (
+            organization_id, logo_url, favicon_url,
+            primary_color, secondary_color, accent_color,
+            theme, custom_css, created_at, updated_at
+        )
+        VALUES ($1, $2, NULL, $3, $4, NULL, $5, NULL, NOW(), NOW())
+        ON CONFLICT (organization_id) DO NOTHING
+        "#,
+    )
+    .bind(org_id)
+    .bind(logo_url)
+    .bind(primary)
+    .bind(secondary)
+    .bind(theme)
+    .execute(&mut **tx)
+    .await?;
+    info!("  Tenancy branding: primary={} theme={}", primary, theme);
+
+    // ---- Demo org_admin user attached to the demo-resto org -------------
+    // Lets the smoke test verify the v1.1 enforcement: this user has
+    // tenancy:read/write_branding/domain perms but cannot see other orgs,
+    // mutate plans, or suspend their tenant. Idempotent on email.
+    let admin_email = "demo-resto-admin@example.com";
+    let already: Option<(Uuid,)> = sqlx::query_as("SELECT id FROM users WHERE email = $1")
+        .bind(admin_email)
+        .fetch_optional(&mut **tx)
+        .await?;
+    if already.is_none() {
+        let admin_id = Uuid::new_v7(Timestamp::now(NoContext));
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+        let password_hash = argon2
+            .hash_password(b"OrgAdmin123!", &salt)
+            .expect("hash demo-resto-admin password")
+            .to_string();
+        sqlx::query(
+            r#"
+            INSERT INTO users (
+                id, email, username, first_name, last_name,
+                password_hash, is_active, organization_id
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, TRUE, $7)
+            "#,
+        )
+        .bind(admin_id)
+        .bind(admin_email)
+        .bind("demo_resto_admin")
+        .bind("Org")
+        .bind("Admin")
+        .bind(&password_hash)
+        .bind(org_id)
+        .execute(&mut **tx)
+        .await?;
+
+        // The org_admin user needs at least one user_stores row for the
+        // auth middleware to populate accessible_store_ids; we tie them to
+        // the default org's main store solely so they can call the admin
+        // endpoints. Cross-org enforcement still rejects requests targeting
+        // other orgs because organization_id is set on the user above.
+        let main_store_id: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM stores WHERE name = $1 LIMIT 1")
+                .bind(data::MAIN_STORE.0)
+                .fetch_optional(&mut **tx)
+                .await?;
+        if let Some((store_id,)) = main_store_id {
+            sqlx::query(
+                r#"
+                INSERT INTO user_stores (user_id, store_id)
+                VALUES ($1, $2)
+                ON CONFLICT (user_id, store_id) DO NOTHING
+                "#,
+            )
+            .bind(admin_id)
+            .bind(store_id)
+            .execute(&mut **tx)
+            .await?;
+            let role_id: (Uuid,) = sqlx::query_as("SELECT id FROM roles WHERE name = 'org_admin'")
+                .fetch_one(&mut **tx)
+                .await?;
+            sqlx::query(
+                r#"
+                INSERT INTO user_store_roles (user_id, store_id, role_id)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (user_id, store_id, role_id) DO NOTHING
+                "#,
+            )
+            .bind(admin_id)
+            .bind(store_id)
+            .bind(role_id.0)
+            .execute(&mut **tx)
+            .await?;
+        }
+        info!(
+            "  Tenancy demo user: {} (role=org_admin, password=OrgAdmin123!)",
+            admin_email
+        );
+    } else {
+        info!(
+            "  Tenancy demo user {} already exists — skipping",
+            admin_email
         );
     }
 

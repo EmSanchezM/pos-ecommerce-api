@@ -31,6 +31,31 @@ pub struct JwtTokenService {
     refresh_token_duration: Duration,
 }
 
+/// Permission code prefixes that are organization-scoped rather than
+/// store-scoped. v1.2 starts with just `tenancy:` (read/write_org, plan,
+/// domain, branding) — `org_admin` needs them to manage their tenant
+/// without sending an `X-Store-Id`. Add more prefixes here if other
+/// modules grow truly global perms.
+const GLOBAL_PERMISSION_PREFIXES: &[&str] = &["tenancy:"];
+
+/// Pulls the set of `GLOBAL_PERMISSION_PREFIXES` permissions out of every
+/// store-scoped grant and dedupes them. Returned in sorted order so token
+/// payloads are byte-stable for the same input.
+fn collect_global_permissions(store_permissions: &HashMap<String, Vec<String>>) -> Vec<String> {
+    let mut globals: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+    for perms in store_permissions.values() {
+        for p in perms {
+            if GLOBAL_PERMISSION_PREFIXES
+                .iter()
+                .any(|prefix| p.starts_with(prefix))
+            {
+                globals.insert(p.clone());
+            }
+        }
+    }
+    globals.into_iter().collect()
+}
+
 /// Claims for refresh tokens (minimal - only user_id and expiration)
 #[derive(Debug, Serialize, Deserialize)]
 struct RefreshTokenClaims {
@@ -113,6 +138,7 @@ impl TokenService for JwtTokenService {
     ) -> Result<String, AuthError> {
         let now = Utc::now();
         let exp = now + self.access_token_duration;
+        let global_permissions = collect_global_permissions(store_permissions);
 
         let claims = TokenClaims::new(
             user.id().as_uuid().to_owned(),
@@ -121,6 +147,8 @@ impl TokenService for JwtTokenService {
             exp.timestamp(),
             now.timestamp(),
             store_permissions.clone(),
+            user.organization_id(),
+            global_permissions,
         );
 
         encode(
@@ -401,6 +429,8 @@ mod tests {
             past.timestamp(), // Already expired
             (past - Duration::minutes(15)).timestamp(),
             HashMap::new(),
+            None,
+            Vec::new(),
         );
 
         // Manually encode the expired token
@@ -441,6 +471,62 @@ mod tests {
         let result = service.validate_refresh_token(&token);
 
         assert!(matches!(result, Err(AuthError::TokenExpired)));
+    }
+
+    #[test]
+    fn collect_global_permissions_picks_only_tenancy_prefix_dedupes_across_stores() {
+        let mut perms: HashMap<String, Vec<String>> = HashMap::new();
+        perms.insert(
+            "store-a".into(),
+            vec![
+                "sales:create".into(),
+                "tenancy:read_org".into(),
+                "tenancy:read_branding".into(),
+            ],
+        );
+        perms.insert(
+            "store-b".into(),
+            vec![
+                "sales:create".into(),
+                "tenancy:read_org".into(), // duplicate across stores
+                "inventory:view".into(),
+            ],
+        );
+        let globals = collect_global_permissions(&perms);
+        // Only tenancy:* perms, deduped, sorted
+        assert_eq!(
+            globals,
+            vec![
+                "tenancy:read_branding".to_string(),
+                "tenancy:read_org".into()
+            ]
+        );
+    }
+
+    #[test]
+    fn collect_global_permissions_empty_when_no_tenancy_perms() {
+        let mut perms: HashMap<String, Vec<String>> = HashMap::new();
+        perms.insert("store-a".into(), vec!["sales:create".into()]);
+        assert!(collect_global_permissions(&perms).is_empty());
+    }
+
+    #[test]
+    fn access_token_embeds_global_permissions() {
+        let service = create_service();
+        let user = create_test_user();
+
+        let mut perms: HashMap<String, Vec<String>> = HashMap::new();
+        perms.insert(
+            "store-x".into(),
+            vec!["tenancy:read_org".into(), "sales:create".into()],
+        );
+
+        let token = service.generate_access_token(&user, &perms).unwrap();
+        let claims = service.validate_access_token(&token).unwrap();
+
+        assert_eq!(claims.global_permissions, vec!["tenancy:read_org"]);
+        // Store perms are kept intact (duplicated is fine; the middleware unions them).
+        assert!(claims.store_permissions["store-x"].contains(&"tenancy:read_org".to_string()));
     }
 
     #[test]

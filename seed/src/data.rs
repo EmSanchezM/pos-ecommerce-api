@@ -258,6 +258,203 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
         "accounting:write",
         "Create accounts, open/close periods, post journal entries",
     ),
+    // Demand planning module
+    ("demand_planning:read_forecast", "Read demand forecasts"),
+    ("demand_planning:read_policy", "Read reorder policies"),
+    (
+        "demand_planning:write_policy",
+        "Create or update reorder policies",
+    ),
+    (
+        "demand_planning:read_suggestion",
+        "List replenishment suggestions",
+    ),
+    (
+        "demand_planning:approve_suggestion",
+        "Approve a replenishment suggestion (creates a Purchase Order)",
+    ),
+    (
+        "demand_planning:dismiss_suggestion",
+        "Dismiss a replenishment suggestion",
+    ),
+    (
+        "demand_planning:read_abc",
+        "Read ABC classification of products",
+    ),
+    // Cash management module
+    ("cash_management:read_account", "Read bank accounts"),
+    (
+        "cash_management:write_account",
+        "Create or update bank accounts",
+    ),
+    ("cash_management:read_transaction", "List bank transactions"),
+    (
+        "cash_management:write_transaction",
+        "Record manual bank transactions",
+    ),
+    ("cash_management:read_deposit", "List cash deposits"),
+    (
+        "cash_management:write_deposit",
+        "Create cash deposits and mark them sent to bank",
+    ),
+    (
+        "cash_management:link_deposit",
+        "Link a deposit to its matching bank transaction",
+    ),
+    (
+        "cash_management:read_reconciliation",
+        "List bank reconciliations",
+    ),
+    (
+        "cash_management:write_reconciliation",
+        "Start a bank reconciliation",
+    ),
+    (
+        "cash_management:close_reconciliation",
+        "Close a bank reconciliation (audit boundary)",
+    ),
+    // Loyalty module
+    ("loyalty:read_program", "Read loyalty programs"),
+    ("loyalty:write_program", "Create or update loyalty programs"),
+    ("loyalty:read_tier", "List program tiers"),
+    ("loyalty:write_tier", "Create/update program tiers"),
+    ("loyalty:read_member", "Read loyalty members + ledgers"),
+    ("loyalty:enroll_member", "Enroll a customer into a program"),
+    (
+        "loyalty:adjust_points",
+        "Manually adjust a member's points (audit boundary)",
+    ),
+    ("loyalty:read_reward", "List rewards"),
+    ("loyalty:write_reward", "Create/update rewards"),
+    (
+        "loyalty:redeem_reward",
+        "Redeem a member's points for a reward",
+    ),
+    // Booking module
+    (
+        "booking:read_resource",
+        "List/read booking resources (people, equipment, rooms)",
+    ),
+    (
+        "booking:write_resource",
+        "Create/update/deactivate booking resources and their calendars",
+    ),
+    ("booking:read_service", "List/read bookable services"),
+    (
+        "booking:write_service",
+        "Create/update/deactivate bookable services and assign resources",
+    ),
+    ("booking:read_appointment", "List/read appointments"),
+    (
+        "booking:write_appointment",
+        "Create appointments on behalf of a customer (walk-in, phone)",
+    ),
+    (
+        "booking:transition_appointment",
+        "Confirm/start/complete/no-show an appointment",
+    ),
+    ("booking:cancel_appointment", "Cancel an appointment"),
+    ("booking:read_policy", "Read the per-store booking policy"),
+    (
+        "booking:write_policy",
+        "Upsert the per-store booking policy",
+    ),
+    // Service orders module
+    (
+        "service_orders:read_asset",
+        "List/read assets being serviced",
+    ),
+    (
+        "service_orders:write_asset",
+        "Register/update/deactivate assets",
+    ),
+    ("service_orders:read_order", "List/read service orders"),
+    (
+        "service_orders:write_order",
+        "Create service orders (intake)",
+    ),
+    (
+        "service_orders:transition_order",
+        "Diagnose/start-repair/start-testing/mark-ready/deliver an order",
+    ),
+    ("service_orders:cancel_order", "Cancel a service order"),
+    (
+        "service_orders:write_item",
+        "Add/update/remove labor or parts items",
+    ),
+    (
+        "service_orders:write_diagnostic",
+        "Record technician diagnostics",
+    ),
+    (
+        "service_orders:write_quote",
+        "Draft a quote from current items",
+    ),
+    (
+        "service_orders:transition_quote",
+        "Send/approve/reject a quote",
+    ),
+    // Restaurant operations module
+    ("restaurant:read_station", "List/read kitchen stations"),
+    (
+        "restaurant:write_station",
+        "Create/update/deactivate kitchen stations",
+    ),
+    ("restaurant:read_table", "List/read restaurant tables"),
+    (
+        "restaurant:write_table",
+        "Create/update tables and change their status",
+    ),
+    (
+        "restaurant:read_modifier",
+        "List/read menu modifier groups + modifiers",
+    ),
+    (
+        "restaurant:write_modifier",
+        "Create/update modifier groups, modifiers, product M2M",
+    ),
+    (
+        "restaurant:read_ticket",
+        "List/read KDS tickets and subscribe to the SSE stream",
+    ),
+    (
+        "restaurant:write_ticket",
+        "Create KDS tickets directly (v1.1 will auto-create from sales)",
+    ),
+    (
+        "restaurant:transition_ticket",
+        "Send/ready/serve a ticket or change item statuses",
+    ),
+    ("restaurant:cancel_ticket", "Cancel a KDS ticket"),
+    // Tenancy module (super_admin only in v1.0)
+    ("tenancy:read_org", "List/read organizations"),
+    (
+        "tenancy:write_org",
+        "Register or update an organization (name + contact)",
+    ),
+    (
+        "tenancy:suspend_org",
+        "Suspend or re-activate an organization",
+    ),
+    (
+        "tenancy:read_plan",
+        "Read an organization plan (tier + feature flags + limits)",
+    ),
+    (
+        "tenancy:write_plan",
+        "Set plan tier, toggle feature flags, change limits",
+    ),
+    ("tenancy:read_domain", "List/read custom domains"),
+    (
+        "tenancy:write_domain",
+        "Register, set primary, or delete a custom domain",
+    ),
+    ("tenancy:verify_domain", "Mark a custom domain as verified"),
+    (
+        "tenancy:read_branding",
+        "Read an organization branding (colors, logo, theme)",
+    ),
+    ("tenancy:write_branding", "Upsert an organization branding"),
     // System permissions
     (
         "system:admin",
@@ -311,6 +508,13 @@ pub const ROLES: &[(&str, &str, bool)] = &[
         "customer",
         "E-commerce customer with access to shopping cart, orders, profile, and product browsing",
         false,
+    ),
+    // Tenancy v1.1 — manages a single organization's branding/domains.
+    // Cannot mutate plan/tier or suspend the org (those stay super_admin).
+    (
+        "org_admin",
+        "Tenant admin: read own organization, manage branding + custom domains",
+        true,
     ),
 ];
 
@@ -493,6 +697,80 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             // Accounting
             "accounting:read",
             "accounting:write",
+            // Demand planning
+            "demand_planning:read_forecast",
+            "demand_planning:read_policy",
+            "demand_planning:write_policy",
+            "demand_planning:read_suggestion",
+            "demand_planning:approve_suggestion",
+            "demand_planning:dismiss_suggestion",
+            "demand_planning:read_abc",
+            // Cash management
+            "cash_management:read_account",
+            "cash_management:write_account",
+            "cash_management:read_transaction",
+            "cash_management:write_transaction",
+            "cash_management:read_deposit",
+            "cash_management:write_deposit",
+            "cash_management:link_deposit",
+            "cash_management:read_reconciliation",
+            "cash_management:write_reconciliation",
+            "cash_management:close_reconciliation",
+            // Loyalty
+            "loyalty:read_program",
+            "loyalty:write_program",
+            "loyalty:read_tier",
+            "loyalty:write_tier",
+            "loyalty:read_member",
+            "loyalty:enroll_member",
+            "loyalty:adjust_points",
+            "loyalty:read_reward",
+            "loyalty:write_reward",
+            "loyalty:redeem_reward",
+            // Booking
+            "booking:read_resource",
+            "booking:write_resource",
+            "booking:read_service",
+            "booking:write_service",
+            "booking:read_appointment",
+            "booking:write_appointment",
+            "booking:transition_appointment",
+            "booking:cancel_appointment",
+            "booking:read_policy",
+            "booking:write_policy",
+            // Service orders
+            "service_orders:read_asset",
+            "service_orders:write_asset",
+            "service_orders:read_order",
+            "service_orders:write_order",
+            "service_orders:transition_order",
+            "service_orders:cancel_order",
+            "service_orders:write_item",
+            "service_orders:write_diagnostic",
+            "service_orders:write_quote",
+            "service_orders:transition_quote",
+            // Restaurant operations
+            "restaurant:read_station",
+            "restaurant:write_station",
+            "restaurant:read_table",
+            "restaurant:write_table",
+            "restaurant:read_modifier",
+            "restaurant:write_modifier",
+            "restaurant:read_ticket",
+            "restaurant:write_ticket",
+            "restaurant:transition_ticket",
+            "restaurant:cancel_ticket",
+            // Tenancy (super_admin only in v1.0)
+            "tenancy:read_org",
+            "tenancy:write_org",
+            "tenancy:suspend_org",
+            "tenancy:read_plan",
+            "tenancy:write_plan",
+            "tenancy:read_domain",
+            "tenancy:write_domain",
+            "tenancy:verify_domain",
+            "tenancy:read_branding",
+            "tenancy:write_branding",
             // System
             "system:admin",
             "system:settings",
@@ -661,6 +939,69 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             // Accounting — chart of accounts, periods, JEs, P&L
             "accounting:read",
             "accounting:write",
+            // Demand planning — forecasts, reorder policies, replenishment, ABC
+            "demand_planning:read_forecast",
+            "demand_planning:read_policy",
+            "demand_planning:write_policy",
+            "demand_planning:read_suggestion",
+            "demand_planning:approve_suggestion",
+            "demand_planning:dismiss_suggestion",
+            "demand_planning:read_abc",
+            // Cash management — bank accounts, manual transactions, deposits, reconciliations
+            "cash_management:read_account",
+            "cash_management:write_account",
+            "cash_management:read_transaction",
+            "cash_management:write_transaction",
+            "cash_management:read_deposit",
+            "cash_management:write_deposit",
+            "cash_management:link_deposit",
+            "cash_management:read_reconciliation",
+            "cash_management:write_reconciliation",
+            "cash_management:close_reconciliation",
+            // Loyalty
+            "loyalty:read_program",
+            "loyalty:write_program",
+            "loyalty:read_tier",
+            "loyalty:write_tier",
+            "loyalty:read_member",
+            "loyalty:enroll_member",
+            "loyalty:adjust_points",
+            "loyalty:read_reward",
+            "loyalty:write_reward",
+            "loyalty:redeem_reward",
+            // Booking
+            "booking:read_resource",
+            "booking:write_resource",
+            "booking:read_service",
+            "booking:write_service",
+            "booking:read_appointment",
+            "booking:write_appointment",
+            "booking:transition_appointment",
+            "booking:cancel_appointment",
+            "booking:read_policy",
+            "booking:write_policy",
+            // Service orders
+            "service_orders:read_asset",
+            "service_orders:write_asset",
+            "service_orders:read_order",
+            "service_orders:write_order",
+            "service_orders:transition_order",
+            "service_orders:cancel_order",
+            "service_orders:write_item",
+            "service_orders:write_diagnostic",
+            "service_orders:write_quote",
+            "service_orders:transition_quote",
+            // Restaurant operations
+            "restaurant:read_station",
+            "restaurant:write_station",
+            "restaurant:read_table",
+            "restaurant:write_table",
+            "restaurant:read_modifier",
+            "restaurant:write_modifier",
+            "restaurant:read_ticket",
+            "restaurant:write_ticket",
+            "restaurant:transition_ticket",
+            "restaurant:cancel_ticket",
         ],
     ),
     // Store manager
@@ -976,6 +1317,22 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "catalog:review",
         ],
     ),
+    // Tenancy v1.1 — org_admin: limited subset that lets the tenant manage
+    // their own branding/domains but NOT their plan or status. Pairs with
+    // require_org_match in the gateway: the user can only ever target their
+    // own org id. write_plan / suspend_org stay super_admin-only.
+    (
+        "org_admin",
+        &[
+            "tenancy:read_org",
+            "tenancy:read_plan",
+            "tenancy:read_domain",
+            "tenancy:write_domain",
+            "tenancy:verify_domain",
+            "tenancy:read_branding",
+            "tenancy:write_branding",
+        ],
+    ),
 ];
 
 /// Main store: (name, address, is_ecommerce, is_active)
@@ -1025,3 +1382,529 @@ pub const CHART_OF_ACCOUNTS: &[(&str, &str, &str)] = &[
     ("5030", "Gastos de Personal", "expense"),
     ("5040", "Gastos Financieros", "expense"),
 ];
+
+// ============================================================================
+// Demand planning seed data
+//
+// Eight high-rotation grocery items typical of an HN bodega plus one slow
+// mover. Each row carries enough fields to seed `products` + `inventory_stock`
+// + `reorder_policies` together, and every product gets ~120 days of synthetic
+// completed sales so the recompute job has signal on first run. The three
+// "near-trigger" SKUs ship with a stock level just below `min + safety` so a
+// `pending` suggestion appears immediately.
+//
+// Fields, in order:
+//   sku, name, unit_of_measure, base_price, cost_price,
+//   on_hand_qty, min_qty, max_qty, safety_stock_qty, lead_time_days,
+//   review_cycle_days, daily_demand_mean, weekly_amplitude
+// `daily_demand_mean` and `weekly_amplitude` drive the synthetic sales: each
+// day samples `mean + amplitude * sin(2π * weekday / 7)` units, rounded down,
+// floor 0.
+// ============================================================================
+
+pub struct DemandSeedItem {
+    pub sku: &'static str,
+    pub name: &'static str,
+    pub uom: &'static str,
+    pub base_price: f64,
+    pub cost_price: f64,
+    pub on_hand_qty: f64,
+    pub min_qty: f64,
+    pub max_qty: f64,
+    pub safety_stock_qty: f64,
+    pub lead_time_days: i32,
+    pub review_cycle_days: i32,
+    pub daily_demand_mean: f64,
+    pub weekly_amplitude: f64,
+}
+
+pub const DEMAND_SEED_ITEMS: &[DemandSeedItem] = &[
+    // High-rotation, currently below trigger → suggestion expected.
+    DemandSeedItem {
+        sku: "DP-ARROZ-1KG",
+        name: "Arroz blanco 1 kg",
+        uom: "kg",
+        base_price: 32.00,
+        cost_price: 22.00,
+        on_hand_qty: 18.0,
+        min_qty: 25.0,
+        max_qty: 120.0,
+        safety_stock_qty: 10.0,
+        lead_time_days: 5,
+        review_cycle_days: 7,
+        daily_demand_mean: 12.0,
+        weekly_amplitude: 4.0,
+    },
+    DemandSeedItem {
+        sku: "DP-FRIJOL-1LB",
+        name: "Frijoles rojos 1 lb",
+        uom: "lb",
+        base_price: 24.00,
+        cost_price: 16.00,
+        on_hand_qty: 22.0,
+        min_qty: 30.0,
+        max_qty: 150.0,
+        safety_stock_qty: 12.0,
+        lead_time_days: 5,
+        review_cycle_days: 7,
+        daily_demand_mean: 14.0,
+        weekly_amplitude: 5.0,
+    },
+    DemandSeedItem {
+        sku: "DP-ACEITE-1L",
+        name: "Aceite vegetal 1 L",
+        uom: "liter",
+        base_price: 58.00,
+        cost_price: 40.00,
+        on_hand_qty: 9.0,
+        min_qty: 15.0,
+        max_qty: 80.0,
+        safety_stock_qty: 6.0,
+        lead_time_days: 7,
+        review_cycle_days: 14,
+        daily_demand_mean: 6.0,
+        weekly_amplitude: 1.5,
+    },
+    // Stable rotation, well above trigger → no suggestion.
+    DemandSeedItem {
+        sku: "DP-LECHE-1L",
+        name: "Leche entera UHT 1 L",
+        uom: "liter",
+        base_price: 36.00,
+        cost_price: 26.00,
+        on_hand_qty: 95.0,
+        min_qty: 30.0,
+        max_qty: 140.0,
+        safety_stock_qty: 8.0,
+        lead_time_days: 3,
+        review_cycle_days: 7,
+        daily_demand_mean: 18.0,
+        weekly_amplitude: 6.0,
+    },
+    DemandSeedItem {
+        sku: "DP-PAPEL-4PK",
+        name: "Papel higiénico 4 rollos",
+        uom: "unit",
+        base_price: 78.00,
+        cost_price: 55.00,
+        on_hand_qty: 60.0,
+        min_qty: 20.0,
+        max_qty: 90.0,
+        safety_stock_qty: 5.0,
+        lead_time_days: 7,
+        review_cycle_days: 14,
+        daily_demand_mean: 5.0,
+        weekly_amplitude: 1.0,
+    },
+    DemandSeedItem {
+        sku: "DP-JABON-200G",
+        name: "Jabón de baño 200 g",
+        uom: "unit",
+        base_price: 22.00,
+        cost_price: 14.00,
+        on_hand_qty: 50.0,
+        min_qty: 25.0,
+        max_qty: 110.0,
+        safety_stock_qty: 8.0,
+        lead_time_days: 7,
+        review_cycle_days: 14,
+        daily_demand_mean: 8.0,
+        weekly_amplitude: 2.0,
+    },
+    // Strong weekend spike (high amplitude) → Holt-Winters value-add.
+    DemandSeedItem {
+        sku: "DP-COCA-2L",
+        name: "Coca-Cola 2 L",
+        uom: "liter",
+        base_price: 45.00,
+        cost_price: 32.00,
+        on_hand_qty: 70.0,
+        min_qty: 25.0,
+        max_qty: 130.0,
+        safety_stock_qty: 10.0,
+        lead_time_days: 4,
+        review_cycle_days: 7,
+        daily_demand_mean: 14.0,
+        weekly_amplitude: 9.0,
+    },
+    // Slow mover → likely class C.
+    DemandSeedItem {
+        sku: "DP-SAL-1KG",
+        name: "Sal refinada 1 kg",
+        uom: "kg",
+        base_price: 12.00,
+        cost_price: 7.00,
+        on_hand_qty: 35.0,
+        min_qty: 8.0,
+        max_qty: 40.0,
+        safety_stock_qty: 2.0,
+        lead_time_days: 14,
+        review_cycle_days: 30,
+        daily_demand_mean: 1.2,
+        weekly_amplitude: 0.4,
+    },
+    // Currently below trigger, slow mover → suggestion expected (small).
+    DemandSeedItem {
+        sku: "DP-CAFE-200G",
+        name: "Café molido 200 g",
+        uom: "unit",
+        base_price: 88.00,
+        cost_price: 62.00,
+        on_hand_qty: 6.0,
+        min_qty: 12.0,
+        max_qty: 50.0,
+        safety_stock_qty: 4.0,
+        lead_time_days: 10,
+        review_cycle_days: 14,
+        daily_demand_mean: 2.5,
+        weekly_amplitude: 0.5,
+    },
+];
+
+/// Vendor used for every demo product so suggestion → PO has a target vendor.
+/// (code, name, legal_name, tax_id, payment_terms_days)
+pub const DEMAND_DEFAULT_VENDOR: (&str, &str, &str, &str, i32) = (
+    "DP-VEN-001",
+    "Distribuidora La Económica",
+    "Distribuidora La Económica S. de R.L.",
+    "08019999000123",
+    15,
+);
+
+/// Category every demo product is filed under: (slug, name).
+pub const DEMAND_DEFAULT_CATEGORY: (&str, &str) = ("abarrotes", "Abarrotes");
+
+// ============================================================================
+// Cash management seed data
+//
+// Default bank account so the API has somewhere to record deposits and
+// transactions on first run. Numbers are placeholders — replace before going
+// to production. (bank_name, account_number, account_type, currency,
+// opening_balance)
+// ============================================================================
+
+pub const DEMO_BANK_ACCOUNT: (&str, &str, &str, &str, f64) = (
+    "BAC Honduras",
+    "10-200-300456",
+    "checking",
+    "HNL",
+    25_000.00,
+);
+
+// ============================================================================
+// Loyalty seed data
+// ============================================================================
+
+/// Default loyalty program for the main store: (name, description,
+/// points_per_currency_unit, expiration_days). 1 pt per L 1 spent; points
+/// expire after 365 days.
+pub const DEMO_LOYALTY_PROGRAM: (&str, &str, f64, i32) = (
+    "Cliente Frecuente",
+    "Programa de fidelidad para clientes recurrentes.",
+    1.0,
+    365,
+);
+
+/// Tiers for the demo program: (name, threshold_points, benefits_json,
+/// sort_order). Bronze→Silver→Gold ladder.
+pub const DEMO_LOYALTY_TIERS: &[(&str, i64, &str, i32)] = &[
+    ("Bronze", 0, r#"{"discount_percent":0}"#, 0),
+    ("Silver", 500, r#"{"discount_percent":5}"#, 1),
+    ("Gold", 2000, r#"{"discount_percent":10}"#, 2),
+];
+
+/// Rewards catalog seed entry. All Honduran-style amounts in HNL.
+pub struct DemoLoyaltyReward {
+    pub name: &'static str,
+    pub description: &'static str,
+    pub cost_points: i64,
+    pub reward_type: &'static str,
+    pub reward_value: f64,
+    pub max_per_member: Option<i32>,
+}
+
+pub const DEMO_LOYALTY_REWARDS: &[DemoLoyaltyReward] = &[
+    DemoLoyaltyReward {
+        name: "Descuento L 50",
+        description: "Cupón de L 50 de descuento en tu próxima compra.",
+        cost_points: 500,
+        reward_type: "discount_amount",
+        reward_value: 50.0,
+        max_per_member: None,
+    },
+    DemoLoyaltyReward {
+        name: "10% en tu próxima visita",
+        description: "Descuento del 10% sobre el subtotal de la próxima venta.",
+        cost_points: 1_000,
+        reward_type: "discount_percent",
+        reward_value: 10.0,
+        max_per_member: Some(2),
+    },
+];
+
+// =============================================================================
+// Booking demo data — gives booking endpoints a complete graph on first boot.
+// =============================================================================
+
+/// Resources scaffolded for the demo store: salon-style "stylist" people plus
+/// one shared room. Color is a Tailwind-ish hex for UI calendars.
+/// Format: (resource_type, name, color)
+pub const DEMO_BOOKING_RESOURCES: &[(&str, &str, &str)] = &[
+    ("person", "Ana — Estilista", "#f97316"),
+    ("person", "Luis — Barbero", "#0ea5e9"),
+    ("room", "Cabina 1", "#10b981"),
+];
+
+/// Weekly availability applied to every demo resource: Mon–Fri 09–17, Sat 09–13.
+/// Format: (day_of_week, start_HH:MM, end_HH:MM). day_of_week: 0=Sun..6=Sat.
+pub const DEMO_BOOKING_CALENDAR: &[(i16, &str, &str)] = &[
+    (1, "09:00", "17:00"),
+    (2, "09:00", "17:00"),
+    (3, "09:00", "17:00"),
+    (4, "09:00", "17:00"),
+    (5, "09:00", "17:00"),
+    (6, "09:00", "13:00"),
+];
+
+/// A demo bookable service. The `eligible_resource_names` field references
+/// names from `DEMO_BOOKING_RESOURCES` so the M2M can be resolved by lookup.
+pub struct DemoBookingService {
+    pub name: &'static str,
+    pub description: &'static str,
+    pub duration_minutes: i32,
+    pub price: f64,
+    pub buffer_minutes_before: i32,
+    pub buffer_minutes_after: i32,
+    pub requires_deposit: bool,
+    pub deposit_amount: Option<f64>,
+    pub eligible_resource_names: &'static [&'static str],
+}
+
+pub const DEMO_BOOKING_SERVICES: &[DemoBookingService] = &[
+    DemoBookingService {
+        name: "Corte de cabello",
+        description: "Corte clásico, lavado incluido.",
+        duration_minutes: 30,
+        price: 250.0,
+        buffer_minutes_before: 0,
+        buffer_minutes_after: 5,
+        requires_deposit: false,
+        deposit_amount: None,
+        eligible_resource_names: &["Ana — Estilista", "Luis — Barbero"],
+    },
+    DemoBookingService {
+        name: "Color y mechas",
+        description: "Aplicación de color completo o mechas.",
+        duration_minutes: 90,
+        price: 1_200.0,
+        buffer_minutes_before: 5,
+        buffer_minutes_after: 10,
+        requires_deposit: true,
+        deposit_amount: Some(300.0),
+        eligible_resource_names: &["Ana — Estilista"],
+    },
+    DemoBookingService {
+        name: "Afeitado clásico",
+        description: "Toalla caliente, navaja, masaje facial.",
+        duration_minutes: 45,
+        price: 350.0,
+        buffer_minutes_before: 0,
+        buffer_minutes_after: 5,
+        requires_deposit: false,
+        deposit_amount: None,
+        eligible_resource_names: &["Luis — Barbero"],
+    },
+];
+
+/// Per-store booking policy.
+/// Format: (requires_deposit, deposit_percentage, cancellation_window_hours,
+///          no_show_fee_amount, default_buffer_minutes, advance_booking_days_max).
+pub const DEMO_BOOKING_POLICY: (bool, Option<f64>, i32, Option<f64>, i32, i32) =
+    (false, None, 24, None, 5, 60);
+
+// =============================================================================
+// Service orders demo data — gives the workshop endpoints a complete graph on
+// first boot. One customer, two assets (a car + a laptop) and one in-progress
+// service order on the car (status = Diagnosis, with a diagnostic + 2 items
+// already added so the staff can immediately draft a quote).
+// =============================================================================
+
+/// Demo customer. Format: (code, first_name, last_name, email, phone,
+///                          customer_type, tax_id).
+pub const DEMO_SERVICE_CUSTOMER: (&str, &str, &str, &str, &str, &str, &str) = (
+    "DEMO-MARIO-001",
+    "Mario",
+    "Lopez",
+    "mario.lopez@example.com",
+    "+50432109876",
+    "individual",
+    "0801-1985-12345",
+);
+
+/// Demo asset registered for the customer.
+/// Fields: (asset_type, brand, model, identifier, year, color, description).
+pub type DemoServiceAsset = (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    Option<i32>,
+    Option<&'static str>,
+    Option<&'static str>,
+);
+
+pub const DEMO_SERVICE_ASSETS: &[DemoServiceAsset] = &[
+    (
+        "vehicle",
+        "Toyota",
+        "Corolla",
+        "PEC-1234",
+        Some(2018),
+        Some("Gris"),
+        Some("Sedan, transmision automatica"),
+    ),
+    (
+        "electronic",
+        "Apple",
+        "MacBook Pro 14",
+        "C02XK1XYZQ6L",
+        Some(2022),
+        Some("Space Gray"),
+        Some("Pantalla con franja vertical intermitente"),
+    ),
+];
+
+/// Demo service order intake. Mounted on the first asset (the car).
+/// Format: (priority, intake_notes, customer_phone). status starts at 'intake'
+/// and the seeder transitions it forward.
+pub const DEMO_SERVICE_ORDER_INTAKE: (&str, &str) = (
+    "high",
+    "Cliente reporta ruido al frenar y vibracion en volante a alta velocidad.",
+);
+
+/// Demo diagnostic recorded against the order.
+/// Format: (findings, recommended_actions, severity).
+pub const DEMO_SERVICE_DIAGNOSTIC: (&str, &str, &str) = (
+    "Pastillas de freno desgastadas (1mm). Disco delantero derecho con alabeo de 0.08mm.",
+    "Cambiar pastillas delanteras y rectificar disco; balanceo de ruedas delanteras.",
+    "high",
+);
+
+/// Demo line items (labor + parts) on the order.
+/// Format: (item_type, description, quantity, unit_price, tax_rate).
+pub const DEMO_SERVICE_ITEMS: &[(&str, &str, f64, f64, f64)] = &[
+    (
+        "labor",
+        "Mano de obra: cambio de pastillas + rectificado",
+        2.0,
+        350.0,
+        0.15,
+    ),
+    (
+        "part",
+        "Juego de pastillas delanteras OEM",
+        1.0,
+        1_200.0,
+        0.15,
+    ),
+    ("labor", "Balanceo de ruedas delanteras", 1.0, 200.0, 0.15),
+];
+
+// =============================================================================
+// Restaurant operations demo data — gives the F&B endpoints a complete graph
+// on first boot. Two stations, four tables, two modifier groups (Cocción +
+// Extras) with 5 modifiers, and one in-progress KDS ticket on Mesa 1 with
+// two items in Pending so the SSE smoke test has something to react to.
+// =============================================================================
+
+/// Kitchen stations: (name, color, sort_order).
+pub const DEMO_KITCHEN_STATIONS: &[(&str, &str, i32)] =
+    &[("Hot Line", "#ef4444", 0), ("Bar", "#06b6d4", 1)];
+
+/// Restaurant tables: (label, capacity, notes).
+pub const DEMO_RESTAURANT_TABLES: &[(&str, i32, Option<&str>)] = &[
+    ("Mesa 1", 4, Some("Ventana")),
+    ("Mesa 2", 2, None),
+    ("Mesa 3", 6, Some("Esquina")),
+    ("Barra 1", 1, Some("Asiento alto")),
+];
+
+/// Modifier group + its modifiers.
+/// Group: (name, min_select, max_select, sort_order).
+/// Modifier: (name, price_delta, sort_order).
+pub struct DemoModifierGroup {
+    pub name: &'static str,
+    pub min_select: i32,
+    pub max_select: i32,
+    pub sort_order: i32,
+    pub modifiers: &'static [(&'static str, f64, i32)],
+}
+
+pub const DEMO_MODIFIER_GROUPS: &[DemoModifierGroup] = &[
+    DemoModifierGroup {
+        name: "Cocción",
+        min_select: 1,
+        max_select: 1,
+        sort_order: 0,
+        modifiers: &[
+            ("Término rojo", 0.0, 0),
+            ("Término medio", 0.0, 1),
+            ("Bien cocido", 0.0, 2),
+        ],
+    },
+    DemoModifierGroup {
+        name: "Extras",
+        min_select: 0,
+        max_select: 5,
+        sort_order: 1,
+        modifiers: &[("Extra queso", 25.0, 0), ("Sin cebolla", 0.0, 1)],
+    },
+];
+
+/// Demo KDS ticket landed on Mesa 1, station Hot Line, status pending.
+/// Format: (course, notes_or_none).
+pub const DEMO_KDS_TICKET: (&str, Option<&str>) = ("main", Some("Cliente alérgico al maní"));
+
+/// Two items already attached to the demo ticket (status=pending, no
+/// modifiers — easy smoke test).
+/// Format: (description, quantity, special_instructions).
+pub const DEMO_KDS_TICKET_ITEMS: &[(&str, f64, Option<&str>)] = &[
+    ("Hamburguesa clásica con papas", 2.0, Some("Una sin tomate")),
+    ("Limonada natural grande", 2.0, None),
+];
+
+// =============================================================================
+// Tenancy demo data
+//
+// The default org (id `00000000-...0001`, slug `default`, plan `enterprise`
+// with all features ON) is created by migration 50 — the seed binary does NOT
+// re-create it. We add ONE additional demo organization here ("Restaurante
+// Demo") so the by-slug / by-domain endpoints have something else to query
+// and the dashboard list isn't single-row. The demo org gets:
+//   - plan tier `pro` with restaurant + booking enabled, service_orders off
+//   - one custom domain `demo-resto.example.com` (already verified)
+//   - branding: orange primary, dark theme
+// =============================================================================
+
+/// Demo org metadata: (name, slug, contact_email, contact_phone, tier).
+pub const DEMO_TENANCY_ORG: (&str, &str, &str, &str, &str) = (
+    "Restaurante Demo",
+    "demo-resto",
+    "owner@demo-resto.example.com",
+    "+50412345678",
+    "pro",
+);
+
+/// Custom domain to register for the demo org. v1.0 marks it verified
+/// directly in the seed (no DNS check) so the `by-domain` endpoint works
+/// out of the box.
+pub const DEMO_TENANCY_DOMAIN: &str = "demo-resto.example.com";
+
+/// Branding for the demo org.
+/// Format: (logo_url, primary_color, secondary_color, theme).
+pub const DEMO_TENANCY_BRANDING: (&str, &str, &str, &str) = (
+    "https://example.com/demo-resto-logo.png",
+    "#f97316",
+    "#0f172a",
+    "dark",
+);

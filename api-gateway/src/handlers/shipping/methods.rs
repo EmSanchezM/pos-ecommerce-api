@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use shipping::{
@@ -30,6 +31,7 @@ pub async fn create_shipping_method_handler(
     JsonBody(cmd): JsonBody<CreateShippingMethodCommand>,
 ) -> Result<(StatusCode, Json<ShippingMethodResponse>), Response> {
     require_permission(&ctx, "shipping:create")?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let uc = CreateShippingMethodUseCase::new(state.shipping_method_repo());
     let resp = uc
         .execute(cmd)
@@ -44,6 +46,7 @@ pub async fn list_shipping_methods_handler(
     Query(q): Query<StoreScopedQuery>,
 ) -> Result<Json<Vec<ShippingMethodResponse>>, Response> {
     require_permission(&ctx, "shipping:read")?;
+    verify_store_in_org(state.pool(), &ctx, q.store_id).await?;
     let uc = ListShippingMethodsUseCase::new(state.shipping_method_repo());
     let resp = uc
         .execute(q.store_id)

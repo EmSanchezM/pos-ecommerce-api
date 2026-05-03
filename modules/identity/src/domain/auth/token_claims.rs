@@ -35,6 +35,18 @@ pub struct TokenClaims {
     /// Defaults to empty for backward compatibility with tokens issued before this field existed.
     #[serde(default)]
     pub store_permissions: HashMap<String, Vec<String>>,
+    /// Tenant the user belongs to. Added in tenancy v1.1; `None` for tokens
+    /// issued before this field existed (callers should treat `None` as
+    /// "no scope" — every org-scoped check rejects the request).
+    #[serde(default)]
+    pub organization_id: Option<Uuid>,
+    /// Permissions that apply at the organization level — not tied to any
+    /// individual store. Added in tenancy v1.2 so `org_admin` can call
+    /// `tenancy:*` endpoints without sending `X-Store-Id`. `auth_middleware`
+    /// unions these into `UserContext.permissions` regardless of the active
+    /// store.
+    #[serde(default)]
+    pub global_permissions: Vec<String>,
 }
 
 impl TokenClaims {
@@ -47,6 +59,12 @@ impl TokenClaims {
     /// * `email` - The user's email address
     /// * `exp` - Expiration timestamp (Unix epoch seconds)
     /// * `iat` - Issued at timestamp (Unix epoch seconds)
+    /// * `store_permissions` - Map of store_id → granted permission codes
+    /// * `organization_id` - The user's tenant (None for users not yet
+    ///   migrated to a tenant — should not happen post-v1.0 backfill).
+    /// * `global_permissions` - Permissions not bound to any specific store
+    ///   (e.g. `tenancy:*` for `org_admin`). Apply regardless of `X-Store-Id`.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_id: Uuid,
         username: String,
@@ -54,6 +72,8 @@ impl TokenClaims {
         exp: i64,
         iat: i64,
         store_permissions: HashMap<String, Vec<String>>,
+        organization_id: Option<Uuid>,
+        global_permissions: Vec<String>,
     ) -> Self {
         Self {
             sub: user_id,
@@ -62,6 +82,8 @@ impl TokenClaims {
             exp,
             iat,
             store_permissions,
+            organization_id,
+            global_permissions,
         }
     }
 
@@ -98,6 +120,8 @@ mod tests {
             1705150000, // exp
             1705140000, // iat
             HashMap::new(),
+            None,
+            Vec::new(),
         )
     }
 
@@ -199,6 +223,8 @@ mod tests {
             1705150000,
             1705140000,
             HashMap::new(),
+            None,
+            Vec::new(),
         );
 
         assert_eq!(claims1, claims2);

@@ -95,12 +95,15 @@ where
 
         // 5. Build and return the UserContext
         // If user has no roles in the store, permission_set will be empty (Requirement 4.4)
+        // Pull the user's organization_id straight off the entity so this
+        // path stays in sync with the JWT claim populated at login time.
         Ok(UserContext::new(
             user_id,
             store_id,
             permission_set,
             vec![],
             false,
+            user.organization_id(),
         ))
     }
 }

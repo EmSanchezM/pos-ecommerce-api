@@ -10,15 +10,22 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use booking::BookingError;
+use cash_management::CashManagementError;
 use catalog::CatalogError;
+use demand_planning::DemandPlanningError;
 use fiscal::FiscalError;
 use identity::{AuthError, ErrorResponse, IdentityError};
 use inventory::InventoryError;
+use loyalty::LoyaltyError;
 use payments::PaymentsError;
 use pos_core::CoreError;
 use purchasing::PurchasingError;
+use restaurant_operations::RestaurantOperationsError;
 use sales::SalesError;
+use service_orders::ServiceOrdersError;
 use shipping::ShippingError;
+use tenancy::TenancyError;
 
 // =============================================================================
 // AppError - Unified API Gateway Error Type
@@ -2144,6 +2151,643 @@ impl From<AccountingError> for AppError {
             ),
         };
 
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<DemandPlanningError> Implementation
+// =============================================================================
+
+impl From<DemandPlanningError> for AppError {
+    fn from(err: DemandPlanningError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            DemandPlanningError::ForecastNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("FORECAST_NOT_FOUND", format!("Forecast not found: {}", id)),
+            ),
+            DemandPlanningError::ReorderPolicyNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "REORDER_POLICY_NOT_FOUND",
+                    format!("Reorder policy not found: {}", id),
+                ),
+            ),
+            DemandPlanningError::SuggestionNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SUGGESTION_NOT_FOUND",
+                    format!("Replenishment suggestion not found: {}", id),
+                ),
+            ),
+
+            // 409
+            DemandPlanningError::DuplicateReorderPolicy { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_REORDER_POLICY", err.to_string()),
+            ),
+            DemandPlanningError::PolicyVersionConflict(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("POLICY_VERSION_CONFLICT", err.to_string()),
+            ),
+            DemandPlanningError::InvalidSuggestionTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATUS_TRANSITION", err.to_string()),
+            ),
+
+            // 400 — validation
+            DemandPlanningError::InvalidPolicyRange
+            | DemandPlanningError::InvalidPolicyDays
+            | DemandPlanningError::NegativeQuantity
+            | DemandPlanningError::InsufficientHistory { .. }
+            | DemandPlanningError::InvalidForecastMethod(_)
+            | DemandPlanningError::InvalidForecastPeriod(_)
+            | DemandPlanningError::InvalidSuggestionStatus(_)
+            | DemandPlanningError::InvalidAbcClass(_)
+            | DemandPlanningError::DismissReasonRequired
+            | DemandPlanningError::ForecastingFailed(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502 — downstream module (purchasing) refused the request. Surface
+            // its message so operators don't have to grep server logs to know
+            // why the auto-PO didn't get created.
+            DemandPlanningError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            DemandPlanningError::Database(_) | DemandPlanningError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<CashManagementError> Implementation
+// =============================================================================
+
+impl From<CashManagementError> for AppError {
+    fn from(err: CashManagementError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            CashManagementError::BankAccountNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "BANK_ACCOUNT_NOT_FOUND",
+                    format!("Bank account not found: {}", id),
+                ),
+            ),
+            CashManagementError::BankTransactionNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "BANK_TRANSACTION_NOT_FOUND",
+                    format!("Bank transaction not found: {}", id),
+                ),
+            ),
+            CashManagementError::CashDepositNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "CASH_DEPOSIT_NOT_FOUND",
+                    format!("Cash deposit not found: {}", id),
+                ),
+            ),
+            CashManagementError::ReconciliationNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "RECONCILIATION_NOT_FOUND",
+                    format!("Reconciliation not found: {}", id),
+                ),
+            ),
+            CashManagementError::ShiftNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SHIFT_NOT_FOUND",
+                    format!("Cashier shift not found: {}", id),
+                ),
+            ),
+
+            // 409
+            CashManagementError::DuplicateAccountNumber(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DUPLICATE_ACCOUNT_NUMBER", err.to_string()),
+            ),
+            CashManagementError::AccountVersionConflict(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("ACCOUNT_VERSION_CONFLICT", err.to_string()),
+            ),
+            CashManagementError::ShiftNotClosed(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SHIFT_NOT_CLOSED", err.to_string()),
+            ),
+            CashManagementError::InvalidDepositTransition { .. }
+            | CashManagementError::InvalidReconciliationTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATUS_TRANSITION", err.to_string()),
+            ),
+            CashManagementError::TransactionAlreadyLinked => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("TRANSACTION_ALREADY_LINKED", err.to_string()),
+            ),
+
+            // 400 — validation
+            CashManagementError::InvalidReconciliationRange
+            | CashManagementError::ReconciliationUnbalanced { .. }
+            | CashManagementError::TransactionAccountMismatch
+            | CashManagementError::TransactionAmountMismatch { .. }
+            | CashManagementError::NegativeAmount
+            | CashManagementError::InvalidTransactionType(_)
+            | CashManagementError::InvalidAccountType(_)
+            | CashManagementError::InvalidDepositStatus(_)
+            | CashManagementError::InvalidReconciliationStatus(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502 — downstream module error (e.g. sales/cashier_shifts SQL).
+            CashManagementError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            CashManagementError::Database(_) | CashManagementError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<LoyaltyError> Implementation
+// =============================================================================
+
+impl From<LoyaltyError> for AppError {
+    fn from(err: LoyaltyError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            LoyaltyError::ProgramNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "LOYALTY_PROGRAM_NOT_FOUND",
+                    format!("Loyalty program not found: {}", id),
+                ),
+            ),
+            LoyaltyError::TierNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("TIER_NOT_FOUND", format!("Member tier not found: {}", id)),
+            ),
+            LoyaltyError::MemberNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "LOYALTY_MEMBER_NOT_FOUND",
+                    format!("Loyalty member not found: {}", id),
+                ),
+            ),
+            LoyaltyError::RewardNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("REWARD_NOT_FOUND", format!("Reward not found: {}", id)),
+            ),
+            LoyaltyError::CustomerNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CUSTOMER_NOT_FOUND", format!("Customer not found: {}", id)),
+            ),
+
+            // 409
+            LoyaltyError::AlreadyEnrolled { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("ALREADY_ENROLLED", err.to_string()),
+            ),
+            LoyaltyError::InsufficientPoints { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INSUFFICIENT_POINTS", err.to_string()),
+            ),
+            LoyaltyError::RewardProgramMismatch { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("REWARD_PROGRAM_MISMATCH", err.to_string()),
+            ),
+
+            // 400 — validation
+            LoyaltyError::NegativeAmount(_)
+            | LoyaltyError::NegativeThreshold(_)
+            | LoyaltyError::InvalidTransactionType(_)
+            | LoyaltyError::InvalidRewardType(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502 — downstream
+            LoyaltyError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            LoyaltyError::Database(_) | LoyaltyError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<BookingError> Implementation
+// =============================================================================
+
+impl From<BookingError> for AppError {
+    fn from(err: BookingError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            BookingError::ResourceNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "BOOKING_RESOURCE_NOT_FOUND",
+                    format!("Booking resource not found: {}", id),
+                ),
+            ),
+            BookingError::ServiceNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "BOOKING_SERVICE_NOT_FOUND",
+                    format!("Booking service not found: {}", id),
+                ),
+            ),
+            BookingError::AppointmentNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "APPOINTMENT_NOT_FOUND",
+                    format!("Appointment not found: {}", id),
+                ),
+            ),
+            BookingError::PolicyNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "BOOKING_POLICY_NOT_FOUND",
+                    format!("Booking policy not found for store: {}", id),
+                ),
+            ),
+            BookingError::CustomerNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CUSTOMER_NOT_FOUND", format!("Customer not found: {}", id)),
+            ),
+            BookingError::StoreNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("STORE_NOT_FOUND", format!("Store not found: {}", id)),
+            ),
+
+            // 401
+            BookingError::InvalidPublicToken => (
+                StatusCode::UNAUTHORIZED,
+                ErrorResponse::new("INVALID_PUBLIC_TOKEN", err.to_string()),
+            ),
+
+            // 409
+            BookingError::SlotConflict { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SLOT_CONFLICT", err.to_string()),
+            ),
+            BookingError::InvalidStateTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATE_TRANSITION", err.to_string()),
+            ),
+            BookingError::OutsideCancellationWindow { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("OUTSIDE_CANCELLATION_WINDOW", err.to_string()),
+            ),
+            BookingError::ResourceNotEligibleForService { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("RESOURCE_NOT_ELIGIBLE_FOR_SERVICE", err.to_string()),
+            ),
+            BookingError::OutsideWorkingHours => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("OUTSIDE_WORKING_HOURS", err.to_string()),
+            ),
+
+            // 400 — validation
+            BookingError::InvalidTimeRange
+            | BookingError::InvalidDuration(_)
+            | BookingError::InvalidResourceType(_)
+            | BookingError::InvalidAppointmentStatus(_)
+            | BookingError::Validation(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502 — downstream
+            BookingError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            BookingError::Database(_) | BookingError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<ServiceOrdersError> Implementation
+// =============================================================================
+
+impl From<ServiceOrdersError> for AppError {
+    fn from(err: ServiceOrdersError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            ServiceOrdersError::AssetNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("ASSET_NOT_FOUND", format!("Asset not found: {}", id)),
+            ),
+            ServiceOrdersError::ServiceOrderNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SERVICE_ORDER_NOT_FOUND",
+                    format!("Service order not found: {}", id),
+                ),
+            ),
+            ServiceOrdersError::ItemNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SERVICE_ORDER_ITEM_NOT_FOUND",
+                    format!("Service order item not found: {}", id),
+                ),
+            ),
+            ServiceOrdersError::DiagnosticNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "DIAGNOSTIC_NOT_FOUND",
+                    format!("Diagnostic not found: {}", id),
+                ),
+            ),
+            ServiceOrdersError::QuoteNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("QUOTE_NOT_FOUND", format!("Quote not found: {}", id)),
+            ),
+            ServiceOrdersError::CustomerNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CUSTOMER_NOT_FOUND", format!("Customer not found: {}", id)),
+            ),
+
+            // 401
+            ServiceOrdersError::InvalidPublicToken => (
+                StatusCode::UNAUTHORIZED,
+                ErrorResponse::new("INVALID_PUBLIC_TOKEN", err.to_string()),
+            ),
+
+            // 409
+            ServiceOrdersError::InvalidStateTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATE_TRANSITION", err.to_string()),
+            ),
+            ServiceOrdersError::InvalidQuoteStateTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_QUOTE_STATE_TRANSITION", err.to_string()),
+            ),
+            ServiceOrdersError::QuoteSuperseded(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("QUOTE_SUPERSEDED", err.to_string()),
+            ),
+            ServiceOrdersError::CannotModifyTerminalOrder => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CANNOT_MODIFY_TERMINAL_ORDER", err.to_string()),
+            ),
+            ServiceOrdersError::InactiveAsset(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INACTIVE_ASSET", err.to_string()),
+            ),
+
+            // 400
+            ServiceOrdersError::InvalidAssetType(_)
+            | ServiceOrdersError::InvalidServiceOrderStatus(_)
+            | ServiceOrdersError::InvalidServiceOrderPriority(_)
+            | ServiceOrdersError::InvalidItemType(_)
+            | ServiceOrdersError::InvalidQuoteStatus(_)
+            | ServiceOrdersError::InvalidDiagnosticSeverity(_)
+            | ServiceOrdersError::Validation(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502
+            ServiceOrdersError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            ServiceOrdersError::Database(_) | ServiceOrdersError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<RestaurantOperationsError> Implementation
+// =============================================================================
+
+impl From<RestaurantOperationsError> for AppError {
+    fn from(err: RestaurantOperationsError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            RestaurantOperationsError::StationNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "KITCHEN_STATION_NOT_FOUND",
+                    format!("Kitchen station not found: {}", id),
+                ),
+            ),
+            RestaurantOperationsError::TableNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "RESTAURANT_TABLE_NOT_FOUND",
+                    format!("Restaurant table not found: {}", id),
+                ),
+            ),
+            RestaurantOperationsError::ModifierGroupNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "MODIFIER_GROUP_NOT_FOUND",
+                    format!("Modifier group not found: {}", id),
+                ),
+            ),
+            RestaurantOperationsError::ModifierNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("MODIFIER_NOT_FOUND", format!("Modifier not found: {}", id)),
+            ),
+            RestaurantOperationsError::ProductNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("PRODUCT_NOT_FOUND", format!("Product not found: {}", id)),
+            ),
+            RestaurantOperationsError::TicketNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "KDS_TICKET_NOT_FOUND",
+                    format!("KDS ticket not found: {}", id),
+                ),
+            ),
+            RestaurantOperationsError::ItemNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "KDS_TICKET_ITEM_NOT_FOUND",
+                    format!("KDS ticket item not found: {}", id),
+                ),
+            ),
+
+            // 409
+            RestaurantOperationsError::InvalidTicketStateTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATE_TRANSITION", err.to_string()),
+            ),
+            RestaurantOperationsError::InvalidItemStateTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATE_TRANSITION", err.to_string()),
+            ),
+            RestaurantOperationsError::InvalidTableStatusTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_TABLE_STATUS_TRANSITION", err.to_string()),
+            ),
+            RestaurantOperationsError::CannotModifyTerminalTicket => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CANNOT_MODIFY_TERMINAL_TICKET", err.to_string()),
+            ),
+            RestaurantOperationsError::ModifierSelectionOutOfBounds { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("MODIFIER_SELECTION_OUT_OF_BOUNDS", err.to_string()),
+            ),
+
+            // 400
+            RestaurantOperationsError::InvalidStationStatus(_)
+            | RestaurantOperationsError::InvalidTableStatus(_)
+            | RestaurantOperationsError::InvalidTicketStatus(_)
+            | RestaurantOperationsError::InvalidItemStatus(_)
+            | RestaurantOperationsError::InvalidCourse(_)
+            | RestaurantOperationsError::Validation(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502
+            RestaurantOperationsError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            RestaurantOperationsError::Database(_)
+            | RestaurantOperationsError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<TenancyError> Implementation
+// =============================================================================
+
+impl From<TenancyError> for AppError {
+    fn from(err: TenancyError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            TenancyError::OrganizationNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_NOT_FOUND",
+                    format!("Organization not found: {}", id),
+                ),
+            ),
+            TenancyError::OrganizationNotFoundBySlug(slug) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_NOT_FOUND",
+                    format!("Organization not found for slug: {}", slug),
+                ),
+            ),
+            TenancyError::PlanNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_PLAN_NOT_FOUND",
+                    format!("Plan not found for organization: {}", id),
+                ),
+            ),
+            TenancyError::DomainNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_DOMAIN_NOT_FOUND",
+                    format!("Custom domain not found: {}", id),
+                ),
+            ),
+            TenancyError::DomainNotFoundByHostname(host) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_DOMAIN_NOT_FOUND",
+                    format!("No organization registered for host: {}", host),
+                ),
+            ),
+            TenancyError::BrandingNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "ORGANIZATION_BRANDING_NOT_FOUND",
+                    format!("Branding not configured for organization: {}", id),
+                ),
+            ),
+
+            // 409
+            TenancyError::SlugAlreadyTaken(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SLUG_ALREADY_TAKEN", err.to_string()),
+            ),
+            TenancyError::DomainAlreadyTaken(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("DOMAIN_ALREADY_TAKEN", err.to_string()),
+            ),
+            TenancyError::InvalidStatusTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATUS_TRANSITION", err.to_string()),
+            ),
+
+            // 400
+            TenancyError::InvalidStatus(_)
+            | TenancyError::InvalidTier(_)
+            | TenancyError::InvalidTheme(_)
+            | TenancyError::InvalidSlug(_)
+            | TenancyError::InvalidDomain(_)
+            | TenancyError::InvalidColor(_)
+            | TenancyError::Validation(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502
+            TenancyError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            TenancyError::Database(_) | TenancyError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
         AppError::new(status, response)
     }
 }

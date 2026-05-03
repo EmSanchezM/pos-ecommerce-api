@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::error::AppError;
 use crate::extractors::{CurrentUser, JsonBody};
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 use shipping::{
@@ -28,6 +29,7 @@ pub async fn create_shipment_handler(
     JsonBody(cmd): JsonBody<CreateShipmentCommand>,
 ) -> Result<(StatusCode, Json<ShipmentResponse>), Response> {
     require_permission(&ctx, "shipments:create")?;
+    verify_store_in_org(state.pool(), &ctx, cmd.store_id).await?;
     let uc = CreateShipmentUseCase::new(state.shipment_deps());
     let resp = uc
         .execute(cmd, *ctx.user_id())
@@ -42,6 +44,9 @@ pub async fn list_shipments_handler(
     Query(q): Query<ListShipmentsQuery>,
 ) -> Result<Json<ShipmentListResponse>, Response> {
     require_permission(&ctx, "shipments:read")?;
+    if let Some(sid) = q.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
     let uc = ListShipmentsUseCase::new(state.shipment_deps());
     let resp = uc
         .execute(q)

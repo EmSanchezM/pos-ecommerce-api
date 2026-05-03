@@ -15,10 +15,28 @@ use analytics::{
     PgAnalyticsQueryRepository, PgDashboardRepository, PgKpiSnapshotRepository, PgWidgetRepository,
     WidgetRepository,
 };
+use booking::{
+    AppointmentRepository, BookingEventSubscriber, BookingPolicyRepository,
+    PgAppointmentRepository, PgBookingPolicyRepository, PgResourceCalendarRepository,
+    PgResourceRepository, PgServiceRepository, ResourceCalendarRepository, ResourceRepository,
+    ServiceRepository as BookingServiceRepository,
+};
+use cash_management::{
+    BankAccountRepository, BankReconciliationRepository, BankTransactionRepository,
+    CashDepositRepository, CashManagementEventSubscriber, PgBankAccountRepository,
+    PgBankReconciliationRepository, PgBankTransactionRepository, PgCashDepositRepository,
+};
 use catalog::{
     DefaultImageStorageRegistry, ImageStorageRegistry, PgImageStorageProviderRepository,
     PgProductImageRepository, PgProductListingRepository, PgProductReviewRepository,
     PgWishlistRepository,
+};
+use demand_planning::{
+    AbcClassificationRepository, DemandForecastRepository, DemandPlanningEventSubscriber,
+    PgAbcClassificationRepository, PgDemandForecastRepository, PgReorderPolicyRepository,
+    PgReplenishmentSuggestionRepository, PgSalesHistoryRepository, PgStockSnapshotRepository,
+    ReorderPolicyRepository, ReplenishmentSuggestionRepository, SalesHistoryRepository,
+    StockSnapshotRepository,
 };
 use events::{OutboxRepository, PgOutboxRepository, SubscriberRegistry};
 use fiscal::{PgFiscalSequenceRepository, PgInvoiceRepository, PgTaxRateRepository};
@@ -27,6 +45,12 @@ use inventory::{
     PgAdjustmentRepository, PgCategoryRepository, PgInventoryMovementRepository,
     PgInventoryStockRepository, PgProductRepository, PgRecipeRepository, PgReservationRepository,
     PgTransferRepository,
+};
+use loyalty::{
+    LoyaltyEventSubscriber, LoyaltyMemberRepository, LoyaltyProgramRepository,
+    MemberTierRepository, PgLoyaltyMemberRepository, PgLoyaltyProgramRepository,
+    PgMemberTierRepository, PgPointsLedgerRepository, PgRewardRedemptionRepository,
+    PgRewardRepository, PointsLedgerRepository, RewardRedemptionRepository, RewardRepository,
 };
 use notifications::{
     DefaultNotificationAdapterRegistry, NotificationAdapterRegistry, PgNotificationRepository,
@@ -37,9 +61,23 @@ use payments::{
 };
 use pos_core::PgTerminalRepository;
 use purchasing::{PgGoodsReceiptRepository, PgPurchaseOrderRepository, PgVendorRepository};
+use restaurant_operations::{
+    KdsBroadcaster, KdsTicketItemRepository, KdsTicketRepository, KitchenStationRepository,
+    MenuModifierRepository, PgKdsTicketItemRepository, PgKdsTicketRepository,
+    PgKitchenStationRepository, PgMenuModifierRepository, PgRestaurantTableRepository,
+    RestaurantOperationsEventSubscriber, RestaurantTableRepository, TokioBroadcastKdsBroadcaster,
+};
 use sales::{
     PgCartRepository, PgCreditNoteRepository, PgCustomerRepository, PgPromotionRepository,
     PgSaleRepository, PgShiftRepository,
+};
+use service_orders::{
+    AssetRepository as ServiceAssetRepository, DiagnosticRepository as ServiceDiagnosticRepository,
+    PgAssetRepository as PgServiceAssetRepository,
+    PgDiagnosticRepository as PgServiceDiagnosticRepository,
+    PgQuoteRepository as PgServiceQuoteRepository, PgServiceOrderItemRepository,
+    PgServiceOrderRepository, QuoteRepository as ServiceQuoteRepository,
+    ServiceOrderItemRepository, ServiceOrderRepository, ServiceOrdersEventSubscriber,
 };
 use shipping::{
     DefaultDeliveryProviderRegistry, DeliveryProviderRegistry, PgDeliveryProviderRepository,
@@ -47,6 +85,11 @@ use shipping::{
     PgShippingMethodRepository, PgShippingRateRepository, PgShippingZoneRepository, ShipmentDeps,
 };
 use sqlx::PgPool;
+use tenancy::{
+    OrganizationBrandingRepository, OrganizationDomainRepository, OrganizationPlanRepository,
+    OrganizationRepository, PgOrganizationBrandingRepository, PgOrganizationDomainRepository,
+    PgOrganizationPlanRepository, PgOrganizationRepository, TenancyEventSubscriber,
+};
 
 /// Application state shared across all HTTP handlers.
 ///
@@ -182,6 +225,68 @@ pub struct AppState {
     accounting_period_repo: Arc<dyn AccountingPeriodRepository>,
     journal_entry_repo: Arc<dyn JournalEntryRepository>,
     accounting_report_repo: Arc<dyn AccountingReportRepository>,
+    // -------------------------------------------------------------------------
+    // Demand planning (forecasts, reorder policies, replenishment, ABC)
+    // -------------------------------------------------------------------------
+    demand_forecast_repo: Arc<dyn DemandForecastRepository>,
+    reorder_policy_repo: Arc<dyn ReorderPolicyRepository>,
+    replenishment_suggestion_repo: Arc<dyn ReplenishmentSuggestionRepository>,
+    abc_classification_repo: Arc<dyn AbcClassificationRepository>,
+    sales_history_repo: Arc<dyn SalesHistoryRepository>,
+    stock_snapshot_repo: Arc<dyn StockSnapshotRepository>,
+    // -------------------------------------------------------------------------
+    // Cash management (bank accounts, bank transactions, deposits, reconciliations)
+    // -------------------------------------------------------------------------
+    bank_account_repo: Arc<dyn BankAccountRepository>,
+    bank_transaction_repo: Arc<dyn BankTransactionRepository>,
+    cash_deposit_repo: Arc<dyn CashDepositRepository>,
+    bank_reconciliation_repo: Arc<dyn BankReconciliationRepository>,
+    // -------------------------------------------------------------------------
+    // Loyalty (programs, tiers, members, ledger, rewards, redemptions)
+    // -------------------------------------------------------------------------
+    loyalty_program_repo: Arc<dyn LoyaltyProgramRepository>,
+    member_tier_repo: Arc<dyn MemberTierRepository>,
+    loyalty_member_repo: Arc<dyn LoyaltyMemberRepository>,
+    points_ledger_repo: Arc<dyn PointsLedgerRepository>,
+    reward_repo: Arc<dyn RewardRepository>,
+    reward_redemption_repo: Arc<dyn RewardRedemptionRepository>,
+    // -------------------------------------------------------------------------
+    // Booking (resources, calendars, services, appointments, policies)
+    // -------------------------------------------------------------------------
+    resource_repo: Arc<dyn ResourceRepository>,
+    resource_calendar_repo: Arc<dyn ResourceCalendarRepository>,
+    booking_service_repo: Arc<dyn BookingServiceRepository>,
+    appointment_repo: Arc<dyn AppointmentRepository>,
+    booking_policy_repo: Arc<dyn BookingPolicyRepository>,
+    // -------------------------------------------------------------------------
+    // Service orders (assets, orders, items, diagnostics, quotes)
+    // -------------------------------------------------------------------------
+    service_asset_repo: Arc<dyn ServiceAssetRepository>,
+    service_order_repo: Arc<dyn ServiceOrderRepository>,
+    service_order_item_repo: Arc<dyn ServiceOrderItemRepository>,
+    service_diagnostic_repo: Arc<dyn ServiceDiagnosticRepository>,
+    service_quote_repo: Arc<dyn ServiceQuoteRepository>,
+    // -------------------------------------------------------------------------
+    // Restaurant operations (stations, tables, modifiers, KDS tickets) + SSE
+    // broadcaster. We keep both a trait-object view (for use cases that just
+    // publish) and the concrete TokioBroadcastKdsBroadcaster handle so the
+    // SSE handler can call `subscribe(station_id)` to obtain a fresh
+    // `broadcast::Receiver`.
+    // -------------------------------------------------------------------------
+    kitchen_station_repo: Arc<dyn KitchenStationRepository>,
+    restaurant_table_repo: Arc<dyn RestaurantTableRepository>,
+    menu_modifier_repo: Arc<dyn MenuModifierRepository>,
+    kds_ticket_repo: Arc<dyn KdsTicketRepository>,
+    kds_ticket_item_repo: Arc<dyn KdsTicketItemRepository>,
+    kds_broadcaster: Arc<dyn KdsBroadcaster>,
+    kds_broadcaster_handle: Arc<TokioBroadcastKdsBroadcaster>,
+    // -------------------------------------------------------------------------
+    // Tenancy (organizations, plans, custom domains, branding)
+    // -------------------------------------------------------------------------
+    organization_repo: Arc<dyn OrganizationRepository>,
+    organization_plan_repo: Arc<dyn OrganizationPlanRepository>,
+    organization_domain_repo: Arc<dyn OrganizationDomainRepository>,
+    organization_branding_repo: Arc<dyn OrganizationBrandingRepository>,
 }
 
 impl AppState {
@@ -264,6 +369,43 @@ impl AppState {
         accounting_period_repo: Arc<dyn AccountingPeriodRepository>,
         journal_entry_repo: Arc<dyn JournalEntryRepository>,
         accounting_report_repo: Arc<dyn AccountingReportRepository>,
+        demand_forecast_repo: Arc<dyn DemandForecastRepository>,
+        reorder_policy_repo: Arc<dyn ReorderPolicyRepository>,
+        replenishment_suggestion_repo: Arc<dyn ReplenishmentSuggestionRepository>,
+        abc_classification_repo: Arc<dyn AbcClassificationRepository>,
+        sales_history_repo: Arc<dyn SalesHistoryRepository>,
+        stock_snapshot_repo: Arc<dyn StockSnapshotRepository>,
+        bank_account_repo: Arc<dyn BankAccountRepository>,
+        bank_transaction_repo: Arc<dyn BankTransactionRepository>,
+        cash_deposit_repo: Arc<dyn CashDepositRepository>,
+        bank_reconciliation_repo: Arc<dyn BankReconciliationRepository>,
+        loyalty_program_repo: Arc<dyn LoyaltyProgramRepository>,
+        member_tier_repo: Arc<dyn MemberTierRepository>,
+        loyalty_member_repo: Arc<dyn LoyaltyMemberRepository>,
+        points_ledger_repo: Arc<dyn PointsLedgerRepository>,
+        reward_repo: Arc<dyn RewardRepository>,
+        reward_redemption_repo: Arc<dyn RewardRedemptionRepository>,
+        resource_repo: Arc<dyn ResourceRepository>,
+        resource_calendar_repo: Arc<dyn ResourceCalendarRepository>,
+        booking_service_repo: Arc<dyn BookingServiceRepository>,
+        appointment_repo: Arc<dyn AppointmentRepository>,
+        booking_policy_repo: Arc<dyn BookingPolicyRepository>,
+        service_asset_repo: Arc<dyn ServiceAssetRepository>,
+        service_order_repo: Arc<dyn ServiceOrderRepository>,
+        service_order_item_repo: Arc<dyn ServiceOrderItemRepository>,
+        service_diagnostic_repo: Arc<dyn ServiceDiagnosticRepository>,
+        service_quote_repo: Arc<dyn ServiceQuoteRepository>,
+        kitchen_station_repo: Arc<dyn KitchenStationRepository>,
+        restaurant_table_repo: Arc<dyn RestaurantTableRepository>,
+        menu_modifier_repo: Arc<dyn MenuModifierRepository>,
+        kds_ticket_repo: Arc<dyn KdsTicketRepository>,
+        kds_ticket_item_repo: Arc<dyn KdsTicketItemRepository>,
+        kds_broadcaster: Arc<dyn KdsBroadcaster>,
+        kds_broadcaster_handle: Arc<TokioBroadcastKdsBroadcaster>,
+        organization_repo: Arc<dyn OrganizationRepository>,
+        organization_plan_repo: Arc<dyn OrganizationPlanRepository>,
+        organization_domain_repo: Arc<dyn OrganizationDomainRepository>,
+        organization_branding_repo: Arc<dyn OrganizationBrandingRepository>,
     ) -> Self {
         Self {
             pool,
@@ -323,6 +465,43 @@ impl AppState {
             accounting_period_repo,
             journal_entry_repo,
             accounting_report_repo,
+            demand_forecast_repo,
+            reorder_policy_repo,
+            replenishment_suggestion_repo,
+            abc_classification_repo,
+            sales_history_repo,
+            stock_snapshot_repo,
+            bank_account_repo,
+            bank_transaction_repo,
+            cash_deposit_repo,
+            bank_reconciliation_repo,
+            loyalty_program_repo,
+            member_tier_repo,
+            loyalty_member_repo,
+            points_ledger_repo,
+            reward_repo,
+            reward_redemption_repo,
+            resource_repo,
+            resource_calendar_repo,
+            booking_service_repo,
+            appointment_repo,
+            booking_policy_repo,
+            service_asset_repo,
+            service_order_repo,
+            service_order_item_repo,
+            service_diagnostic_repo,
+            service_quote_repo,
+            kitchen_station_repo,
+            restaurant_table_repo,
+            menu_modifier_repo,
+            kds_ticket_repo,
+            kds_ticket_item_repo,
+            kds_broadcaster,
+            kds_broadcaster_handle,
+            organization_repo,
+            organization_plan_repo,
+            organization_domain_repo,
+            organization_branding_repo,
         }
     }
 
@@ -449,6 +628,103 @@ impl AppState {
             Arc::new(PgAccountingReportRepository::new((*pool_arc).clone()));
         subscriber_registry.register(Arc::new(AccountingEventSubscriber::new()));
 
+        // Demand planning repositories + register its outbox subscriber.
+        let demand_forecast_repo: Arc<dyn DemandForecastRepository> =
+            Arc::new(PgDemandForecastRepository::new((*pool_arc).clone()));
+        let reorder_policy_repo: Arc<dyn ReorderPolicyRepository> =
+            Arc::new(PgReorderPolicyRepository::new((*pool_arc).clone()));
+        let replenishment_suggestion_repo: Arc<dyn ReplenishmentSuggestionRepository> = Arc::new(
+            PgReplenishmentSuggestionRepository::new((*pool_arc).clone()),
+        );
+        let abc_classification_repo: Arc<dyn AbcClassificationRepository> =
+            Arc::new(PgAbcClassificationRepository::new((*pool_arc).clone()));
+        let sales_history_repo: Arc<dyn SalesHistoryRepository> =
+            Arc::new(PgSalesHistoryRepository::new((*pool_arc).clone()));
+        let stock_snapshot_repo: Arc<dyn StockSnapshotRepository> =
+            Arc::new(PgStockSnapshotRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(DemandPlanningEventSubscriber::new()));
+
+        // Cash management repositories + register its outbox subscriber.
+        let bank_account_repo: Arc<dyn BankAccountRepository> =
+            Arc::new(PgBankAccountRepository::new((*pool_arc).clone()));
+        let bank_transaction_repo: Arc<dyn BankTransactionRepository> =
+            Arc::new(PgBankTransactionRepository::new((*pool_arc).clone()));
+        let cash_deposit_repo: Arc<dyn CashDepositRepository> =
+            Arc::new(PgCashDepositRepository::new((*pool_arc).clone()));
+        let bank_reconciliation_repo: Arc<dyn BankReconciliationRepository> =
+            Arc::new(PgBankReconciliationRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(CashManagementEventSubscriber::new()));
+
+        // Loyalty repositories + register its outbox subscriber.
+        let loyalty_program_repo: Arc<dyn LoyaltyProgramRepository> =
+            Arc::new(PgLoyaltyProgramRepository::new((*pool_arc).clone()));
+        let member_tier_repo: Arc<dyn MemberTierRepository> =
+            Arc::new(PgMemberTierRepository::new((*pool_arc).clone()));
+        let loyalty_member_repo: Arc<dyn LoyaltyMemberRepository> =
+            Arc::new(PgLoyaltyMemberRepository::new((*pool_arc).clone()));
+        let points_ledger_repo: Arc<dyn PointsLedgerRepository> =
+            Arc::new(PgPointsLedgerRepository::new((*pool_arc).clone()));
+        let reward_repo: Arc<dyn RewardRepository> =
+            Arc::new(PgRewardRepository::new((*pool_arc).clone()));
+        let reward_redemption_repo: Arc<dyn RewardRedemptionRepository> =
+            Arc::new(PgRewardRedemptionRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(LoyaltyEventSubscriber::new()));
+
+        // Booking repositories + register its outbox subscriber.
+        let resource_repo: Arc<dyn ResourceRepository> =
+            Arc::new(PgResourceRepository::new((*pool_arc).clone()));
+        let resource_calendar_repo: Arc<dyn ResourceCalendarRepository> =
+            Arc::new(PgResourceCalendarRepository::new((*pool_arc).clone()));
+        let booking_service_repo: Arc<dyn BookingServiceRepository> =
+            Arc::new(PgServiceRepository::new((*pool_arc).clone()));
+        let appointment_repo: Arc<dyn AppointmentRepository> =
+            Arc::new(PgAppointmentRepository::new((*pool_arc).clone()));
+        let booking_policy_repo: Arc<dyn BookingPolicyRepository> =
+            Arc::new(PgBookingPolicyRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(BookingEventSubscriber::new()));
+
+        // Service orders repositories + register its outbox subscriber.
+        let service_asset_repo: Arc<dyn ServiceAssetRepository> =
+            Arc::new(PgServiceAssetRepository::new((*pool_arc).clone()));
+        let service_order_repo: Arc<dyn ServiceOrderRepository> =
+            Arc::new(PgServiceOrderRepository::new((*pool_arc).clone()));
+        let service_order_item_repo: Arc<dyn ServiceOrderItemRepository> =
+            Arc::new(PgServiceOrderItemRepository::new((*pool_arc).clone()));
+        let service_diagnostic_repo: Arc<dyn ServiceDiagnosticRepository> =
+            Arc::new(PgServiceDiagnosticRepository::new((*pool_arc).clone()));
+        let service_quote_repo: Arc<dyn ServiceQuoteRepository> =
+            Arc::new(PgServiceQuoteRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(ServiceOrdersEventSubscriber::new()));
+
+        // Restaurant operations repositories + SSE broadcaster.
+        let kitchen_station_repo: Arc<dyn KitchenStationRepository> =
+            Arc::new(PgKitchenStationRepository::new((*pool_arc).clone()));
+        let restaurant_table_repo: Arc<dyn RestaurantTableRepository> =
+            Arc::new(PgRestaurantTableRepository::new((*pool_arc).clone()));
+        let menu_modifier_repo: Arc<dyn MenuModifierRepository> =
+            Arc::new(PgMenuModifierRepository::new((*pool_arc).clone()));
+        let kds_ticket_repo: Arc<dyn KdsTicketRepository> =
+            Arc::new(PgKdsTicketRepository::new((*pool_arc).clone()));
+        let kds_ticket_item_repo: Arc<dyn KdsTicketItemRepository> =
+            Arc::new(PgKdsTicketItemRepository::new((*pool_arc).clone()));
+        // One TokioBroadcastKdsBroadcaster shared as two views: trait-object
+        // for use cases (publish) + concrete handle for the SSE handler
+        // (subscribe).
+        // Tenancy repositories + register its outbox subscriber.
+        let organization_repo: Arc<dyn OrganizationRepository> =
+            Arc::new(PgOrganizationRepository::new((*pool_arc).clone()));
+        let organization_plan_repo: Arc<dyn OrganizationPlanRepository> =
+            Arc::new(PgOrganizationPlanRepository::new((*pool_arc).clone()));
+        let organization_domain_repo: Arc<dyn OrganizationDomainRepository> =
+            Arc::new(PgOrganizationDomainRepository::new((*pool_arc).clone()));
+        let organization_branding_repo: Arc<dyn OrganizationBrandingRepository> =
+            Arc::new(PgOrganizationBrandingRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(TenancyEventSubscriber::new()));
+
+        let kds_broadcaster_handle = Arc::new(TokioBroadcastKdsBroadcaster::new());
+        let kds_broadcaster: Arc<dyn KdsBroadcaster> = kds_broadcaster_handle.clone();
+        subscriber_registry.register(Arc::new(RestaurantOperationsEventSubscriber::new()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -510,6 +786,43 @@ impl AppState {
             accounting_period_repo,
             journal_entry_repo,
             accounting_report_repo,
+            demand_forecast_repo,
+            reorder_policy_repo,
+            replenishment_suggestion_repo,
+            abc_classification_repo,
+            sales_history_repo,
+            stock_snapshot_repo,
+            bank_account_repo,
+            bank_transaction_repo,
+            cash_deposit_repo,
+            bank_reconciliation_repo,
+            loyalty_program_repo,
+            member_tier_repo,
+            loyalty_member_repo,
+            points_ledger_repo,
+            reward_repo,
+            reward_redemption_repo,
+            resource_repo,
+            resource_calendar_repo,
+            booking_service_repo,
+            appointment_repo,
+            booking_policy_repo,
+            service_asset_repo,
+            service_order_repo,
+            service_order_item_repo,
+            service_diagnostic_repo,
+            service_quote_repo,
+            kitchen_station_repo,
+            restaurant_table_repo,
+            menu_modifier_repo,
+            kds_ticket_repo,
+            kds_ticket_item_repo,
+            kds_broadcaster,
+            kds_broadcaster_handle,
+            organization_repo,
+            organization_plan_repo,
+            organization_domain_repo,
+            organization_branding_repo,
         }
     }
 
@@ -792,5 +1105,153 @@ impl AppState {
     }
     pub fn accounting_report_repo(&self) -> Arc<dyn AccountingReportRepository> {
         self.accounting_report_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Demand planning accessors
+    // -------------------------------------------------------------------------
+
+    pub fn demand_forecast_repo(&self) -> Arc<dyn DemandForecastRepository> {
+        self.demand_forecast_repo.clone()
+    }
+    pub fn reorder_policy_repo(&self) -> Arc<dyn ReorderPolicyRepository> {
+        self.reorder_policy_repo.clone()
+    }
+    pub fn replenishment_suggestion_repo(&self) -> Arc<dyn ReplenishmentSuggestionRepository> {
+        self.replenishment_suggestion_repo.clone()
+    }
+    pub fn abc_classification_repo(&self) -> Arc<dyn AbcClassificationRepository> {
+        self.abc_classification_repo.clone()
+    }
+    pub fn sales_history_repo(&self) -> Arc<dyn SalesHistoryRepository> {
+        self.sales_history_repo.clone()
+    }
+    pub fn stock_snapshot_repo(&self) -> Arc<dyn StockSnapshotRepository> {
+        self.stock_snapshot_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Cash management accessors
+    // -------------------------------------------------------------------------
+
+    pub fn bank_account_repo(&self) -> Arc<dyn BankAccountRepository> {
+        self.bank_account_repo.clone()
+    }
+    pub fn bank_transaction_repo(&self) -> Arc<dyn BankTransactionRepository> {
+        self.bank_transaction_repo.clone()
+    }
+    pub fn cash_deposit_repo(&self) -> Arc<dyn CashDepositRepository> {
+        self.cash_deposit_repo.clone()
+    }
+    pub fn bank_reconciliation_repo(&self) -> Arc<dyn BankReconciliationRepository> {
+        self.bank_reconciliation_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Loyalty accessors
+    // -------------------------------------------------------------------------
+
+    pub fn loyalty_program_repo(&self) -> Arc<dyn LoyaltyProgramRepository> {
+        self.loyalty_program_repo.clone()
+    }
+    pub fn member_tier_repo(&self) -> Arc<dyn MemberTierRepository> {
+        self.member_tier_repo.clone()
+    }
+    pub fn loyalty_member_repo(&self) -> Arc<dyn LoyaltyMemberRepository> {
+        self.loyalty_member_repo.clone()
+    }
+    pub fn points_ledger_repo(&self) -> Arc<dyn PointsLedgerRepository> {
+        self.points_ledger_repo.clone()
+    }
+    pub fn reward_repo(&self) -> Arc<dyn RewardRepository> {
+        self.reward_repo.clone()
+    }
+    pub fn reward_redemption_repo(&self) -> Arc<dyn RewardRedemptionRepository> {
+        self.reward_redemption_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Booking accessors
+    // -------------------------------------------------------------------------
+
+    pub fn resource_repo(&self) -> Arc<dyn ResourceRepository> {
+        self.resource_repo.clone()
+    }
+    pub fn resource_calendar_repo(&self) -> Arc<dyn ResourceCalendarRepository> {
+        self.resource_calendar_repo.clone()
+    }
+    pub fn booking_service_repo(&self) -> Arc<dyn BookingServiceRepository> {
+        self.booking_service_repo.clone()
+    }
+    pub fn appointment_repo(&self) -> Arc<dyn AppointmentRepository> {
+        self.appointment_repo.clone()
+    }
+    pub fn booking_policy_repo(&self) -> Arc<dyn BookingPolicyRepository> {
+        self.booking_policy_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Service orders accessors
+    // -------------------------------------------------------------------------
+
+    pub fn service_asset_repo(&self) -> Arc<dyn ServiceAssetRepository> {
+        self.service_asset_repo.clone()
+    }
+    pub fn service_order_repo(&self) -> Arc<dyn ServiceOrderRepository> {
+        self.service_order_repo.clone()
+    }
+    pub fn service_order_item_repo(&self) -> Arc<dyn ServiceOrderItemRepository> {
+        self.service_order_item_repo.clone()
+    }
+    pub fn service_diagnostic_repo(&self) -> Arc<dyn ServiceDiagnosticRepository> {
+        self.service_diagnostic_repo.clone()
+    }
+    pub fn service_quote_repo(&self) -> Arc<dyn ServiceQuoteRepository> {
+        self.service_quote_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Restaurant operations accessors
+    // -------------------------------------------------------------------------
+
+    pub fn kitchen_station_repo(&self) -> Arc<dyn KitchenStationRepository> {
+        self.kitchen_station_repo.clone()
+    }
+    pub fn restaurant_table_repo(&self) -> Arc<dyn RestaurantTableRepository> {
+        self.restaurant_table_repo.clone()
+    }
+    pub fn menu_modifier_repo(&self) -> Arc<dyn MenuModifierRepository> {
+        self.menu_modifier_repo.clone()
+    }
+    pub fn kds_ticket_repo(&self) -> Arc<dyn KdsTicketRepository> {
+        self.kds_ticket_repo.clone()
+    }
+    pub fn kds_ticket_item_repo(&self) -> Arc<dyn KdsTicketItemRepository> {
+        self.kds_ticket_item_repo.clone()
+    }
+    /// Trait-object view for use cases that publish events.
+    pub fn kds_broadcaster(&self) -> Arc<dyn KdsBroadcaster> {
+        self.kds_broadcaster.clone()
+    }
+    /// Concrete handle for the SSE handler (calls `.subscribe(station_id)`).
+    pub fn kds_broadcaster_handle(&self) -> Arc<TokioBroadcastKdsBroadcaster> {
+        self.kds_broadcaster_handle.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Tenancy accessors
+    // -------------------------------------------------------------------------
+
+    pub fn organization_repo(&self) -> Arc<dyn OrganizationRepository> {
+        self.organization_repo.clone()
+    }
+    pub fn organization_plan_repo(&self) -> Arc<dyn OrganizationPlanRepository> {
+        self.organization_plan_repo.clone()
+    }
+    pub fn organization_domain_repo(&self) -> Arc<dyn OrganizationDomainRepository> {
+        self.organization_domain_repo.clone()
+    }
+    pub fn organization_branding_repo(&self) -> Arc<dyn OrganizationBrandingRepository> {
+        self.organization_branding_repo.clone()
     }
 }

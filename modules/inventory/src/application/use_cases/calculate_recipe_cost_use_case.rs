@@ -141,7 +141,7 @@ mod tests {
             let mut ingredients = self.ingredients.lock().unwrap();
             ingredients
                 .entry(recipe_id)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(ingredient);
         }
     }
@@ -220,7 +220,7 @@ mod tests {
             let mut ingredients = self.ingredients.lock().unwrap();
             ingredients
                 .entry(ingredient.recipe_id())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(ingredient.clone());
             Ok(())
         }

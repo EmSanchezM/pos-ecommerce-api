@@ -25,6 +25,7 @@ use inventory::{
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -172,6 +173,9 @@ pub async fn get_valuation_report_handler(
     Query(params): Query<ValuationReportQueryParams>,
 ) -> Result<Json<ValuationReportResponse>, Response> {
     require_permission(&ctx, "reports:inventory")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = GetValuationReportUseCase::new(
         state.stock_repo(),
@@ -216,6 +220,9 @@ pub async fn get_low_stock_report_handler(
     Query(params): Query<LowStockReportQueryParams>,
 ) -> Result<Json<LowStockReportResponse>, Response> {
     require_permission(&ctx, "reports:inventory")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = GetLowStockReportUseCase::new(state.stock_repo(), state.product_repo());
 
@@ -261,6 +268,9 @@ pub async fn get_movements_report_handler(
     Query(params): Query<MovementsReportQueryParams>,
 ) -> Result<Json<PaginatedResponse<MovementResponse>>, Response> {
     require_permission(&ctx, "reports:inventory")?;
+    if let Some(sid) = params.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = GetMovementsReportUseCase::new(state.movement_repo());
 

@@ -16,16 +16,26 @@ mod routes;
 mod state;
 
 use routes::{
-    accounting_router, analytics_router, auth_router, cart_router, catalog_images_router,
+    abc_classification_router, accounting_router, analytics_router, auth_router,
+    bank_accounts_router, bank_reconciliations_router, bank_transactions_router,
+    booking_appointments_router, booking_policies_router, booking_resources_router,
+    booking_services_router, cart_router, cash_deposits_router, catalog_images_router,
     catalog_listings_router, catalog_public_router, catalog_reviews_router,
     catalog_storage_providers_router, catalog_wishlist_router, categories_router,
     credit_notes_router, customers_router, delivery_providers_router, delivery_webhooks_router,
-    drivers_router, goods_receipts_router, inventory_router, invoices_router, orders_router,
-    payment_gateways_router, payouts_router, pos_sales_router, products_router, promotions_router,
-    public_tracking_router, purchase_orders_router, recipes_router, reports_router, shifts_router,
-    shipments_router, shipping_calculate_router, shipping_methods_router, shipping_rates_router,
+    drivers_router, forecasts_router, goods_receipts_router, inventory_router, invoices_router,
+    kds_stream_router, kds_tickets_router, loyalty_members_router, loyalty_programs_router,
+    loyalty_rewards_router, loyalty_tiers_router, orders_router, payment_gateways_router,
+    payouts_router, pos_sales_router, products_router, promotions_router, public_booking_router,
+    public_service_orders_router, public_tenancy_router, public_tracking_router,
+    purchase_orders_router, recipes_router, reorder_policies_router,
+    replenishment_suggestions_router, reports_router, restaurant_modifier_groups_router,
+    restaurant_product_modifiers_router, restaurant_stations_router, restaurant_tables_router,
+    service_orders_assets_router, service_orders_router, shifts_router, shipments_router,
+    shipping_calculate_router, shipping_methods_router, shipping_rates_router,
     shipping_zones_router, store_router, store_terminals_router, tax_rates_router,
-    terminals_router, transactions_router, transfers_router, vendors_router, webhooks_router,
+    tenancy_organizations_router, terminals_router, transactions_router, transfers_router,
+    vendors_router, webhooks_router,
 };
 use state::AppState;
 
@@ -161,6 +171,116 @@ async fn main() {
         .nest("/api/v1/analytics", analytics_router(app_state.clone()))
         // Accounting
         .nest("/api/v1/accounting", accounting_router(app_state.clone()))
+        // Demand planning
+        .nest("/api/v1/forecasts", forecasts_router(app_state.clone()))
+        .nest(
+            "/api/v1/reorder-policies",
+            reorder_policies_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/replenishment-suggestions",
+            replenishment_suggestions_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/abc-classification",
+            abc_classification_router(app_state.clone()),
+        )
+        // Cash management
+        .nest(
+            "/api/v1/bank-accounts",
+            bank_accounts_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/bank-transactions",
+            bank_transactions_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/cash-deposits",
+            cash_deposits_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/bank-reconciliations",
+            bank_reconciliations_router(app_state.clone()),
+        )
+        // Loyalty
+        .nest(
+            "/api/v1/loyalty/programs",
+            loyalty_programs_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/loyalty/tiers",
+            loyalty_tiers_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/loyalty/rewards",
+            loyalty_rewards_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/loyalty/members",
+            loyalty_members_router(app_state.clone()),
+        )
+        // Booking
+        .nest(
+            "/api/v1/booking/resources",
+            booking_resources_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/booking/services",
+            booking_services_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/booking/appointments",
+            booking_appointments_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/booking/policies",
+            booking_policies_router(app_state.clone()),
+        )
+        .nest("/api/v1/public/booking", public_booking_router())
+        // Service orders (workshop tickets)
+        .nest(
+            "/api/v1/assets",
+            service_orders_assets_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/service-orders",
+            service_orders_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/public/service-orders",
+            public_service_orders_router(),
+        )
+        // Restaurant operations
+        .nest(
+            "/api/v1/restaurant/stations",
+            restaurant_stations_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/restaurant/tables",
+            restaurant_tables_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/restaurant/modifier-groups",
+            restaurant_modifier_groups_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/restaurant/products",
+            restaurant_product_modifiers_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/restaurant/kds/tickets",
+            kds_tickets_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/restaurant/kds/stations",
+            kds_stream_router(app_state.clone()),
+        )
+        // Tenancy
+        .nest(
+            "/api/v1/organizations",
+            tenancy_organizations_router(app_state.clone()),
+        )
+        .nest("/api/v1/public/organizations", public_tenancy_router())
         // Static file serving for the LocalServer image storage adapter.
         // The mount path matches IMAGE_STORAGE_PUBLIC_URL (default `/uploads`).
         .nest_service(
@@ -180,6 +300,7 @@ async fn main() {
     let notification_retry_interval = env_or::<u64>("NOTIFICATION_RETRY_INTERVAL_SECS", 60);
     let notification_retry_batch_size = env_or::<i64>("NOTIFICATION_RETRY_BATCH_SIZE", 50);
     let analytics_recompute_interval = env_or::<u64>("ANALYTICS_RECOMPUTE_INTERVAL_SECS", 1800);
+    let demand_planning_interval = env_or::<u64>("DEMAND_PLANNING_RECOMPUTE_INTERVAL_SECS", 86_400);
 
     jobs::reservation_expiry::spawn(
         app_state.reservation_repo(),
@@ -203,6 +324,15 @@ async fn main() {
         app_state.analytics_query_repo(),
         app_state.kpi_snapshot_repo(),
         analytics_recompute_interval,
+    );
+    jobs::demand_planning_recompute::spawn(
+        app_state.sales_history_repo(),
+        app_state.demand_forecast_repo(),
+        app_state.reorder_policy_repo(),
+        app_state.stock_snapshot_repo(),
+        app_state.replenishment_suggestion_repo(),
+        app_state.abc_classification_repo(),
+        demand_planning_interval,
     );
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8000").await.unwrap();

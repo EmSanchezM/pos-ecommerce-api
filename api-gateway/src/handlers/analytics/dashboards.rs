@@ -21,6 +21,7 @@ use serde::Deserialize;
 
 use crate::error::AppError;
 use crate::extractors::CurrentUser;
+use crate::middleware::org_scope::verify_store_in_org;
 use crate::middleware::permission::require_permission;
 use crate::state::AppState;
 
@@ -66,6 +67,9 @@ pub async fn create_dashboard_handler(
     Json(body): Json<CreateDashboardBody>,
 ) -> Result<Json<DashboardResponse>, Response> {
     require_permission(&ctx, "analytics:write")?;
+    if let Some(sid) = body.store_id {
+        verify_store_in_org(state.pool(), &ctx, sid).await?;
+    }
 
     let use_case = CreateDashboardUseCase::new(state.dashboard_repo());
     let dashboard = use_case
