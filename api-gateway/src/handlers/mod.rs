@@ -3,6 +3,7 @@
 pub mod accounting;
 pub mod analytics;
 pub mod auth_handlers;
+pub mod booking;
 pub mod cai_handlers;
 pub mod cash_management;
 pub mod catalog;

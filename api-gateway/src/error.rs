@@ -10,6 +10,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use booking::BookingError;
 use cash_management::CashManagementError;
 use catalog::CatalogError;
 use demand_planning::DemandPlanningError;
@@ -2388,6 +2389,105 @@ impl From<LoyaltyError> for AppError {
 
             // 500
             LoyaltyError::Database(_) | LoyaltyError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+// =============================================================================
+// From<BookingError> Implementation
+// =============================================================================
+
+impl From<BookingError> for AppError {
+    fn from(err: BookingError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            BookingError::ResourceNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "BOOKING_RESOURCE_NOT_FOUND",
+                    format!("Booking resource not found: {}", id),
+                ),
+            ),
+            BookingError::ServiceNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "BOOKING_SERVICE_NOT_FOUND",
+                    format!("Booking service not found: {}", id),
+                ),
+            ),
+            BookingError::AppointmentNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "APPOINTMENT_NOT_FOUND",
+                    format!("Appointment not found: {}", id),
+                ),
+            ),
+            BookingError::PolicyNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "BOOKING_POLICY_NOT_FOUND",
+                    format!("Booking policy not found for store: {}", id),
+                ),
+            ),
+            BookingError::CustomerNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("CUSTOMER_NOT_FOUND", format!("Customer not found: {}", id)),
+            ),
+            BookingError::StoreNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("STORE_NOT_FOUND", format!("Store not found: {}", id)),
+            ),
+
+            // 401
+            BookingError::InvalidPublicToken => (
+                StatusCode::UNAUTHORIZED,
+                ErrorResponse::new("INVALID_PUBLIC_TOKEN", err.to_string()),
+            ),
+
+            // 409
+            BookingError::SlotConflict { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("SLOT_CONFLICT", err.to_string()),
+            ),
+            BookingError::InvalidStateTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATE_TRANSITION", err.to_string()),
+            ),
+            BookingError::OutsideCancellationWindow { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("OUTSIDE_CANCELLATION_WINDOW", err.to_string()),
+            ),
+            BookingError::ResourceNotEligibleForService { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("RESOURCE_NOT_ELIGIBLE_FOR_SERVICE", err.to_string()),
+            ),
+            BookingError::OutsideWorkingHours => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("OUTSIDE_WORKING_HOURS", err.to_string()),
+            ),
+
+            // 400 — validation
+            BookingError::InvalidTimeRange
+            | BookingError::InvalidDuration(_)
+            | BookingError::InvalidResourceType(_)
+            | BookingError::InvalidAppointmentStatus(_)
+            | BookingError::Validation(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502 — downstream
+            BookingError::Subscriber(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            BookingError::Database(_) | BookingError::Serialization(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
             ),

@@ -3,7 +3,7 @@ use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
-use chrono::{Datelike, Duration, NaiveDate, TimeZone, Utc};
+use chrono::{Datelike, Duration, NaiveDate, NaiveTime, TimeZone, Utc};
 use rust_decimal::Decimal;
 use rust_decimal::prelude::FromPrimitive;
 use sqlx::postgres::PgPoolOptions;
@@ -136,6 +136,12 @@ async fn main() -> Result<()> {
     // store so the loyalty endpoints have a complete graph on first boot.
     info!("Seeding loyalty defaults...");
     seed_loyalty_defaults(&mut tx, store_id).await?;
+
+    // Seed booking demo: 3 resources (2 stylists + 1 room), shared weekly
+    // calendar, 3 bookable services with M2M assignments, and a default
+    // per-store policy. Public booking endpoints work end-to-end on first boot.
+    info!("Seeding booking defaults...");
+    seed_booking_defaults(&mut tx, store_id).await?;
 
     tx.commit().await?;
 
@@ -1227,6 +1233,209 @@ async fn seed_loyalty_defaults(
     info!(
         "  Loyalty rewards: {} catalog entries",
         data::DEMO_LOYALTY_REWARDS.len()
+    );
+
+    Ok(())
+}
+
+/// Seeds the booking module: resources (stylists + room), shared weekly
+/// calendar, bookable services with eligible-resource M2M, and a default
+/// per-store policy. Idempotent — re-running does not create duplicates.
+async fn seed_booking_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+) -> Result<()> {
+    use std::collections::HashMap;
+
+    // ---- Resources (idempotent on (store_id, name)) -----------------------
+    let mut resource_ids: HashMap<&str, Uuid> = HashMap::new();
+    for (resource_type, name, color) in data::DEMO_BOOKING_RESOURCES {
+        let existing: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM booking_resources WHERE store_id = $1 AND name = $2")
+                .bind(store_id)
+                .bind(name)
+                .fetch_optional(&mut **tx)
+                .await?;
+        let id = match existing {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                sqlx::query(
+                    r#"
+                    INSERT INTO booking_resources (
+                        id, store_id, resource_type, name, color, is_active
+                    )
+                    VALUES ($1, $2, $3, $4, $5, TRUE)
+                    "#,
+                )
+                .bind(id)
+                .bind(store_id)
+                .bind(*resource_type)
+                .bind(*name)
+                .bind(*color)
+                .execute(&mut **tx)
+                .await?;
+                id
+            }
+        };
+        resource_ids.insert(*name, id);
+    }
+    info!(
+        "  Booking resources: {} ({} types)",
+        data::DEMO_BOOKING_RESOURCES.len(),
+        data::DEMO_BOOKING_RESOURCES
+            .iter()
+            .map(|(t, _, _)| *t)
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+    );
+
+    // ---- Calendars: replace-and-insert if the resource has none yet ------
+    for (_, name, _) in data::DEMO_BOOKING_RESOURCES {
+        let resource_id = resource_ids.get(name).copied().expect("resource id");
+        let existing_count: (i64,) = sqlx::query_as(
+            "SELECT COUNT(*)::BIGINT FROM booking_resource_calendars WHERE resource_id = $1",
+        )
+        .bind(resource_id)
+        .fetch_one(&mut **tx)
+        .await?;
+        if existing_count.0 > 0 {
+            continue;
+        }
+        for (dow, start, end) in data::DEMO_BOOKING_CALENDAR {
+            let start_t = NaiveTime::parse_from_str(start, "%H:%M")?;
+            let end_t = NaiveTime::parse_from_str(end, "%H:%M")?;
+            sqlx::query(
+                r#"
+                INSERT INTO booking_resource_calendars (
+                    id, resource_id, day_of_week, start_time, end_time, is_active
+                )
+                VALUES ($1, $2, $3, $4, $5, TRUE)
+                "#,
+            )
+            .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+            .bind(resource_id)
+            .bind(*dow)
+            .bind(start_t)
+            .bind(end_t)
+            .execute(&mut **tx)
+            .await?;
+        }
+    }
+    info!(
+        "  Booking calendars: {} weekly windows × {} resources",
+        data::DEMO_BOOKING_CALENDAR.len(),
+        data::DEMO_BOOKING_RESOURCES.len()
+    );
+
+    // ---- Services + service_resources M2M --------------------------------
+    let mut services_added = 0;
+    for svc in data::DEMO_BOOKING_SERVICES {
+        let existing: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM booking_services WHERE store_id = $1 AND name = $2")
+                .bind(store_id)
+                .bind(svc.name)
+                .fetch_optional(&mut **tx)
+                .await?;
+        let service_id = match existing {
+            Some((id,)) => id,
+            None => {
+                let id = Uuid::new_v7(Timestamp::now(NoContext));
+                let price_dec = Decimal::from_f64(svc.price).unwrap_or(Decimal::ZERO);
+                let deposit_dec = svc
+                    .deposit_amount
+                    .and_then(Decimal::from_f64)
+                    .map(|d| d.round_dp(4));
+                sqlx::query(
+                    r#"
+                    INSERT INTO booking_services (
+                        id, store_id, name, description, duration_minutes, price,
+                        buffer_minutes_before, buffer_minutes_after,
+                        requires_deposit, deposit_amount, is_active
+                    )
+                    VALUES (
+                        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE
+                    )
+                    "#,
+                )
+                .bind(id)
+                .bind(store_id)
+                .bind(svc.name)
+                .bind(svc.description)
+                .bind(svc.duration_minutes)
+                .bind(price_dec)
+                .bind(svc.buffer_minutes_before)
+                .bind(svc.buffer_minutes_after)
+                .bind(svc.requires_deposit)
+                .bind(deposit_dec)
+                .execute(&mut **tx)
+                .await?;
+                services_added += 1;
+                id
+            }
+        };
+
+        for resource_name in svc.eligible_resource_names {
+            let resource_id = match resource_ids.get(resource_name) {
+                Some(id) => *id,
+                None => continue,
+            };
+            sqlx::query(
+                r#"
+                INSERT INTO booking_service_resources (service_id, resource_id)
+                VALUES ($1, $2)
+                ON CONFLICT DO NOTHING
+                "#,
+            )
+            .bind(service_id)
+            .bind(resource_id)
+            .execute(&mut **tx)
+            .await?;
+        }
+    }
+    info!(
+        "  Booking services: {} ({} new), M2M assignments synced",
+        data::DEMO_BOOKING_SERVICES.len(),
+        services_added
+    );
+
+    // ---- Per-store policy (one row per store) ----------------------------
+    let (
+        requires_deposit,
+        deposit_pct,
+        cancellation_hours,
+        no_show_fee,
+        default_buffer,
+        advance_max,
+    ) = data::DEMO_BOOKING_POLICY;
+    let pct_dec = deposit_pct.and_then(Decimal::from_f64);
+    let fee_dec = no_show_fee
+        .and_then(Decimal::from_f64)
+        .map(|d| d.round_dp(4));
+    sqlx::query(
+        r#"
+        INSERT INTO booking_policies (
+            id, store_id, requires_deposit, deposit_percentage,
+            cancellation_window_hours, no_show_fee_amount,
+            default_buffer_minutes, advance_booking_days_max
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT (store_id) DO NOTHING
+        "#,
+    )
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+    .bind(store_id)
+    .bind(requires_deposit)
+    .bind(pct_dec)
+    .bind(cancellation_hours)
+    .bind(fee_dec)
+    .bind(default_buffer)
+    .bind(advance_max)
+    .execute(&mut **tx)
+    .await?;
+    info!(
+        "  Booking policy: cancel window {}h, advance booking ≤{}d, default buffer {}min",
+        cancellation_hours, advance_max, default_buffer
     );
 
     Ok(())
