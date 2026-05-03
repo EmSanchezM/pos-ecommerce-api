@@ -143,6 +143,12 @@ async fn main() -> Result<()> {
     info!("Seeding booking defaults...");
     seed_booking_defaults(&mut tx, store_id).await?;
 
+    // Seed service-orders demo: 1 customer, 2 assets (car + laptop), one
+    // intake on the car already advanced to Diagnosis with a diagnostic and
+    // 3 items (labor + parts) so staff can immediately draft a quote.
+    info!("Seeding service orders defaults...");
+    seed_service_orders_defaults(&mut tx, store_id, super_admin_id).await?;
+
     tx.commit().await?;
 
     info!("Seed completed successfully!");
@@ -1436,6 +1442,212 @@ async fn seed_booking_defaults(
     info!(
         "  Booking policy: cancel window {}h, advance booking ≤{}d, default buffer {}min",
         cancellation_hours, advance_max, default_buffer
+    );
+
+    Ok(())
+}
+
+/// Seeds the service_orders module: a demo customer, two assets (car +
+/// laptop), and one in-progress service order on the car with a diagnostic
+/// and three line items, already advanced to status='diagnosis'.
+/// Idempotent — re-running does not create duplicates (skips when the demo
+/// customer already exists, since it's the anchor for everything else).
+async fn seed_service_orders_defaults(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    store_id: Uuid,
+    intake_user_id: Uuid,
+) -> Result<()> {
+    use std::collections::HashMap;
+
+    // ---- Customer (idempotent on (store_id, code)) -----------------------
+    let (cust_code, cust_first, cust_last, cust_email, cust_phone, cust_type, cust_tax_id) =
+        data::DEMO_SERVICE_CUSTOMER;
+    let existing: Option<(Uuid,)> =
+        sqlx::query_as("SELECT id FROM customers WHERE store_id = $1 AND code = $2")
+            .bind(store_id)
+            .bind(cust_code)
+            .fetch_optional(&mut **tx)
+            .await?;
+    if existing.is_some() {
+        info!(
+            "  Service orders demo customer {} already exists — skipping",
+            cust_code
+        );
+        return Ok(());
+    }
+    let customer_id = Uuid::new_v7(Timestamp::now(NoContext));
+    sqlx::query(
+        r#"
+        INSERT INTO customers (
+            id, store_id, customer_type, code,
+            first_name, last_name, email, phone, tax_id,
+            is_active, total_purchases, purchase_count, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, 0, 0, NOW(), NOW())
+        "#,
+    )
+    .bind(customer_id)
+    .bind(store_id)
+    .bind(cust_type)
+    .bind(cust_code)
+    .bind(cust_first)
+    .bind(cust_last)
+    .bind(cust_email)
+    .bind(cust_phone)
+    .bind(cust_tax_id)
+    .execute(&mut **tx)
+    .await?;
+    let cust_full = format!("{} {}", cust_first, cust_last);
+    info!("  Service customer: {} ({})", cust_full, cust_email);
+
+    // ---- Assets ----------------------------------------------------------
+    let mut asset_ids: HashMap<&str, Uuid> = HashMap::new();
+    for (asset_type, brand, model, identifier, year, color, description) in
+        data::DEMO_SERVICE_ASSETS
+    {
+        let id = Uuid::new_v7(Timestamp::now(NoContext));
+        sqlx::query(
+            r#"
+            INSERT INTO service_assets (
+                id, store_id, customer_id, asset_type,
+                brand, model, identifier, year, color, description,
+                attributes, is_active, created_at, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                    '{}'::jsonb, TRUE, NOW(), NOW())
+            "#,
+        )
+        .bind(id)
+        .bind(store_id)
+        .bind(customer_id)
+        .bind(*asset_type)
+        .bind(*brand)
+        .bind(*model)
+        .bind(*identifier)
+        .bind(*year)
+        .bind(*color)
+        .bind(*description)
+        .execute(&mut **tx)
+        .await?;
+        asset_ids.insert(*identifier, id);
+    }
+    info!(
+        "  Service assets: {} ({} for customer {})",
+        data::DEMO_SERVICE_ASSETS.len(),
+        data::DEMO_SERVICE_ASSETS.len(),
+        cust_email
+    );
+
+    // ---- Service order on the car (PEC-1234) -----------------------------
+    let car_asset_id = asset_ids
+        .get("PEC-1234")
+        .copied()
+        .expect("car asset should be present");
+    let order_id = Uuid::new_v7(Timestamp::now(NoContext));
+    let public_token = Uuid::new_v7(Timestamp::now(NoContext)).simple().to_string();
+    let (priority, intake_notes) = data::DEMO_SERVICE_ORDER_INTAKE;
+    sqlx::query(
+        r#"
+        INSERT INTO service_orders (
+            id, store_id, asset_id, customer_id,
+            customer_name, customer_email, customer_phone,
+            status, priority, intake_notes, intake_at, intake_by_user_id,
+            promised_at, public_token, total_amount, created_at, updated_at
+        )
+        VALUES (
+            $1, $2, $3, $4, $5, $6, $7, 'diagnosis', $8, $9,
+            NOW(), $10, NULL, $11, 0, NOW(), NOW()
+        )
+        "#,
+    )
+    .bind(order_id)
+    .bind(store_id)
+    .bind(car_asset_id)
+    .bind(customer_id)
+    .bind(cust_full.clone())
+    .bind(cust_email)
+    .bind(cust_phone)
+    .bind(priority)
+    .bind(intake_notes)
+    .bind(intake_user_id)
+    .bind(&public_token)
+    .execute(&mut **tx)
+    .await?;
+    info!(
+        "  Service order: status=diagnosis priority={} on asset PEC-1234 (token={})",
+        priority,
+        &public_token[..8]
+    );
+
+    // ---- Diagnostic ------------------------------------------------------
+    let (findings, recommended, severity) = data::DEMO_SERVICE_DIAGNOSTIC;
+    sqlx::query(
+        r#"
+        INSERT INTO service_diagnostics (
+            id, service_order_id, technician_user_id,
+            findings, recommended_actions, severity, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, NOW())
+        "#,
+    )
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+    .bind(order_id)
+    .bind(intake_user_id)
+    .bind(findings)
+    .bind(recommended)
+    .bind(severity)
+    .execute(&mut **tx)
+    .await?;
+    info!("  Service diagnostic: severity={}", severity);
+
+    // ---- Items + recompute total -----------------------------------------
+    let mut running_total = Decimal::ZERO;
+    for (item_type, description, quantity, unit_price, tax_rate) in data::DEMO_SERVICE_ITEMS {
+        let qty = Decimal::from_f64(*quantity)
+            .unwrap_or(Decimal::ZERO)
+            .round_dp(4);
+        let price = Decimal::from_f64(*unit_price)
+            .unwrap_or(Decimal::ZERO)
+            .round_dp(4);
+        let rate = Decimal::from_f64(*tax_rate)
+            .unwrap_or(Decimal::ZERO)
+            .round_dp(4);
+        let subtotal = (qty * price).round_dp(4);
+        let tax_amount = (subtotal * rate).round_dp(4);
+        let total = subtotal + tax_amount;
+        running_total += total;
+
+        sqlx::query(
+            r#"
+            INSERT INTO service_order_items (
+                id, service_order_id, item_type, description,
+                quantity, unit_price, total,
+                product_id, variant_id, tax_rate, tax_amount, created_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, NULL, $8, $9, NOW())
+            "#,
+        )
+        .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+        .bind(order_id)
+        .bind(*item_type)
+        .bind(*description)
+        .bind(qty)
+        .bind(price)
+        .bind(total)
+        .bind(rate)
+        .bind(tax_amount)
+        .execute(&mut **tx)
+        .await?;
+    }
+    sqlx::query("UPDATE service_orders SET total_amount = $2, updated_at = NOW() WHERE id = $1")
+        .bind(order_id)
+        .bind(running_total.round_dp(4))
+        .execute(&mut **tx)
+        .await?;
+    info!(
+        "  Service items: {} (running total L {:.2})",
+        data::DEMO_SERVICE_ITEMS.len(),
+        running_total
     );
 
     Ok(())

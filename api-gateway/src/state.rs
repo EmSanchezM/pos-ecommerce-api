@@ -65,6 +65,14 @@ use sales::{
     PgCartRepository, PgCreditNoteRepository, PgCustomerRepository, PgPromotionRepository,
     PgSaleRepository, PgShiftRepository,
 };
+use service_orders::{
+    AssetRepository as ServiceAssetRepository, DiagnosticRepository as ServiceDiagnosticRepository,
+    PgAssetRepository as PgServiceAssetRepository,
+    PgDiagnosticRepository as PgServiceDiagnosticRepository,
+    PgQuoteRepository as PgServiceQuoteRepository, PgServiceOrderItemRepository,
+    PgServiceOrderRepository, QuoteRepository as ServiceQuoteRepository,
+    ServiceOrderItemRepository, ServiceOrderRepository, ServiceOrdersEventSubscriber,
+};
 use shipping::{
     DefaultDeliveryProviderRegistry, DeliveryProviderRegistry, PgDeliveryProviderRepository,
     PgDriverRepository, PgShipmentRepository, PgShipmentTrackingEventRepository,
@@ -239,6 +247,14 @@ pub struct AppState {
     booking_service_repo: Arc<dyn BookingServiceRepository>,
     appointment_repo: Arc<dyn AppointmentRepository>,
     booking_policy_repo: Arc<dyn BookingPolicyRepository>,
+    // -------------------------------------------------------------------------
+    // Service orders (assets, orders, items, diagnostics, quotes)
+    // -------------------------------------------------------------------------
+    service_asset_repo: Arc<dyn ServiceAssetRepository>,
+    service_order_repo: Arc<dyn ServiceOrderRepository>,
+    service_order_item_repo: Arc<dyn ServiceOrderItemRepository>,
+    service_diagnostic_repo: Arc<dyn ServiceDiagnosticRepository>,
+    service_quote_repo: Arc<dyn ServiceQuoteRepository>,
 }
 
 impl AppState {
@@ -342,6 +358,11 @@ impl AppState {
         booking_service_repo: Arc<dyn BookingServiceRepository>,
         appointment_repo: Arc<dyn AppointmentRepository>,
         booking_policy_repo: Arc<dyn BookingPolicyRepository>,
+        service_asset_repo: Arc<dyn ServiceAssetRepository>,
+        service_order_repo: Arc<dyn ServiceOrderRepository>,
+        service_order_item_repo: Arc<dyn ServiceOrderItemRepository>,
+        service_diagnostic_repo: Arc<dyn ServiceDiagnosticRepository>,
+        service_quote_repo: Arc<dyn ServiceQuoteRepository>,
     ) -> Self {
         Self {
             pool,
@@ -422,6 +443,11 @@ impl AppState {
             booking_service_repo,
             appointment_repo,
             booking_policy_repo,
+            service_asset_repo,
+            service_order_repo,
+            service_order_item_repo,
+            service_diagnostic_repo,
+            service_quote_repo,
         }
     }
 
@@ -603,6 +629,19 @@ impl AppState {
             Arc::new(PgBookingPolicyRepository::new((*pool_arc).clone()));
         subscriber_registry.register(Arc::new(BookingEventSubscriber::new()));
 
+        // Service orders repositories + register its outbox subscriber.
+        let service_asset_repo: Arc<dyn ServiceAssetRepository> =
+            Arc::new(PgServiceAssetRepository::new((*pool_arc).clone()));
+        let service_order_repo: Arc<dyn ServiceOrderRepository> =
+            Arc::new(PgServiceOrderRepository::new((*pool_arc).clone()));
+        let service_order_item_repo: Arc<dyn ServiceOrderItemRepository> =
+            Arc::new(PgServiceOrderItemRepository::new((*pool_arc).clone()));
+        let service_diagnostic_repo: Arc<dyn ServiceDiagnosticRepository> =
+            Arc::new(PgServiceDiagnosticRepository::new((*pool_arc).clone()));
+        let service_quote_repo: Arc<dyn ServiceQuoteRepository> =
+            Arc::new(PgServiceQuoteRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(ServiceOrdersEventSubscriber::new()));
+
         // Services
         let token_service = Arc::new(JwtTokenService::new(jwt_secret));
 
@@ -685,6 +724,11 @@ impl AppState {
             booking_service_repo,
             appointment_repo,
             booking_policy_repo,
+            service_asset_repo,
+            service_order_repo,
+            service_order_item_repo,
+            service_diagnostic_repo,
+            service_quote_repo,
         }
     }
 
@@ -1050,5 +1094,25 @@ impl AppState {
     }
     pub fn booking_policy_repo(&self) -> Arc<dyn BookingPolicyRepository> {
         self.booking_policy_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Service orders accessors
+    // -------------------------------------------------------------------------
+
+    pub fn service_asset_repo(&self) -> Arc<dyn ServiceAssetRepository> {
+        self.service_asset_repo.clone()
+    }
+    pub fn service_order_repo(&self) -> Arc<dyn ServiceOrderRepository> {
+        self.service_order_repo.clone()
+    }
+    pub fn service_order_item_repo(&self) -> Arc<dyn ServiceOrderItemRepository> {
+        self.service_order_item_repo.clone()
+    }
+    pub fn service_diagnostic_repo(&self) -> Arc<dyn ServiceDiagnosticRepository> {
+        self.service_diagnostic_repo.clone()
+    }
+    pub fn service_quote_repo(&self) -> Arc<dyn ServiceQuoteRepository> {
+        self.service_quote_repo.clone()
     }
 }

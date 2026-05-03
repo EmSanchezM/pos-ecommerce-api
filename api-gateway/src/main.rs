@@ -26,12 +26,13 @@ use routes::{
     drivers_router, forecasts_router, goods_receipts_router, inventory_router, invoices_router,
     loyalty_members_router, loyalty_programs_router, loyalty_rewards_router, loyalty_tiers_router,
     orders_router, payment_gateways_router, payouts_router, pos_sales_router, products_router,
-    promotions_router, public_booking_router, public_tracking_router, purchase_orders_router,
-    recipes_router, reorder_policies_router, replenishment_suggestions_router, reports_router,
-    shifts_router, shipments_router, shipping_calculate_router, shipping_methods_router,
-    shipping_rates_router, shipping_zones_router, store_router, store_terminals_router,
-    tax_rates_router, terminals_router, transactions_router, transfers_router, vendors_router,
-    webhooks_router,
+    promotions_router, public_booking_router, public_service_orders_router, public_tracking_router,
+    purchase_orders_router, recipes_router, reorder_policies_router,
+    replenishment_suggestions_router, reports_router, service_orders_assets_router,
+    service_orders_router, shifts_router, shipments_router, shipping_calculate_router,
+    shipping_methods_router, shipping_rates_router, shipping_zones_router, store_router,
+    store_terminals_router, tax_rates_router, terminals_router, transactions_router,
+    transfers_router, vendors_router, webhooks_router,
 };
 use state::AppState;
 
@@ -233,6 +234,19 @@ async fn main() {
             booking_policies_router(app_state.clone()),
         )
         .nest("/api/v1/public/booking", public_booking_router())
+        // Service orders (workshop tickets)
+        .nest(
+            "/api/v1/assets",
+            service_orders_assets_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/service-orders",
+            service_orders_router(app_state.clone()),
+        )
+        .nest(
+            "/api/v1/public/service-orders",
+            public_service_orders_router(),
+        )
         // Static file serving for the LocalServer image storage adapter.
         // The mount path matches IMAGE_STORAGE_PUBLIC_URL (default `/uploads`).
         .nest_service(

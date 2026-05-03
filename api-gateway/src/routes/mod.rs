@@ -13,6 +13,7 @@ pub mod loyalty_routes;
 pub mod payments_routes;
 pub mod purchasing_routes;
 pub mod sales_routes;
+pub mod service_orders_routes;
 pub mod shipping_routes;
 pub mod store_routes;
 pub mod terminal_routes;
@@ -51,6 +52,9 @@ pub use purchasing_routes::{goods_receipts_router, purchase_orders_router, vendo
 pub use sales_routes::{
     cart_router, credit_notes_router, customers_router, orders_router, pos_sales_router,
     promotions_router, shifts_router,
+};
+pub use service_orders_routes::{
+    public_service_orders_router, service_orders_assets_router, service_orders_router,
 };
 pub use shipping_routes::{
     delivery_providers_router, delivery_webhooks_router, drivers_router, public_tracking_router,
