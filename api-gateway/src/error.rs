@@ -25,6 +25,7 @@ use restaurant_operations::RestaurantOperationsError;
 use sales::SalesError;
 use service_orders::ServiceOrdersError;
 use shipping::ShippingError;
+use subscriptions::SubscriptionError;
 use tenancy::TenancyError;
 
 // =============================================================================
@@ -2784,6 +2785,85 @@ impl From<TenancyError> for AppError {
 
             // 500
             TenancyError::Database(_) | TenancyError::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+        AppError::new(status, response)
+    }
+}
+
+impl From<SubscriptionError> for AppError {
+    fn from(err: SubscriptionError) -> Self {
+        let (status, response) = match &err {
+            // 404
+            SubscriptionError::PlanNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SUBSCRIPTION_PLAN_NOT_FOUND",
+                    format!("Subscription plan not found: {}", id),
+                ),
+            ),
+            SubscriptionError::SubscriptionNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "SUBSCRIPTION_NOT_FOUND",
+                    format!("Subscription not found: {}", id),
+                ),
+            ),
+            SubscriptionError::BillingCycleNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "BILLING_CYCLE_NOT_FOUND",
+                    format!("Billing cycle not found: {}", id),
+                ),
+            ),
+            SubscriptionError::DunningAttemptNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new(
+                    "DUNNING_ATTEMPT_NOT_FOUND",
+                    format!("Dunning attempt not found: {}", id),
+                ),
+            ),
+
+            // 409
+            SubscriptionError::OrganizationAlreadySubscribed(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("ORGANIZATION_ALREADY_SUBSCRIBED", err.to_string()),
+            ),
+            SubscriptionError::CodeAlreadyTaken(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("PLAN_CODE_ALREADY_TAKEN", err.to_string()),
+            ),
+            SubscriptionError::InvalidStatusTransition { .. } => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("INVALID_STATUS_TRANSITION", err.to_string()),
+            ),
+            SubscriptionError::OptimisticLockFailed => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("VERSION_CONFLICT", err.to_string()),
+            ),
+
+            // 400
+            SubscriptionError::PlanInactive(_)
+            | SubscriptionError::InvalidPlanCode(_)
+            | SubscriptionError::InvalidStatus(_)
+            | SubscriptionError::InvalidCycleStatus(_)
+            | SubscriptionError::InvalidInterval(_)
+            | SubscriptionError::InvalidDunningOutcome(_)
+            | SubscriptionError::Validation(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::validation_error(err.to_string()),
+            ),
+
+            // 502 — downstream integration failures
+            SubscriptionError::FiscalIntegration(_) | SubscriptionError::PaymentIntegration(_) => (
+                StatusCode::BAD_GATEWAY,
+                ErrorResponse::new("DOWNSTREAM_ERROR", err.to_string()),
+            ),
+
+            // 500
+            SubscriptionError::Database(_) | SubscriptionError::Serialization(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
             ),

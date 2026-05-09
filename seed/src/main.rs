@@ -162,6 +162,12 @@ async fn main() -> Result<()> {
     info!("Seeding tenancy defaults...");
     seed_tenancy_defaults(&mut tx).await?;
 
+    // Seed subscription plans: free / starter / pro / enterprise. The plans
+    // are catalog rows; orgs subscribe to them via the API. No demo
+    // subscription is created — that's exercised by the smoke tests.
+    info!("Seeding subscription plans...");
+    seed_subscription_plans(&mut tx).await?;
+
     tx.commit().await?;
 
     info!("Seed completed successfully!");
@@ -985,15 +991,22 @@ async fn seed_demand_planning_demo(
         }
 
         // ---- Synthetic 120-day sales history -------------------------------
-        // Skip if we already seeded sales for this SKU.
+        // Skip if we already seeded sales for this SKU. The synthetic sales
+        // are tagged via the `sale_number` prefix `DP-DEMO-<sku-slice>-`,
+        // not via `sale_items.sku` (which holds the real product SKU). That
+        // mismatch was the root cause of the seed crashloop on container
+        // restart — checking sale_items always returned 0 and the next
+        // INSERT into `sales` collided with `sales_store_number_unique`.
+        let sale_number_prefix = format!("DP-DEMO-{}-", &item.sku[3..]);
         let already_seeded: (i64,) = sqlx::query_as(
             r#"
             SELECT COUNT(*)::BIGINT
-            FROM sale_items
-            WHERE product_id = $1 AND sku LIKE 'DP-DEMO-%'
+            FROM sales
+            WHERE store_id = $1 AND sale_number LIKE $2
             "#,
         )
-        .bind(product_id)
+        .bind(store_id)
+        .bind(format!("{}%", sale_number_prefix))
         .fetch_one(&mut **tx)
         .await?;
         if already_seeded.0 > 0 {
@@ -1916,6 +1929,53 @@ async fn seed_restaurant_defaults(
 /// migration 50) so the by-slug / by-domain endpoints have multiple rows to
 /// query and the dashboard list isn't single-row. Idempotent — re-running
 /// does not duplicate the demo org or its sub-resources.
+async fn seed_subscription_plans(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<()> {
+    for (code, name, description, tier, interval, price_cents, currency, trial_days, sort_order) in
+        data::SUBSCRIPTION_PLANS
+    {
+        // Idempotent on `code` — re-running the seed must not duplicate.
+        let existing: Option<(Uuid,)> =
+            sqlx::query_as("SELECT id FROM subscription_plans WHERE code = $1")
+                .bind(*code)
+                .fetch_optional(&mut **tx)
+                .await?;
+        if existing.is_some() {
+            info!("  Subscription plan `{}` already exists — skipping", code);
+            continue;
+        }
+
+        sqlx::query(
+            r#"
+            INSERT INTO subscription_plans (
+                id, code, name, description, tier, interval,
+                price_cents, currency, trial_days, is_active, sort_order,
+                created_at, updated_at
+            )
+            VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, $10, NOW(), NOW()
+            )
+            "#,
+        )
+        .bind(Uuid::new_v7(Timestamp::now(NoContext)))
+        .bind(*code)
+        .bind(*name)
+        .bind(*description)
+        .bind(*tier)
+        .bind(*interval)
+        .bind(*price_cents)
+        .bind(*currency)
+        .bind(*trial_days)
+        .bind(*sort_order)
+        .execute(&mut **tx)
+        .await?;
+        info!(
+            "  Subscription plan: {} ({} {} cents, tier={}, trial={:?})",
+            name, currency, price_cents, tier, trial_days
+        );
+    }
+    Ok(())
+}
+
 async fn seed_tenancy_defaults(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<()> {
     let (name, slug, contact_email, contact_phone, tier) = data::DEMO_TENANCY_ORG;
 

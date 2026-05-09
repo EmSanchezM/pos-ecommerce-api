@@ -85,6 +85,16 @@ use shipping::{
     PgShippingMethodRepository, PgShippingRateRepository, PgShippingZoneRepository, ShipmentDeps,
 };
 use sqlx::PgPool;
+use subscriptions::{
+    BillingCycleRepository as SubscriptionBillingCycleRepository,
+    BillingInvoiceGateway as SubscriptionInvoiceGateway,
+    BillingPaymentGateway as SubscriptionPaymentGateway,
+    DunningAttemptRepository as SubscriptionDunningAttemptRepository,
+    PgBillingCycleRepository as PgSubscriptionBillingCycleRepository,
+    PgDunningAttemptRepository as PgSubscriptionDunningAttemptRepository,
+    PgSubscriptionPlanRepository, PgSubscriptionRepository, RecordPaymentOutcomeUseCase,
+    SubscriptionPlanRepository, SubscriptionRepository, SubscriptionsEventSubscriber,
+};
 use tenancy::{
     OrganizationBrandingRepository, OrganizationDomainRepository, OrganizationPlanRepository,
     OrganizationRepository, PgOrganizationBrandingRepository, PgOrganizationDomainRepository,
@@ -287,6 +297,16 @@ pub struct AppState {
     organization_plan_repo: Arc<dyn OrganizationPlanRepository>,
     organization_domain_repo: Arc<dyn OrganizationDomainRepository>,
     organization_branding_repo: Arc<dyn OrganizationBrandingRepository>,
+    // -------------------------------------------------------------------------
+    // Subscriptions (SaaS billing of the platform itself: plans, subs, cycles,
+    // dunning attempts) + outbound invoicing/payments gateways used by the job.
+    // -------------------------------------------------------------------------
+    subscription_plan_repo: Arc<dyn SubscriptionPlanRepository>,
+    subscription_repo: Arc<dyn SubscriptionRepository>,
+    billing_cycle_repo: Arc<dyn SubscriptionBillingCycleRepository>,
+    dunning_attempt_repo: Arc<dyn SubscriptionDunningAttemptRepository>,
+    subscription_invoice_gateway: Arc<dyn SubscriptionInvoiceGateway>,
+    subscription_payment_gateway: Arc<dyn SubscriptionPaymentGateway>,
 }
 
 impl AppState {
@@ -406,6 +426,12 @@ impl AppState {
         organization_plan_repo: Arc<dyn OrganizationPlanRepository>,
         organization_domain_repo: Arc<dyn OrganizationDomainRepository>,
         organization_branding_repo: Arc<dyn OrganizationBrandingRepository>,
+        subscription_plan_repo: Arc<dyn SubscriptionPlanRepository>,
+        subscription_repo: Arc<dyn SubscriptionRepository>,
+        billing_cycle_repo: Arc<dyn SubscriptionBillingCycleRepository>,
+        dunning_attempt_repo: Arc<dyn SubscriptionDunningAttemptRepository>,
+        subscription_invoice_gateway: Arc<dyn SubscriptionInvoiceGateway>,
+        subscription_payment_gateway: Arc<dyn SubscriptionPaymentGateway>,
     ) -> Self {
         Self {
             pool,
@@ -502,6 +528,12 @@ impl AppState {
             organization_plan_repo,
             organization_domain_repo,
             organization_branding_repo,
+            subscription_plan_repo,
+            subscription_repo,
+            billing_cycle_repo,
+            dunning_attempt_repo,
+            subscription_invoice_gateway,
+            subscription_payment_gateway,
         }
     }
 
@@ -721,6 +753,35 @@ impl AppState {
             Arc::new(PgOrganizationBrandingRepository::new((*pool_arc).clone()));
         subscriber_registry.register(Arc::new(TenancyEventSubscriber::new()));
 
+        // Subscriptions (SaaS billing of the platform itself).
+        let subscription_plan_repo: Arc<dyn SubscriptionPlanRepository> =
+            Arc::new(PgSubscriptionPlanRepository::new((*pool_arc).clone()));
+        let subscription_repo: Arc<dyn SubscriptionRepository> =
+            Arc::new(PgSubscriptionRepository::new((*pool_arc).clone()));
+        let billing_cycle_repo: Arc<dyn SubscriptionBillingCycleRepository> = Arc::new(
+            PgSubscriptionBillingCycleRepository::new((*pool_arc).clone()),
+        );
+        let dunning_attempt_repo: Arc<dyn SubscriptionDunningAttemptRepository> = Arc::new(
+            PgSubscriptionDunningAttemptRepository::new((*pool_arc).clone()),
+        );
+        // v1.0 ships with stub gateways: they generate placeholder invoice /
+        // transaction ids and log. Real fiscal + payments wiring follows once
+        // the manual-gateway flow is exercised end-to-end and we know the
+        // exact `GenerateInvoiceCommand` / `ProcessOnlinePaymentCommand`
+        // contracts to call.
+        let subscription_invoice_gateway: Arc<dyn SubscriptionInvoiceGateway> =
+            Arc::new(crate::adapters::subscription_billing_stubs::StubBillingInvoiceGateway::new());
+        let subscription_payment_gateway: Arc<dyn SubscriptionPaymentGateway> =
+            Arc::new(crate::adapters::subscription_billing_stubs::StubBillingPaymentGateway::new());
+        let record_payment_outcome = Arc::new(RecordPaymentOutcomeUseCase::new(
+            Arc::clone(&subscription_repo),
+            Arc::clone(&billing_cycle_repo),
+            Arc::clone(&dunning_attempt_repo),
+        ));
+        subscriber_registry.register(Arc::new(SubscriptionsEventSubscriber::new(
+            record_payment_outcome,
+        )));
+
         let kds_broadcaster_handle = Arc::new(TokioBroadcastKdsBroadcaster::new());
         let kds_broadcaster: Arc<dyn KdsBroadcaster> = kds_broadcaster_handle.clone();
         subscriber_registry.register(Arc::new(RestaurantOperationsEventSubscriber::new()));
@@ -823,6 +884,12 @@ impl AppState {
             organization_plan_repo,
             organization_domain_repo,
             organization_branding_repo,
+            subscription_plan_repo,
+            subscription_repo,
+            billing_cycle_repo,
+            dunning_attempt_repo,
+            subscription_invoice_gateway,
+            subscription_payment_gateway,
         }
     }
 
@@ -1253,5 +1320,28 @@ impl AppState {
     }
     pub fn organization_branding_repo(&self) -> Arc<dyn OrganizationBrandingRepository> {
         self.organization_branding_repo.clone()
+    }
+
+    // -------------------------------------------------------------------------
+    // Subscriptions accessors
+    // -------------------------------------------------------------------------
+
+    pub fn subscription_plan_repo(&self) -> Arc<dyn SubscriptionPlanRepository> {
+        self.subscription_plan_repo.clone()
+    }
+    pub fn subscription_repo(&self) -> Arc<dyn SubscriptionRepository> {
+        self.subscription_repo.clone()
+    }
+    pub fn billing_cycle_repo(&self) -> Arc<dyn SubscriptionBillingCycleRepository> {
+        self.billing_cycle_repo.clone()
+    }
+    pub fn dunning_attempt_repo(&self) -> Arc<dyn SubscriptionDunningAttemptRepository> {
+        self.dunning_attempt_repo.clone()
+    }
+    pub fn subscription_invoice_gateway(&self) -> Arc<dyn SubscriptionInvoiceGateway> {
+        self.subscription_invoice_gateway.clone()
+    }
+    pub fn subscription_payment_gateway(&self) -> Arc<dyn SubscriptionPaymentGateway> {
+        self.subscription_payment_gateway.clone()
     }
 }
