@@ -139,10 +139,7 @@ mod tests {
 
         fn add_ingredient(&self, recipe_id: RecipeId, ingredient: RecipeIngredient) {
             let mut ingredients = self.ingredients.lock().unwrap();
-            ingredients
-                .entry(recipe_id)
-                .or_default()
-                .push(ingredient);
+            ingredients.entry(recipe_id).or_default().push(ingredient);
         }
     }
 

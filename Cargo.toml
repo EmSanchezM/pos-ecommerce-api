@@ -22,6 +22,7 @@ members = [
     "modules/service_orders",
     "modules/restaurant_operations",
     "modules/tenancy",
+    "modules/subscriptions",
     "api-gateway",
     "seed",
 ]

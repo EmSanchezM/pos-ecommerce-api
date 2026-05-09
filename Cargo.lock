@@ -108,6 +108,7 @@ dependencies = [
  "service_orders",
  "shipping",
  "sqlx",
+ "subscriptions",
  "tenancy",
  "tokio",
  "tokio-stream",
@@ -2838,6 +2839,25 @@ dependencies = [
  "unicode-bidi",
  "unicode-normalization",
  "unicode-properties",
+]
+
+[[package]]
+name = "subscriptions"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "common",
+ "events",
+ "identity",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tenancy",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
