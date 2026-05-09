@@ -455,6 +455,30 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
         "Read an organization branding (colors, logo, theme)",
     ),
     ("tenancy:write_branding", "Upsert an organization branding"),
+    // Subscriptions module — SaaS billing of the platform itself.
+    // Self-service billing portal: org_admin manages its own org's billing
+    // (read_plan / read_subscription / cancel_subscription). Catalog mutation
+    // and provisioning (write_plan / write_subscription) stay super_admin-only.
+    (
+        "subscriptions:read_plan",
+        "List and read subscription plans (super_admin + org_admin)",
+    ),
+    (
+        "subscriptions:write_plan",
+        "Create, update, and deactivate subscription plans (super_admin only)",
+    ),
+    (
+        "subscriptions:read_subscription",
+        "Read an organization's active subscription and billing cycles (own org for org_admin)",
+    ),
+    (
+        "subscriptions:write_subscription",
+        "Subscribe an organization to a plan or change its plan (super_admin only)",
+    ),
+    (
+        "subscriptions:cancel_subscription",
+        "Cancel (at period end) or resume an organization's subscription. Immediate cancel restricted to super_admin",
+    ),
     // System permissions
     (
         "system:admin",
@@ -771,6 +795,12 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "tenancy:verify_domain",
             "tenancy:read_branding",
             "tenancy:write_branding",
+            // Subscriptions (SaaS billing)
+            "subscriptions:read_plan",
+            "subscriptions:write_plan",
+            "subscriptions:read_subscription",
+            "subscriptions:write_subscription",
+            "subscriptions:cancel_subscription",
             // System
             "system:admin",
             "system:settings",
@@ -1331,7 +1361,77 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "tenancy:verify_domain",
             "tenancy:read_branding",
             "tenancy:write_branding",
+            // Subscriptions self-service: org_admin can browse plans and
+            // view + cancel their own subscription. Plan CRUD, subscribe/
+            // change-plan and cross-org listing stay super_admin-only.
+            // `cancel_subscription` here grants only `cancel_at_period_end`;
+            // the handler downgrades `immediately=true` for non-admins.
+            "subscriptions:read_plan",
+            "subscriptions:read_subscription",
+            "subscriptions:cancel_subscription",
         ],
+    ),
+];
+
+/// One row of `SUBSCRIPTION_PLANS`:
+/// `(code, name, description, tier, interval, price_cents, currency, trial_days, sort_order)`.
+pub type SubscriptionPlanSeed = (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    i64,
+    &'static str,
+    Option<i32>,
+    i32,
+);
+
+/// Subscription plans seeded out of the box.
+pub const SUBSCRIPTION_PLANS: &[SubscriptionPlanSeed] = &[
+    (
+        "free_monthly",
+        "Free",
+        "Plan gratuito: punto de venta básico, hasta 1 tienda y 2 terminales.",
+        "free",
+        "monthly",
+        0,
+        "USD",
+        None,
+        10,
+    ),
+    (
+        "starter_monthly",
+        "Starter",
+        "Para comercios en crecimiento: hasta 3 tiendas, e-commerce básico.",
+        "free",
+        "monthly",
+        1900,
+        "USD",
+        Some(14),
+        20,
+    ),
+    (
+        "pro_monthly",
+        "Pro",
+        "Negocio establecido: módulos de loyalty, booking y restaurant.",
+        "pro",
+        "monthly",
+        4900,
+        "USD",
+        Some(14),
+        30,
+    ),
+    (
+        "enterprise_monthly",
+        "Enterprise",
+        "Multi-tenant completo con SLA, white-label y soporte dedicado.",
+        "enterprise",
+        "monthly",
+        19900,
+        "USD",
+        Some(30),
+        40,
     ),
 ];
 

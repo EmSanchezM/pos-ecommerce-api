@@ -15156,6 +15156,549 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Subscriptions",
+      "description": "SaaS billing del propio platform: catálogo de planes (`SubscriptionPlan`), suscripciones de cada `Organization`, ciclos de facturación y reintentos de cobro (dunning).\n\n**Reparto de permisos (v1.0, modelo self-service):**\n\n- `super_admin`: todo (CRUD del catálogo, subscribe, change-plan, cancel inmediato, listado cross-org).\n- `org_admin`: portal de billing de su propia org — `read_plan`, `read_subscription`, `cancel_subscription` (solo cancel-at-period-end). El handler downgrade silenciosamente `immediately=true` para no super_admins. Cross-org enforcement vía `require_org_match`.\n- Anónimo: solo los lookups `/public/subscription-plans` (catálogo + lookup por id).\n\nJob horario `subscription_billing` rota períodos, factura ciclos `Pending`, dispara reintentos y cancela suscripciones que agoten el período de gracia (14 días).",
+      "item": [
+        {
+          "name": "Public — List Subscription Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/public/subscription-plans",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "public",
+                "subscription-plans"
+              ]
+            },
+            "description": "Endpoint **público** (sin autenticación). Devuelve todos los planes activos ordenados por `sort_order` y `created_at`."
+          },
+          "response": []
+        },
+        {
+          "name": "Public — Get Subscription Plan",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/public/subscription-plans/{{subscription_plan_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "public",
+                "subscription-plans",
+                "{{subscription_plan_id}}"
+              ]
+            },
+            "description": "Endpoint **público**. Devuelve un plan por id (incluso `is_active=false`, útil para usuarios cuya suscripción quedó en un plan retirado)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Subscription Plan",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('subscription_plan_id', jsonData.id);",
+                  "    pm.test('Subscription plan created', function() {",
+                  "        pm.expect(jsonData.id).to.not.be.empty;",
+                  "        pm.expect(jsonData.code).to.not.be.empty;",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"code\": \"pro_monthly_demo\",\n    \"name\": \"Pro Monthly Demo\",\n    \"description\": \"Plan de demostración para Postman\",\n    \"tier\": \"pro\",\n    \"interval\": \"monthly\",\n    \"price_cents\": 4900,\n    \"currency\": \"USD\",\n    \"trial_days\": 14,\n    \"sort_order\": 50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscription-plans",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "subscription-plans"
+              ]
+            },
+            "description": "Crea un nuevo `SubscriptionPlan`. Permiso requerido: `subscriptions:write_plan` (solo `super_admin` en v1.0).\n\n## Request Body\n\n| Campo | Tipo | Requerido | Descripción |\n|-------|------|-----------|-------------|\n| code | string | Sí | Identificador único, regex `[a-z0-9_]{3,32}` |\n| name | string | Sí | Nombre comercial del plan |\n| description | string | No | Descripción larga |\n| tier | string | Sí | `free`, `pro` o `enterprise` |\n| interval | string | Sí | `monthly` (única cadencia en v1.0) |\n| price_cents | integer | Sí | Precio en la unidad mínima de la divisa |\n| currency | string | Sí | ISO-4217 (e.g. `USD`, `HNL`) |\n| trial_days | integer | No | Días de prueba (>0). `null` = sin trial |\n| sort_order | integer | No | Orden en el listado público |\n\n**Inmutables tras crear:** `code`, `tier`, `interval`, `price_cents`, `currency`. Para cambiar precio crea un plan nuevo y migra suscripciones manualmente."
+          },
+          "response": []
+        },
+        {
+          "name": "List Subscription Plans (Auth)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscription-plans",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "subscription-plans"
+              ]
+            },
+            "description": "Lista los planes activos. Requiere `subscriptions:read_plan` (super_admin + org_admin). Para clientes anónimos usar `/public/subscription-plans`."
+          },
+          "response": []
+        },
+        {
+          "name": "List Subscription Plans (Admin / Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscription-plans/admin?page=1&page_size=50",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "subscription-plans",
+                "admin"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Listado paginado completo (incluye planes inactivos). Permiso `subscriptions:read_plan`."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Subscription Plan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscription-plans/{{subscription_plan_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "subscription-plans",
+                "{{subscription_plan_id}}"
+              ]
+            },
+            "description": "Detalle de un plan por id. Permiso `subscriptions:read_plan`."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Subscription Plan",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Pro Monthly Demo (Renombrado)\",\n    \"description\": \"Descripción actualizada\",\n    \"trial_days\": 30,\n    \"sort_order\": 60,\n    \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscription-plans/{{subscription_plan_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "subscription-plans",
+                "{{subscription_plan_id}}"
+              ]
+            },
+            "description": "Actualiza campos mutables del plan. Permiso `subscriptions:write_plan`. Solo se permite cambiar: `name`, `description`, `trial_days`, `sort_order`, `is_active`. Para cambiar precio o tier hay que crear un plan nuevo."
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Subscription Plan",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscription-plans/{{subscription_plan_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "subscription-plans",
+                "{{subscription_plan_id}}"
+              ]
+            },
+            "description": "Soft-delete: marca `is_active=false`. Las suscripciones existentes en este plan siguen vigentes. Permiso `subscriptions:write_plan`."
+          },
+          "response": []
+        },
+        {
+          "name": "Subscribe Organization",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('subscription_id', jsonData.id);",
+                  "    pm.test('Organization subscribed', function() {",
+                  "        pm.expect(jsonData.id).to.not.be.empty;",
+                  "        pm.expect(['trialing','active']).to.include(jsonData.status);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"plan_id\": \"{{subscription_plan_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/organizations/{{organization_id}}/subscription",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "organizations",
+                "{{organization_id}}",
+                "subscription"
+              ]
+            },
+            "description": "Crea una nueva `Subscription` para la organización. Falla con 409 si la org ya tiene una suscripción no cancelada. Permiso `subscriptions:write_subscription` (solo `super_admin` — provisioning queda con el operador del platform).\n\n- Si el plan tiene `trial_days > 0`: status inicial `trialing`, primer ciclo `Trialing` (sin invoice).\n- Sin trial: status `active`, primer ciclo `Pending` que el job factura en el próximo tick."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Organization Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/organizations/{{organization_id}}/subscription",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "organizations",
+                "{{organization_id}}",
+                "subscription"
+              ]
+            },
+            "description": "Devuelve la única suscripción no cancelada de la organización. 404 si no hay ninguna. Permiso `subscriptions:read_subscription`."
+          },
+          "response": []
+        },
+        {
+          "name": "List Billing Cycles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/organizations/{{organization_id}}/subscription/cycles?page=1&page_size=50",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "organizations",
+                "{{organization_id}}",
+                "subscription",
+                "cycles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Historial paginado de `BillingCycle`s, ordenados por `period_end DESC`. Cada ciclo tiene `status` (`pending|trialing|invoiced|paid|failed|skipped`) y, una vez facturado, `invoice_id` + `transaction_id`. Permiso `subscriptions:read_subscription`."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"immediately\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/organizations/{{organization_id}}/subscription/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "organizations",
+                "{{organization_id}}",
+                "subscription",
+                "cancel"
+              ]
+            },
+            "description": "Cancela la suscripción. Permiso `subscriptions:cancel_subscription` (super_admin + org_admin).\n\n- `immediately=false` (default): marca `cancel_at_period_end=true`. El job pasa a `canceled` cuando `current_period_end <= now`. Recuperable con `resume`. Disponible para org_admin.\n- `immediately=true`: transición directa a `canceled` y `canceled_at=now`. No recuperable. **Solo super_admin** — el handler hace downgrade silencioso a period-end para org_admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Resume Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/organizations/{{organization_id}}/subscription/resume",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "organizations",
+                "{{organization_id}}",
+                "subscription",
+                "resume"
+              ]
+            },
+            "description": "Revierte un `cancel_at_period_end=true` mientras la suscripción aún esté dentro de su período pagado y no haya transicionado a `canceled`. Falla con 400 si no hay cancelación pendiente. Permiso `subscriptions:cancel_subscription`."
+          },
+          "response": []
+        },
+        {
+          "name": "Change Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"new_plan_id\": \"{{subscription_plan_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/organizations/{{organization_id}}/subscription/change-plan",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "organizations",
+                "{{organization_id}}",
+                "subscription",
+                "change-plan"
+              ]
+            },
+            "description": "Cambia el `plan_id` de la suscripción. v1.0: el cambio se aplica inmediatamente al campo, pero el precio del nuevo plan recién se factura en el próximo ciclo (no hay proration). Permiso `subscriptions:write_subscription`."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin — List All Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "X-Store-Id",
+                "value": "{{store_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/subscriptions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "subscriptions"
+              ]
+            },
+            "description": "Listado cross-organización (solo `super_admin`). v1.0 devuelve **501 Not Implemented** — el repo aún no expone `list_all`. Aterriza en v1.1; mientras tanto consulta por organización vía `/organizations/{org_id}/subscription`."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
