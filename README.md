@@ -5,27 +5,49 @@ API REST en Rust con Axum para sistema de punto de venta y ecommerce
 
 ```
 pos-ecommerce-api/
-├── api-gateway/              # HTTP API entry point (Axum server)
+├── api-gateway/                  # Punto de entrada HTTP (Axum server)
 │   └── src/
-│       ├── main.rs          # Application bootstrap
-│       ├── state.rs         # Shared application state & DI container
-│       ├── error.rs         # Unified error handling (HTTP mapping)
-│       ├── handlers/        # HTTP request handlers
-│       ├── middleware/      # Auth & permission middleware
-│       ├── extractors/      # Axum extractors (CurrentUser)
-│       └── routes/          # Route registration
-├── modules/              # Módulos del sistema
-│   ├── common/          # Utilidades y código compartido
-│   ├── core/            # Funcionalidad core del sistema
-│   ├── identity/        # Gestión de usuarios y autenticación
-│   ├── inventory/       # Gestión de inventario
-│   ├── purchasing/      # Módulo de compras
-│   └── sales/           # Módulo de ventas
-├── migrations/          # Migraciones de base de datos
-├── docs/                # Documentación
-├── Dockerfile           # Configuración Docker
-├── compose.dev.yml      # Docker Compose para desarrollo
-└── Cargo.toml           # Workspace de Rust
+│       ├── main.rs              # Bootstrap de la aplicación
+│       ├── state.rs             # Estado compartido y contenedor DI
+│       ├── error.rs             # Manejo unificado de errores (mapeo HTTP)
+│       ├── handlers/            # Handlers HTTP
+│       ├── middleware/          # Auth, permisos y resolución de tenant
+│       ├── extractors/          # Extractors de Axum (CurrentUser, etc.)
+│       ├── routes/              # Registro de rutas
+│       ├── adapters/            # Adaptadores hacia servicios externos (broadcast SSE, etc.)
+│       └── jobs/                # Workers en background (outbox dispatcher, expiraciones)
+│
+├── modules/                      # Módulos de negocio (Clean Architecture por módulo)
+│   ├── common/                  # Utilidades compartidas y health checks
+│   ├── core/                    # Stores, terminales, CAI (cumplimiento fiscal HN)
+│   ├── identity/                # Usuarios, autenticación JWT y RBAC
+│   ├── tenancy/                 # Organizaciones (multi-tenant), dominios, branding y planes
+│   ├── catalog/                 # Catálogo público/ecommerce: slugs, SEO, imágenes, reviews, wishlists
+│   ├── inventory/               # Productos, stock, recetas, transferencias y ajustes
+│   ├── purchasing/              # Proveedores, órdenes de compra y recepciones de mercadería
+│   ├── sales/                   # Ventas POS, carritos, turnos de caja y notas de crédito
+│   ├── payments/                # Procesamiento de pagos online (gateways)
+│   ├── shipping/                # Configuración de envíos y fulfillment
+│   ├── cash_management/         # Cuentas bancarias, depósitos y conciliación
+│   ├── accounting/              # Contabilidad general (libro mayor, doble partida)
+│   ├── fiscal/                  # Gestión fiscal (CAI, secuencias, comprobantes)
+│   ├── loyalty/                 # Programas de fidelización transversales
+│   ├── demand_planning/         # Forecasting y reposición automática
+│   ├── analytics/               # KPIs, dashboards y reportes BI
+│   ├── notifications/           # Mensajería multi-canal (email, SMS, WhatsApp, push, webhook)
+│   ├── events/                  # Outbox transaccional + dispatch in-process
+│   ├── booking/                 # Vertical de citas (salones, spas, talleres)
+│   ├── restaurant_operations/   # Vertical F&B: estaciones, mesas, modificadores y KDS
+│   ├── service_orders/          # Vertical de talleres/reparación: assets, diagnósticos, cotizaciones
+│   └── subscriptions/           # Facturación SaaS de la plataforma misma
+│
+├── migrations/                   # Migraciones SQLx
+├── seed/                         # Carga inicial (permisos, roles, tienda principal)
+├── docker/                       # Recursos para imágenes Docker
+├── docs/                         # Postman collection y documentación
+├── Dockerfile                    # Imagen del runtime
+├── compose.dev.yml               # Docker Compose para desarrollo
+└── Cargo.toml                    # Workspace de Rust
 ```
 
 ## 🚀 Iniciar el Proyecto con Docker
