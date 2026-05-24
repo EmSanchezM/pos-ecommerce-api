@@ -4,6 +4,7 @@
 
 use std::collections::HashMap;
 
+use common::{ActorClaim, TokenAudience};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -19,6 +20,9 @@ use uuid::Uuid;
 /// * `email` - User's email address
 /// * `exp` - Expiration timestamp (Unix epoch seconds)
 /// * `iat` - Issued at timestamp (Unix epoch seconds)
+/// * `aud` - Audience: which service the token targets (Tenant | Backoffice)
+/// * `iss` - Issuer: which service + environment signed the token
+/// * `act` - Optional RFC 8693 actor claim (present only on impersonation tokens)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TokenClaims {
     /// Subject - the user ID
@@ -47,6 +51,15 @@ pub struct TokenClaims {
     /// store.
     #[serde(default)]
     pub global_permissions: Vec<String>,
+    /// Which service this token is intended for. Required since Phase 2.
+    /// Tokens without this field are rejected (force re-login per FR-JWT-7).
+    pub aud: TokenAudience,
+    /// Issuer string identifying the service + environment that signed the token.
+    pub iss: String,
+    /// RFC 8693 actor claim. Present only on impersonation tokens (Phase 5).
+    /// Phase 2 issuance always sets this to None.
+    #[serde(default)]
+    pub act: Option<ActorClaim>,
 }
 
 impl TokenClaims {
@@ -64,6 +77,8 @@ impl TokenClaims {
     ///   migrated to a tenant — should not happen post-v1.0 backfill).
     /// * `global_permissions` - Permissions not bound to any specific store
     ///   (e.g. `tenancy:*` for `org_admin`). Apply regardless of `X-Store-Id`.
+    /// * `aud` - Token audience (Tenant for api-gateway tokens).
+    /// * `iss` - Issuer string.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_id: Uuid,
@@ -74,6 +89,8 @@ impl TokenClaims {
         store_permissions: HashMap<String, Vec<String>>,
         organization_id: Option<Uuid>,
         global_permissions: Vec<String>,
+        aud: TokenAudience,
+        iss: String,
     ) -> Self {
         Self {
             sub: user_id,
@@ -84,6 +101,9 @@ impl TokenClaims {
             store_permissions,
             organization_id,
             global_permissions,
+            aud,
+            iss,
+            act: None,
         }
     }
 
@@ -122,6 +142,8 @@ mod tests {
             HashMap::new(),
             None,
             Vec::new(),
+            common::TokenAudience::Tenant,
+            "api-gateway:test".to_string(),
         )
     }
 
@@ -225,6 +247,8 @@ mod tests {
             HashMap::new(),
             None,
             Vec::new(),
+            common::TokenAudience::Tenant,
+            "api-gateway:test".to_string(),
         );
 
         assert_eq!(claims1, claims2);

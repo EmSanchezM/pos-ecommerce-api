@@ -4,6 +4,7 @@
 // using the jsonwebtoken crate with HS256 algorithm.
 
 use chrono::{Duration, Utc};
+use common::TokenAudience;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 
@@ -27,6 +28,7 @@ use crate::domain::value_objects::UserId;
 ///
 pub struct JwtTokenService {
     secret: String,
+    issuer: String,
     access_token_duration: Duration,
     refresh_token_duration: Duration,
 }
@@ -88,10 +90,27 @@ impl JwtTokenService {
     /// let service = JwtTokenService::new("your-secret-key-at-least-32-bytes-long".to_string());
     /// ```
     pub fn new(secret: String) -> Self {
+        let issuer = std::env::var("JWT_ISSUER").unwrap_or_else(|_| "api-gateway".to_string());
         Self {
             secret,
+            issuer,
             access_token_duration: Duration::minutes(15),
             refresh_token_duration: Duration::days(7),
+        }
+    }
+
+    /// Creates a new JwtTokenService with explicit issuer and custom durations.
+    pub fn with_issuer_and_durations(
+        secret: String,
+        issuer: String,
+        access_token_duration: Duration,
+        refresh_token_duration: Duration,
+    ) -> Self {
+        Self {
+            secret,
+            issuer,
+            access_token_duration,
+            refresh_token_duration,
         }
     }
 
@@ -107,8 +126,10 @@ impl JwtTokenService {
         access_token_duration: Duration,
         refresh_token_duration: Duration,
     ) -> Self {
+        let issuer = std::env::var("JWT_ISSUER").unwrap_or_else(|_| "api-gateway".to_string());
         Self {
             secret,
+            issuer,
             access_token_duration,
             refresh_token_duration,
         }
@@ -149,6 +170,8 @@ impl TokenService for JwtTokenService {
             store_permissions.clone(),
             user.organization_id(),
             global_permissions,
+            TokenAudience::Tenant,
+            self.issuer.clone(),
         );
 
         encode(
@@ -185,12 +208,15 @@ impl TokenService for JwtTokenService {
 
     /// Validates and decodes an access token.
     ///
-    /// Verifies the token signature using HS256 and checks expiration.
-    ///
+    /// Verifies the token signature using HS256, checks expiration, and
+    /// rejects any token whose `aud` is not `Tenant` (FR-JWT-4).
     fn validate_access_token(&self, token: &str) -> Result<TokenClaims, AuthError> {
-        let validation = Validation::default();
+        let mut validation = Validation::default();
+        // Disable built-in aud validation — we check it manually below so we
+        // can return a specific error variant instead of a generic decode error.
+        validation.validate_aud = false;
 
-        decode::<TokenClaims>(
+        let claims = decode::<TokenClaims>(
             token,
             &DecodingKey::from_secret(self.secret.as_bytes()),
             &validation,
@@ -199,7 +225,13 @@ impl TokenService for JwtTokenService {
         .map_err(|e| match e.kind() {
             jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::TokenExpired,
             _ => AuthError::InvalidToken,
-        })
+        })?;
+
+        if claims.aud != TokenAudience::Tenant {
+            return Err(AuthError::InvalidToken);
+        }
+
+        Ok(claims)
     }
 
     /// Validates a refresh token and extracts the user ID.
@@ -431,6 +463,8 @@ mod tests {
             HashMap::new(),
             None,
             Vec::new(),
+            common::TokenAudience::Tenant,
+            "api-gateway:test".to_string(),
         );
 
         // Manually encode the expired token

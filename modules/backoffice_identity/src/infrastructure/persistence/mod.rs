@@ -1,0 +1,7 @@
+mod pg_backoffice_permission_repository;
+mod pg_backoffice_role_repository;
+mod pg_backoffice_user_repository;
+
+pub use pg_backoffice_permission_repository::PgBackofficePermissionRepository;
+pub use pg_backoffice_role_repository::PgBackofficeRoleRepository;
+pub use pg_backoffice_user_repository::PgBackofficeUserRepository;

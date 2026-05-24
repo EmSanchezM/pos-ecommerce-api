@@ -481,8 +481,8 @@ pub const PERMISSIONS: &[(&str, &str)] = &[
     ),
     // System permissions
     (
-        "system:admin",
-        "Full system administration access (super_admin only)",
+        "organization:admin",
+        "Full organization administration access (super_admin only)",
     ),
     ("system:settings", "Manage system settings"),
     ("system:audit_log", "View audit logs"),
@@ -802,7 +802,7 @@ pub const ROLE_PERMISSIONS: &[(&str, &[&str])] = &[
             "subscriptions:write_subscription",
             "subscriptions:cancel_subscription",
             // System
-            "system:admin",
+            "organization:admin",
             "system:settings",
             "system:audit_log",
             "system:backup",
