@@ -147,7 +147,7 @@ pub fn require_any_permission(ctx: &UserContext, permissions: &[&str]) -> Result
 
 /// Checks if the user has the super_admin role.
 ///
-/// Super admin is identified by having the "system:admin" permission,
+/// Super admin is identified by having the "organization:admin" permission,
 /// which is only granted to users with the super_admin role.
 ///
 /// # Arguments
@@ -177,7 +177,7 @@ pub fn require_any_permission(ctx: &UserContext, permissions: &[&str]) -> Result
 #[allow(clippy::result_large_err)]
 pub fn require_super_admin(ctx: &UserContext) -> Result<(), Response> {
     // The auth middleware computes `is_super_admin` by scanning ALL stores in the
-    // JWT claims for `system:admin` — so it stays true regardless of which store
+    // JWT claims for `organization:admin` — so it stays true regardless of which store
     // is selected via `X-Store-Id`. `has_permission` only looks at the current store.
     if ctx.is_super_admin() {
         Ok(())

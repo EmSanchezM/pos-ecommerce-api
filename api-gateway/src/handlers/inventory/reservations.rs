@@ -267,12 +267,12 @@ pub async fn cancel_reservation_handler(
 ///
 /// - 200 OK: Batch expiration completed with result summary
 /// - 401 Unauthorized: Missing or invalid token
-/// - 403 Forbidden: User lacks system:admin permission
+/// - 403 Forbidden: User lacks organization:admin permission
 pub async fn expire_reservations_handler(
     State(state): State<AppState>,
     CurrentUser(ctx): CurrentUser,
 ) -> Result<Json<ExpireReservationsResponse>, Response> {
-    require_permission(&ctx, "system:admin")?;
+    require_permission(&ctx, "organization:admin")?;
 
     let use_case = ExpireReservationsUseCase::new(state.reservation_repo(), state.stock_repo());
 

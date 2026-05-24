@@ -149,7 +149,7 @@ pub fn recipes_router(state: AppState) -> Router<AppState> {
 /// - `GET /reservations` - List reservations (requires inventory:read)
 /// - `PUT /reservations/{id}/confirm` - Confirm a reservation (requires sales:create)
 /// - `PUT /reservations/{id}/cancel` - Cancel a reservation (requires cart:remove or sales:void)
-/// - `POST /reservations/expire` - Expire all expired reservations (requires system:admin)
+/// - `POST /reservations/expire` - Expire all expired reservations (requires organization:admin)
 ///
 /// ## Adjustment Routes
 /// - `POST /adjustments` - Create an adjustment (requires inventory:adjustments:create)
