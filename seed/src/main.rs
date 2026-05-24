@@ -180,7 +180,7 @@ async fn seed_permissions(
     let mut permission_ids = std::collections::HashMap::new();
 
     for (code, description) in data::PERMISSIONS {
-        let id = Uuid::now_v7();
+        let id = Uuid::new_v7(Timestamp::now(NoContext));
 
         sqlx::query(
             r#"
@@ -214,7 +214,7 @@ async fn seed_roles(
     let mut role_ids = std::collections::HashMap::new();
 
     for (name, description, is_system_protected) in data::ROLES {
-        let id = Uuid::now_v7();
+        let id = Uuid::new_v7(Timestamp::now(NoContext));
 
         sqlx::query(
             r#"
@@ -280,7 +280,7 @@ async fn seed_role_permissions(
 }
 
 async fn seed_main_store(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<Uuid> {
-    let id = Uuid::now_v7();
+    let id = Uuid::new_v7(Timestamp::now(NoContext));
     // Hard-coded id of the default org created by migration
     // 20260501000050_create_default_organization.sql. Pinning the seed's new
     // store to it keeps tenancy v1.0 backward-compatible: every existing
@@ -316,7 +316,7 @@ async fn seed_main_store(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Resu
 }
 
 async fn seed_super_admin_user(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<Uuid> {
-    let id = Uuid::now_v7();
+    let id = Uuid::new_v7(Timestamp::now(NoContext));
 
     // Hash the password using Argon2
     let salt = SaltString::generate(&mut OsRng);
@@ -408,7 +408,7 @@ async fn seed_terminal(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     store_id: Uuid,
 ) -> Result<Uuid> {
-    let id = Uuid::now_v7();
+    let id = Uuid::new_v7(Timestamp::now(NoContext));
 
     sqlx::query(
         r#"
@@ -440,7 +440,7 @@ async fn seed_cai_range(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     terminal_id: Uuid,
 ) -> Result<Uuid> {
-    let id = Uuid::now_v7();
+    let id = Uuid::new_v7(Timestamp::now(NoContext));
     let expiry = NaiveDate::from_ymd_opt(2027, 12, 31).unwrap();
 
     sqlx::query(
@@ -484,7 +484,7 @@ async fn seed_tax_rates(
     ];
 
     for (name, tax_type, rate, is_default, applies_to) in &tax_rates {
-        let id = Uuid::now_v7();
+        let id = Uuid::new_v7(Timestamp::now(NoContext));
         let rate_decimal: rust_decimal::Decimal = rate.parse().unwrap();
 
         sqlx::query(
@@ -516,7 +516,7 @@ async fn seed_fiscal_sequence(
     terminal_id: Uuid,
     cai_range_id: Uuid,
 ) -> Result<()> {
-    let id = Uuid::now_v7();
+    let id = Uuid::new_v7(Timestamp::now(NoContext));
 
     sqlx::query(
         r#"
@@ -545,7 +545,7 @@ async fn seed_payment_gateway(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     store_id: Uuid,
 ) -> Result<()> {
-    let id = Uuid::now_v7();
+    let id = Uuid::new_v7(Timestamp::now(NoContext));
 
     // The Manual adapter ignores credentials — these placeholder values just
     // satisfy the NOT NULL constraints. Real adapters (Stripe, BAC, …) will
@@ -594,7 +594,7 @@ async fn seed_shipping_defaults(
            VALUES ($1, $2, $3, $4, 'store_pickup', $5, 0)
            ON CONFLICT (store_id, code) DO NOTHING"#,
     )
-    .bind(Uuid::now_v7())
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
     .bind(store_id)
     .bind("Retiro en tienda")
     .bind("pickup")
@@ -609,7 +609,7 @@ async fn seed_shipping_defaults(
            VALUES ($1, $2, $3, $4, 'own_delivery', $5, 0, 1, 1)
            ON CONFLICT (store_id, code) DO NOTHING"#,
     )
-    .bind(Uuid::now_v7())
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
     .bind(store_id)
     .bind("Envío con motorista propio")
     .bind("own_delivery")
@@ -624,7 +624,7 @@ async fn seed_shipping_defaults(
            VALUES ($1, $2, 'Tegucigalpa', $3, $4, '{}')
            ON CONFLICT DO NOTHING"#,
     )
-    .bind(Uuid::now_v7())
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
     .bind(store_id)
     .bind(vec!["HN".to_string()])
     .bind(vec!["FM".to_string()])
@@ -659,7 +659,7 @@ async fn seed_shipping_defaults(
            VALUES ($1, $2, $3, 'flat', 0, 0, NULL, 'HNL')
            ON CONFLICT DO NOTHING"#,
     )
-    .bind(Uuid::now_v7())
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
     .bind(pickup_id.0)
     .bind(zone_id.0)
     .execute(&mut **tx)
@@ -671,7 +671,7 @@ async fn seed_shipping_defaults(
            VALUES ($1, $2, $3, 'order_based', 50.00, 0, 1000.00, 'HNL')
            ON CONFLICT DO NOTHING"#,
     )
-    .bind(Uuid::now_v7())
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
     .bind(own_id.0)
     .bind(zone_id.0)
     .execute(&mut **tx)
@@ -695,7 +695,7 @@ async fn seed_catalog_defaults(
                   'local-not-applicable', 'local-not-applicable', NULL)
           ON CONFLICT (store_id, name) DO NOTHING"#,
     )
-    .bind(Uuid::now_v7())
+    .bind(Uuid::new_v7(Timestamp::now(NoContext)))
     .bind(store_id)
     .execute(&mut **tx)
     .await?;

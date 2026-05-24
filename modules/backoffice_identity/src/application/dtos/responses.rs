@@ -1,7 +1,8 @@
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Response DTO returned after a successful backoffice login.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BackofficeAuthResponse {
     pub access_token: String,
     /// Token lifetime in seconds.
