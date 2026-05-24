@@ -104,6 +104,7 @@ where
             vec![],
             false,
             user.organization_id(),
+            None, // build_user_context is used for normal login tokens (no impersonation)
         ))
     }
 }

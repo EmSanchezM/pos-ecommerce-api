@@ -11,9 +11,11 @@ use std::sync::Arc;
 use audit_infra::{BackofficeAuditSubscriber, PgBackofficeAuditLogRepository};
 use backoffice_identity::{
     AuthenticateBackofficeUserUseCase, BackofficeTokenService, BackofficeUserRepository,
-    JwtBackofficeTokenService, PgBackofficeUserRepository, SuspendOrganizationWithAuditUseCase,
+    IssueImpersonationTokenWithAuditUseCase, JwtBackofficeTokenService, PgBackofficeUserRepository,
+    SuspendOrganizationWithAuditUseCase,
 };
 use events::{PublishEventUseCase, PgOutboxRepository};
+use identity::{PgUserRepository, UserRepository};
 use tenancy::{OrganizationRepository, PgOrganizationRepository};
 use sqlx::PgPool;
 
@@ -26,6 +28,9 @@ pub struct BackofficeAppState {
     pool: PgPool,
     /// Backoffice user repository.
     user_repo: Arc<dyn BackofficeUserRepository>,
+    /// Tenant user repository — for verifying that a target tenant_user_id exists
+    /// before issuing an impersonation token (P5-T03).
+    tenant_user_repo: Arc<dyn UserRepository>,
     /// Token service for validating incoming backoffice JWTs in the auth middleware.
     token_service: Arc<dyn BackofficeTokenService>,
     /// Use case: authenticate a backoffice user and issue a JWT.
@@ -34,6 +39,8 @@ pub struct BackofficeAppState {
     org_repo: Arc<dyn OrganizationRepository>,
     /// Suspend org use case with transactional audit (backoffice_identity module).
     suspend_with_audit_use_case: Arc<SuspendOrganizationWithAuditUseCase>,
+    /// Impersonation use case — issues tenant-scoped token + writes audit event.
+    impersonation_use_case: Arc<IssueImpersonationTokenWithAuditUseCase>,
     /// Publish event use case — writes to outbox in a transaction.
     publish_event: Arc<PublishEventUseCase>,
 }
@@ -46,11 +53,20 @@ impl BackofficeAppState {
     /// * `pool` - PostgreSQL connection pool
     /// * `backoffice_secret` - Secret for signing/validating backoffice JWTs
     /// * `backoffice_issuer` - Issuer string embedded in backoffice tokens
-    pub fn from_pool(pool: PgPool, backoffice_secret: String, backoffice_issuer: String) -> Self {
+    /// * `tenant_secret` - JWT_SECRET for signing impersonation tokens (Decision 2)
+    pub fn from_pool(
+        pool: PgPool,
+        backoffice_secret: String,
+        backoffice_issuer: String,
+        tenant_secret: String,
+    ) -> Self {
         let pool_arc = Arc::new(pool.clone());
 
         let user_repo: Arc<dyn BackofficeUserRepository> =
             Arc::new(PgBackofficeUserRepository::new((*pool_arc).clone()));
+
+        let tenant_user_repo: Arc<dyn UserRepository> =
+            Arc::new(PgUserRepository::new((*pool_arc).clone()));
 
         let token_service = Arc::new(JwtBackofficeTokenService::with_issuer(
             backoffice_secret,
@@ -74,13 +90,23 @@ impl BackofficeAppState {
             publish_event.clone(),
         ));
 
+        let impersonation_use_case = Arc::new(IssueImpersonationTokenWithAuditUseCase::new(
+            (*pool_arc).clone(),
+            user_repo.clone(),
+            token_service.clone(),
+            publish_event.clone(),
+            tenant_secret,
+        ));
+
         Self {
             pool,
             user_repo,
+            tenant_user_repo,
             token_service,
             authenticate_use_case,
             org_repo,
             suspend_with_audit_use_case,
+            impersonation_use_case,
             publish_event,
         }
     }
@@ -93,6 +119,11 @@ impl BackofficeAppState {
     /// Returns the backoffice user repository.
     pub fn user_repo(&self) -> Arc<dyn BackofficeUserRepository> {
         self.user_repo.clone()
+    }
+
+    /// Returns the tenant user repository (for tenant_user_id existence checks).
+    pub fn tenant_user_repo(&self) -> Arc<dyn UserRepository> {
+        self.tenant_user_repo.clone()
     }
 
     /// Returns the backoffice token service (used by auth middleware for validation).
@@ -113,6 +144,11 @@ impl BackofficeAppState {
     /// Returns the suspend organization with audit use case.
     pub fn suspend_with_audit_use_case(&self) -> Arc<SuspendOrganizationWithAuditUseCase> {
         self.suspend_with_audit_use_case.clone()
+    }
+
+    /// Returns the impersonation use case.
+    pub fn impersonation_use_case(&self) -> Arc<IssueImpersonationTokenWithAuditUseCase> {
+        self.impersonation_use_case.clone()
     }
 
     /// Returns the publish event use case (writes outbox events in a transaction).
@@ -142,6 +178,7 @@ mod tests {
             pool,
             "backoffice-secret-at-least-32-bytes-long".to_string(),
             "backoffice-api:test".to_string(),
+            "tenant-secret-at-least-32-bytes-long-x".to_string(),
         );
 
         // authenticate_use_case is Arc-wrapped and clone-able
@@ -150,6 +187,8 @@ mod tests {
         let _pool = state.pool();
         // user_repo is accessible
         let _repo = state.user_repo();
+        // impersonation_use_case is accessible (P5)
+        let _imp = state.impersonation_use_case();
     }
 
     #[tokio::test]
@@ -161,6 +200,7 @@ mod tests {
             pool,
             "backoffice-secret-at-least-32-bytes-long".to_string(),
             "backoffice-api:test".to_string(),
+            "tenant-secret-at-least-32-bytes-long-x".to_string(),
         );
 
         // State must be Clone so Axum can share it across handlers.

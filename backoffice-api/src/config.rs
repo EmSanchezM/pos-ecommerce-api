@@ -9,6 +9,13 @@ pub struct BackofficeConfig {
     pub database: DatabaseConfig,
     pub backoffice_secret: String,
     pub backoffice_issuer: String,
+    /// JWT_SECRET — the tenant token signing key.
+    ///
+    /// Per Decision 2 (sdd/backoffice-api/decisions), backoffice-api reads
+    /// JWT_SECRET ONLY to sign impersonation tokens with `aud: Tenant` so
+    /// api-gateway can validate them. This is a dev-mode pragmatic choice;
+    /// the v2 migration target is an internal mTLS endpoint on api-gateway.
+    pub tenant_secret: String,
     pub port: u16,
 }
 
@@ -36,6 +43,10 @@ impl BackofficeConfig {
                 .expect("JWT_BACKOFFICE_SECRET environment variable must be set"),
             backoffice_issuer: env::var("JWT_BACKOFFICE_ISSUER")
                 .unwrap_or_else(|_| "backoffice-api".to_string()),
+            // JWT_SECRET is the TENANT signing key — read here ONLY to sign
+            // impersonation tokens. See Decision 2 in sdd/backoffice-api/decisions.
+            tenant_secret: env::var("JWT_SECRET")
+                .expect("JWT_SECRET environment variable must be set"),
             port: env_or("BACKOFFICE_PORT", 8001u16),
         }
     }
