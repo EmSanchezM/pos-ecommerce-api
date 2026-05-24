@@ -158,6 +158,30 @@ impl From<BackofficeIdentityError> for AppError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),
             ),
+
+            // --- Phase 4 variants ---
+            BackofficeIdentityError::InvalidInput(msg) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("INVALID_INPUT", msg.as_str()),
+            ),
+            BackofficeIdentityError::OrgNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("ORG_NOT_FOUND", &format!("Organization {} not found", id)),
+            ),
+            BackofficeIdentityError::Tenancy(msg) => {
+                tracing::error!("org state transition error: {}", msg);
+                (
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    ErrorResponse::new("STATE_TRANSITION_ERROR", msg.as_str()),
+                )
+            }
+            BackofficeIdentityError::Outbox(msg) => {
+                tracing::error!("outbox publish error: {}", msg);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    ErrorResponse::internal_error(),
+                )
+            }
         };
 
         AppError::new(status, body)

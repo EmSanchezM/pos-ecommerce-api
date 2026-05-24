@@ -5,10 +5,16 @@
 
 use std::sync::Arc;
 
+// BackofficeAuditSubscriber and PgBackofficeAuditLogRepository will be used
+// in P4-T08 when the event_dispatcher job is wired.
+#[allow(unused_imports)]
+use audit_infra::{BackofficeAuditSubscriber, PgBackofficeAuditLogRepository};
 use backoffice_identity::{
     AuthenticateBackofficeUserUseCase, BackofficeTokenService, BackofficeUserRepository,
-    JwtBackofficeTokenService, PgBackofficeUserRepository,
+    JwtBackofficeTokenService, PgBackofficeUserRepository, SuspendOrganizationWithAuditUseCase,
 };
+use events::{PublishEventUseCase, PgOutboxRepository};
+use tenancy::{OrganizationRepository, PgOrganizationRepository};
 use sqlx::PgPool;
 
 /// Application state shared across all backoffice HTTP handlers.
@@ -24,6 +30,12 @@ pub struct BackofficeAppState {
     token_service: Arc<dyn BackofficeTokenService>,
     /// Use case: authenticate a backoffice user and issue a JWT.
     authenticate_use_case: Arc<AuthenticateBackofficeUserUseCase>,
+    /// Organization repository (tenancy module) — for suspend/activate operations.
+    org_repo: Arc<dyn OrganizationRepository>,
+    /// Suspend org use case with transactional audit (backoffice_identity module).
+    suspend_with_audit_use_case: Arc<SuspendOrganizationWithAuditUseCase>,
+    /// Publish event use case — writes to outbox in a transaction.
+    publish_event: Arc<PublishEventUseCase>,
 }
 
 impl BackofficeAppState {
@@ -50,11 +62,26 @@ impl BackofficeAppState {
             token_service.clone(),
         ));
 
+        let org_repo: Arc<dyn OrganizationRepository> =
+            Arc::new(PgOrganizationRepository::new((*pool_arc).clone()));
+
+        let outbox_repo = Arc::new(PgOutboxRepository::new((*pool_arc).clone()));
+        let publish_event = Arc::new(PublishEventUseCase::new(outbox_repo));
+
+        let suspend_with_audit_use_case = Arc::new(SuspendOrganizationWithAuditUseCase::new(
+            (*pool_arc).clone(),
+            org_repo.clone(),
+            publish_event.clone(),
+        ));
+
         Self {
             pool,
             user_repo,
             token_service,
             authenticate_use_case,
+            org_repo,
+            suspend_with_audit_use_case,
+            publish_event,
         }
     }
 
@@ -76,6 +103,21 @@ impl BackofficeAppState {
     /// Returns the authenticate backoffice user use case.
     pub fn authenticate_use_case(&self) -> Arc<AuthenticateBackofficeUserUseCase> {
         self.authenticate_use_case.clone()
+    }
+
+    /// Returns the organization repository (for suspend/activate).
+    pub fn org_repo(&self) -> Arc<dyn OrganizationRepository> {
+        self.org_repo.clone()
+    }
+
+    /// Returns the suspend organization with audit use case.
+    pub fn suspend_with_audit_use_case(&self) -> Arc<SuspendOrganizationWithAuditUseCase> {
+        self.suspend_with_audit_use_case.clone()
+    }
+
+    /// Returns the publish event use case (writes outbox events in a transaction).
+    pub fn publish_event(&self) -> Arc<PublishEventUseCase> {
+        self.publish_event.clone()
     }
 }
 

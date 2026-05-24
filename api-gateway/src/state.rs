@@ -38,6 +38,7 @@ use demand_planning::{
     ReorderPolicyRepository, ReplenishmentSuggestionRepository, SalesHistoryRepository,
     StockSnapshotRepository,
 };
+use audit_infra::{BackofficeAuditSubscriber, PgBackofficeAuditLogRepository};
 use events::{OutboxRepository, PgOutboxRepository, SubscriberRegistry};
 use fiscal::{PgFiscalSequenceRepository, PgInvoiceRepository, PgTaxRateRepository};
 use identity::{JwtTokenService, PgAuditRepository, PgStoreRepository, PgUserRepository};
@@ -632,6 +633,12 @@ impl AppState {
         let outbox_repo: Arc<dyn OutboxRepository> =
             Arc::new(PgOutboxRepository::new((*pool_arc).clone()));
         let mut subscriber_registry = SubscriberRegistry::new();
+
+        // P4-T08: Register BackofficeAuditSubscriber so impersonation audit
+        // events emitted from api-gateway (Phase 5) are also persisted.
+        // Note: api-gateway does NOT dep on backoffice_identity — only audit_infra.
+        let audit_log_repo = Arc::new(PgBackofficeAuditLogRepository::new((*pool_arc).clone()));
+        subscriber_registry.register(Arc::new(BackofficeAuditSubscriber::new(audit_log_repo)));
 
         // Notifications repository + adapter registry
         let notification_repo = Arc::new(PgNotificationRepository::new((*pool_arc).clone()));

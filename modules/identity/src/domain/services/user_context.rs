@@ -5,7 +5,7 @@
 
 use std::collections::HashSet;
 
-use uuid::{NoContext, Timestamp, Uuid};
+use uuid::Uuid;
 
 use crate::domain::value_objects::{PermissionCode, StoreId, UserId};
 
@@ -202,6 +202,7 @@ impl UserContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use uuid::{NoContext, Timestamp};
 
     fn create_test_context(permissions: &[&str]) -> UserContext {
         let perms: HashSet<PermissionCode> = permissions

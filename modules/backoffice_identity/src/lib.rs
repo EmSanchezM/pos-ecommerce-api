@@ -36,6 +36,7 @@ pub use domain::auth::BackofficeTokenService;
 
 // Application — Use Cases
 pub use application::use_cases::AuthenticateBackofficeUserUseCase;
+pub use application::use_cases::SuspendOrganizationWithAuditUseCase;
 
 // Application — DTOs
 pub use application::dtos::{AuthenticateBackofficeCommand, BackofficeAuthResponse};

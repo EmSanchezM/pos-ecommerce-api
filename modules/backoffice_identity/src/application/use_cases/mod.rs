@@ -1,3 +1,5 @@
 mod authenticate_backoffice_user;
+mod suspend_organization_with_audit;
 
 pub use authenticate_backoffice_user::AuthenticateBackofficeUserUseCase;
+pub use suspend_organization_with_audit::SuspendOrganizationWithAuditUseCase;
