@@ -38,6 +38,7 @@ async fn main() {
         pool,
         config.backoffice_secret,
         config.backoffice_issuer,
+        config.tenant_secret,
     );
 
     let app = router::build_router(app_state.clone());

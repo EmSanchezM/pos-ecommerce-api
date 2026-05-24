@@ -1,10 +1,37 @@
 use chrono::{Duration, Utc};
-use common::{BackofficeClaims, TokenAudience};
+use common::{ActorClaim, BackofficeClaims, TokenAudience};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
+use crate::application::use_cases::IMPERSONATION_TOKEN_EXPIRY_SECONDS;
 use crate::domain::auth::BackofficeTokenService;
 use crate::domain::entities::BackofficeUser;
 use crate::error::BackofficeIdentityError;
+
+/// Minimal claims struct for impersonation tokens.
+///
+/// Impersonation tokens are issued with `aud: Tenant` and signed with
+/// `JWT_SECRET` (the tenant secret), so `api-gateway` can validate them.
+/// They carry an RFC 8693 `act` claim identifying the real backoffice actor.
+///
+/// We keep this struct local to avoid a dep on `modules/identity`'s
+/// `TokenClaims` (which has many tenant-specific fields we don't need here).
+#[derive(Debug, Serialize, Deserialize)]
+struct ImpersonationClaims {
+    /// Subject — the impersonated TENANT user ID.
+    sub: Uuid,
+    /// Audience — always Tenant so api-gateway accepts the token.
+    aud: TokenAudience,
+    /// Issuer.
+    iss: String,
+    /// Expiration (Unix timestamp seconds).
+    exp: i64,
+    /// Issued at (Unix timestamp seconds).
+    iat: i64,
+    /// RFC 8693 actor claim — identifies the real backoffice operator.
+    act: ActorClaim,
+}
 
 /// Access token duration for backoffice tokens: 7 days.
 ///
@@ -85,6 +112,36 @@ impl BackofficeTokenService for JwtBackofficeTokenService {
         }
 
         Ok(claims)
+    }
+
+    fn issue_impersonation_token(
+        &self,
+        backoffice_user: &BackofficeUser,
+        tenant_user_id: Uuid,
+        tenant_secret: &str,
+    ) -> Result<String, BackofficeIdentityError> {
+        let now = Utc::now();
+        let exp = now + Duration::seconds(IMPERSONATION_TOKEN_EXPIRY_SECONDS);
+
+        let claims = ImpersonationClaims {
+            sub: tenant_user_id,
+            aud: TokenAudience::Tenant,
+            iss: self.issuer.clone(),
+            exp: exp.timestamp(),
+            iat: now.timestamp(),
+            act: ActorClaim {
+                sub: *backoffice_user.id().as_uuid(),
+                sub_type: "backoffice_user".to_string(),
+                email: backoffice_user.email().as_str().to_string(),
+            },
+        };
+
+        encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(tenant_secret.as_bytes()),
+        )
+        .map_err(|e| BackofficeIdentityError::JwtError(e.to_string()))
     }
 }
 

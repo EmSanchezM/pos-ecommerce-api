@@ -213,7 +213,7 @@ mod tests {
             .iter()
             .filter_map(|p| PermissionCode::new(p).ok())
             .collect();
-        UserContext::new(UserId::new(), StoreId::new(), perms, vec![], false, None)
+        UserContext::new(UserId::new(), StoreId::new(), perms, vec![], false, None, None)
     }
 
     #[test]
@@ -284,6 +284,7 @@ mod tests {
             HashSet::new(),
             vec![],
             true,
+            None,
             None,
         );
         let result = require_super_admin(&ctx);

@@ -214,6 +214,15 @@ mod tests {
                 permissions: vec![],
             })
         }
+
+        fn issue_impersonation_token(
+            &self,
+            _backoffice_user: &BackofficeUser,
+            _tenant_user_id: uuid::Uuid,
+            _tenant_secret: &str,
+        ) -> Result<String, BackofficeIdentityError> {
+            Ok("mock.impersonation.token".to_string())
+        }
     }
 
     // -------------------------------------------------------------------------
