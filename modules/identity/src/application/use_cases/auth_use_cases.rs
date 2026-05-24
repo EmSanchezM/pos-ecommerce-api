@@ -410,7 +410,7 @@ fn generate_username_from_email(email: &Email) -> Username {
 fn generate_unique_username(email: &Email) -> Username {
     let base = generate_username_from_email(email);
     // Use UUID v7 to generate a unique suffix (last 4 chars of UUID)
-    let uuid = uuid::Uuid::now_v7();
+    let uuid = uuid::Uuid::new_v7(uuid::Timestamp::now(uuid::NoContext));
     let suffix = &uuid.to_string()[..4];
     let unique_str = format!("{}_{}", base.as_str(), suffix);
 

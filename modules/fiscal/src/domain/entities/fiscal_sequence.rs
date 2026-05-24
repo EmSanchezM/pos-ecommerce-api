@@ -173,7 +173,7 @@ mod tests {
         FiscalSequence::create(
             StoreId::new(),
             TerminalId::new(),
-            uuid::Uuid::now_v7(),
+            uuid::Uuid::new_v7(uuid::Timestamp::now(uuid::NoContext)),
             "001-001-01-".to_string(),
             1,
             100,
@@ -209,7 +209,7 @@ mod tests {
         let mut seq = FiscalSequence::create(
             StoreId::new(),
             TerminalId::new(),
-            uuid::Uuid::now_v7(),
+            uuid::Uuid::new_v7(uuid::Timestamp::now(uuid::NoContext)),
             "001-001-01-".to_string(),
             1,
             2,
