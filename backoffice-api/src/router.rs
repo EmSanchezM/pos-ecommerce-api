@@ -1,0 +1,34 @@
+// Backoffice router assembly
+//
+// Mounts all backoffice routes. The auth middleware is applied to
+// authenticated routes only; /health and /backoffice/auth/login are public.
+
+use axum::{Router, middleware, routing::get};
+
+use crate::handlers::health::health_handler;
+use crate::middleware::auth::backoffice_auth_middleware;
+use crate::routes::{auth_router, org_router};
+use crate::state::BackofficeAppState;
+
+/// Build the complete backoffice API router.
+///
+/// Route layout:
+/// - `GET /health`                    — public, no auth
+/// - `POST /backoffice/auth/login`    — public, no auth (FR-END-7)
+/// - `GET /backoffice/orgs`           — requires aud:Backoffice JWT (stub in Phase 3)
+pub fn build_router(state: BackofficeAppState) -> Router {
+    // Public routes — no auth middleware
+    let public_routes = Router::new()
+        .route("/health", get(health_handler))
+        .nest("/backoffice/auth", auth_router(state.clone()));
+
+    // Authenticated routes — backoffice JWT middleware applied
+    let authenticated_routes = Router::new()
+        .nest("/backoffice/orgs", org_router(state.clone()))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            backoffice_auth_middleware,
+        ));
+
+    public_routes.merge(authenticated_routes)
+}

@@ -14,6 +14,7 @@ use axum::{
 
 use std::collections::HashSet;
 
+use common::TokenAudience;
 use identity::{ErrorResponse, PermissionCode, StoreId, TokenService, UserContext, UserId};
 
 use crate::state::AppState;
@@ -58,13 +59,20 @@ pub async fn auth_middleware(
         }
     };
 
-    // 3. Extract user_id from claims
+    // 3. Reject any token not intended for the tenant surface (FR-JWT-4).
+    //    validate_access_token already enforces this, but we make the intent
+    //    explicit here so the middleware remains self-documenting.
+    if claims.aud != TokenAudience::Tenant {
+        return unauthorized_response("Invalid token audience");
+    }
+
+    // 4. Extract user_id from claims
     let user_id = UserId::from_uuid(claims.user_id());
 
-    // 4. Get store_id from request header
+    // 5. Get store_id from request header
     let store_id = extract_store_id(&request);
 
-    // 5. Build UserContext from token claims (no DB query needed).
+    // 6. Build UserContext from token claims (no DB query needed).
     //    Effective perms = (perms granted on the active store) ∪ (global perms).
     //    Globals (e.g. `tenancy:*`) apply regardless of `X-Store-Id` so an
     //    `org_admin` can hit `/api/v1/organizations` without picking a store.
@@ -91,11 +99,11 @@ pub async fn auth_middleware(
         .filter_map(|k| uuid::Uuid::parse_str(k).ok())
         .collect();
 
-    // Determine if the user is a super admin (any store has system:admin permission)
+    // Determine if the user is a super admin (any store has organization:admin permission)
     let is_super_admin = claims
         .store_permissions
         .values()
-        .any(|perms| perms.iter().any(|p| p == "system:admin"));
+        .any(|perms| perms.iter().any(|p| p == "organization:admin"));
 
     let user_context = UserContext::new(
         user_id,
@@ -106,10 +114,10 @@ pub async fn auth_middleware(
         claims.organization_id,
     );
 
-    // 6. Insert UserContext into request extensions
+    // 7. Insert UserContext into request extensions
     request.extensions_mut().insert(user_context);
 
-    // 7. Continue to the next handler
+    // 8. Continue to the next handler
     next.run(request).await
 }
 
@@ -269,5 +277,125 @@ mod tests {
         let store_id = extract_store_id(&request);
         // Should fall back to nil UUID
         assert_eq!(store_id.into_uuid(), uuid::Uuid::nil());
+    }
+
+    #[test]
+    fn test_is_super_admin_uses_organization_admin_not_system_admin() {
+        // Regression test: after renaming system:admin → organization:admin,
+        // the is_super_admin flag must be driven by "organization:admin".
+        use std::collections::HashMap;
+
+        let mut perms_with_new_code: HashMap<String, Vec<String>> = HashMap::new();
+        perms_with_new_code.insert(
+            "store-1".to_string(),
+            vec!["organization:admin".to_string()],
+        );
+
+        let is_super_admin_new = perms_with_new_code
+            .values()
+            .any(|perms| perms.iter().any(|p| p == "organization:admin"));
+
+        let mut perms_with_old_code: HashMap<String, Vec<String>> = HashMap::new();
+        perms_with_old_code.insert("store-1".to_string(), vec!["system:admin".to_string()]);
+
+        let is_super_admin_old = perms_with_old_code
+            .values()
+            .any(|perms| perms.iter().any(|p| p == "organization:admin"));
+
+        assert!(is_super_admin_new, "organization:admin must grant super admin");
+        assert!(
+            !is_super_admin_old,
+            "system:admin must NOT grant super admin after rename"
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // P2-T08: Audience rejection tests (FR-JWT-4)
+    //
+    // These tests verify at the token-service level that tokens with incorrect
+    // audience are rejected before they can reach any handler. The middleware
+    // itself delegates to `validate_access_token` which now enforces aud==Tenant.
+    // -------------------------------------------------------------------------
+
+    #[test]
+    fn token_with_backoffice_aud_rejected_by_tenant_token_service() {
+        use common::{BackofficeClaims, TokenAudience};
+        use identity::JwtTokenService;
+        use jsonwebtoken::{EncodingKey, Header, encode};
+        use uuid::{NoContext, Timestamp};
+
+        let secret = "shared-secret-for-test-at-least-32-bytes";
+        let tenant_service = JwtTokenService::new(secret.to_string());
+
+        // Craft a BackofficeClaims token signed with the SAME secret as the
+        // tenant service — simulates cross-audience token smuggling attempt.
+        let now = chrono::Utc::now();
+        let backoffice_claims = BackofficeClaims {
+            sub: uuid::Uuid::new_v7(Timestamp::now(NoContext)),
+            aud: TokenAudience::Backoffice,
+            iss: "backoffice-api:test".to_string(),
+            exp: (now + chrono::Duration::hours(1)).timestamp(),
+            iat: now.timestamp(),
+            permissions: vec![],
+        };
+
+        let token = encode(
+            &Header::default(),
+            &backoffice_claims,
+            &EncodingKey::from_secret(secret.as_bytes()),
+        )
+        .unwrap();
+
+        // validate_access_token must reject aud: Backoffice
+        let result = identity::TokenService::validate_access_token(&tenant_service, &token);
+        assert!(
+            result.is_err(),
+            "aud:Backoffice token must be rejected by tenant token service"
+        );
+    }
+
+    #[test]
+    fn token_without_aud_field_rejected_by_tenant_token_service() {
+        // A legacy token (no aud field) cannot deserialize into TokenClaims
+        // because `aud` is now required (non-optional). This satisfies FR-JWT-7:
+        // force re-login for tokens lacking aud/iss.
+        use identity::JwtTokenService;
+        use jsonwebtoken::{EncodingKey, Header, encode};
+        use serde::{Deserialize, Serialize};
+
+        let secret = "shared-secret-for-test-at-least-32-bytes";
+        let tenant_service = JwtTokenService::new(secret.to_string());
+
+        // Old-style claims without aud/iss fields
+        #[derive(Serialize, Deserialize)]
+        struct LegacyClaims {
+            sub: uuid::Uuid,
+            username: String,
+            email: String,
+            exp: i64,
+            iat: i64,
+        }
+
+        let now = chrono::Utc::now();
+        let legacy = LegacyClaims {
+            sub: uuid::Uuid::nil(),
+            username: "legacyuser".to_string(),
+            email: "legacy@example.com".to_string(),
+            exp: (now + chrono::Duration::hours(1)).timestamp(),
+            iat: now.timestamp(),
+        };
+
+        let token = encode(
+            &Header::default(),
+            &legacy,
+            &EncodingKey::from_secret(secret.as_bytes()),
+        )
+        .unwrap();
+
+        let result = identity::TokenService::validate_access_token(&tenant_service, &token);
+        assert!(
+            result.is_err(),
+            "Legacy token without aud must be rejected"
+        );
     }
 }

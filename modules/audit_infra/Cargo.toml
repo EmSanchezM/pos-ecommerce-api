@@ -1,0 +1,28 @@
+[package]
+name = "audit_infra"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+# Shared types
+backoffice_identity = { path = "../backoffice_identity" }
+events = { path = "../events" }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = "0.1"
+
+# Types and utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }

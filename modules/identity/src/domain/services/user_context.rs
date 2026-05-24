@@ -202,6 +202,7 @@ impl UserContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use uuid::{NoContext, Timestamp};
 
     fn create_test_context(permissions: &[&str]) -> UserContext {
         let perms: HashSet<PermissionCode> = permissions
@@ -228,8 +229,8 @@ mod tests {
 
     #[test]
     fn test_user_context_with_store_access() {
-        let store1 = Uuid::now_v7();
-        let store2 = Uuid::now_v7();
+        let store1 = Uuid::new_v7(Timestamp::now(NoContext));
+        let store2 = Uuid::new_v7(Timestamp::now(NoContext));
         let ctx = UserContext::new(
             UserId::new(),
             StoreId::new(),

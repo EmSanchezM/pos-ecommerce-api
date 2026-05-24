@@ -9,3 +9,6 @@ CLAUDE.md
 
 # Variables de entorno
 .env
+
+#Notes
+docs/*.md

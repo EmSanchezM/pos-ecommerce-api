@@ -1,0 +1,43 @@
+[package]
+name = "backoffice_identity"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+# Shared types (TokenAudience, ActorClaim)
+common = { path = "../common" }
+
+# Tenancy module — Organization entity + repository trait (for suspend use case)
+tenancy = { path = "../tenancy" }
+
+# Events module — PublishEventUseCase for transactional outbox writes
+events = { path = "../events" }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Database
+sqlx = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+async-trait = "0.1"
+
+# Types and utilities
+uuid = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+
+# Password hashing
+argon2 = { workspace = true }
+
+# JWT
+jsonwebtoken = { workspace = true }
+
+# Regex for PlatformPermissionCode validation
+regex = "1.11"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }
+sqlx = { workspace = true }

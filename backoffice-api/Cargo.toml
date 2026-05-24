@@ -1,0 +1,32 @@
+[package]
+name = "backoffice-api"
+version = { workspace = true }
+edition = { workspace = true }
+
+[[bin]]
+name = "backoffice-api"
+path = "src/main.rs"
+
+[dependencies]
+audit_infra = { path = "../modules/audit_infra" }
+backoffice_identity = { path = "../modules/backoffice_identity" }
+common = { path = "../modules/common" }
+events = { path = "../modules/events" }
+tenancy = { path = "../modules/tenancy" }
+
+axum = { workspace = true, features = ["json"] }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+dotenvy = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }
