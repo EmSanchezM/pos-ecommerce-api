@@ -50,4 +50,18 @@ pub enum BackofficeIdentityError {
 
     #[error("Database error: {0}")]
     Database(#[from] sqlx::Error),
+
+    // --- Variants added for Phase 4 (SuspendOrganizationWithAuditUseCase) ---
+
+    #[error("Invalid input: {0}")]
+    InvalidInput(String),
+
+    #[error("Organization not found: {0}")]
+    OrgNotFound(Uuid),
+
+    #[error("Organization state transition error: {0}")]
+    Tenancy(String),
+
+    #[error("Outbox publish error: {0}")]
+    Outbox(String),
 }

@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "modules/audit_infra",
     "modules/backoffice_identity",
     "modules/common",
     "modules/identity",

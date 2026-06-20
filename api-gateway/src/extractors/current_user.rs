@@ -100,6 +100,7 @@ mod tests {
             vec![],
             false,
             None,
+            None,
         )
     }
 

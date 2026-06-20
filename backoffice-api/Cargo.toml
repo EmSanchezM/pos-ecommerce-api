@@ -8,8 +8,11 @@ name = "backoffice-api"
 path = "src/main.rs"
 
 [dependencies]
+audit_infra = { path = "../modules/audit_infra" }
 backoffice_identity = { path = "../modules/backoffice_identity" }
 common = { path = "../modules/common" }
+events = { path = "../modules/events" }
+identity = { path = "../modules/identity" }
 tenancy = { path = "../modules/tenancy" }
 
 axum = { workspace = true, features = ["json"] }

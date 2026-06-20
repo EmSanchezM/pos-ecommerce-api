@@ -36,9 +36,16 @@ pub use domain::auth::BackofficeTokenService;
 
 // Application — Use Cases
 pub use application::use_cases::AuthenticateBackofficeUserUseCase;
+pub use application::use_cases::{
+    IssueImpersonationTokenUseCase, IssueImpersonationTokenWithAuditUseCase,
+    IMPERSONATION_TOKEN_EXPIRY_SECONDS,
+};
+pub use application::use_cases::SuspendOrganizationWithAuditUseCase;
 
 // Application — DTOs
-pub use application::dtos::{AuthenticateBackofficeCommand, BackofficeAuthResponse};
+pub use application::dtos::{
+    AuthenticateBackofficeCommand, BackofficeAuthResponse, ImpersonationTokenResponse,
+};
 
 // Infrastructure — Pg Implementations
 pub use infrastructure::persistence::{

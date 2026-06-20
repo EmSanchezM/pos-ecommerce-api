@@ -4,6 +4,7 @@ version = { workspace = true }
 edition = { workspace = true }
 
 [dependencies]
+audit_infra = { path = "../modules/audit_infra" }
 common = { path = "../modules/common" }
 identity = { path = "../modules/identity" }
 pos_core = { path = "../modules/core" }

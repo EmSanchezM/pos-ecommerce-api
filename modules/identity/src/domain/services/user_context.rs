@@ -5,7 +5,7 @@
 
 use std::collections::HashSet;
 
-use uuid::{NoContext, Timestamp, Uuid};
+use uuid::Uuid;
 
 use crate::domain::value_objects::{PermissionCode, StoreId, UserId};
 
@@ -35,12 +35,23 @@ pub struct UserContext {
     /// the field — every org-scoped check must reject the request in that
     /// case (treat absent org as no scope, never as "all orgs").
     organization_id: Option<Uuid>,
+    /// RFC 8693 actor claim — the REAL actor's ID when this context was built
+    /// from an impersonation token. `None` for normal (non-impersonated) requests.
+    ///
+    /// When `Some(actor_id)`:
+    ///   - `user_id` is the IMPERSONATED user (the token's `sub`)
+    ///   - `actor_id` is the REAL backoffice operator (the token's `act.sub`)
+    ///
+    /// Callers who want to record who triggered an action should check this
+    /// field first. Tracing middleware logs both when `Some`.
+    actor_id: Option<Uuid>,
 }
 
 impl UserContext {
     /// Creates a new UserContext with the given user_id, store_id, permissions,
     /// the full list of accessible store IDs from the JWT, super-admin flag,
-    /// and the user's organization id (None if the JWT predates v1.1).
+    /// the user's organization id (None if the JWT predates v1.1), and the
+    /// optional actor_id (Some only for impersonation tokens, per RFC 8693).
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         user_id: UserId,
@@ -49,6 +60,7 @@ impl UserContext {
         accessible_store_ids: Vec<Uuid>,
         is_super_admin: bool,
         organization_id: Option<Uuid>,
+        actor_id: Option<Uuid>,
     ) -> Self {
         Self {
             user_id,
@@ -57,6 +69,7 @@ impl UserContext {
             accessible_store_ids,
             is_super_admin,
             organization_id,
+            actor_id,
         }
     }
 
@@ -89,6 +102,15 @@ impl UserContext {
     /// tenancy v1.1.
     pub fn organization_id(&self) -> Option<Uuid> {
         self.organization_id
+    }
+
+    /// Returns the real actor's ID, or `None` for non-impersonated requests.
+    ///
+    /// `Some(actor_id)` means this request arrived with an impersonation token
+    /// (RFC 8693 `act` claim). The real backoffice operator is `actor_id`;
+    /// the impersonated user is `user_id`.
+    pub fn actor_id(&self) -> Option<Uuid> {
+        self.actor_id
     }
 
     /// Checks if the user has a specific permission.
@@ -202,13 +224,14 @@ impl UserContext {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use uuid::{NoContext, Timestamp};
 
     fn create_test_context(permissions: &[&str]) -> UserContext {
         let perms: HashSet<PermissionCode> = permissions
             .iter()
             .filter_map(|p| PermissionCode::new(p).ok())
             .collect();
-        UserContext::new(UserId::new(), StoreId::new(), perms, vec![], false, None)
+        UserContext::new(UserId::new(), StoreId::new(), perms, vec![], false, None, None)
     }
 
     #[test]
@@ -217,7 +240,7 @@ mod tests {
         let store_id = StoreId::new();
         let permissions = HashSet::new();
 
-        let ctx = UserContext::new(user_id, store_id, permissions, vec![], false, None);
+        let ctx = UserContext::new(user_id, store_id, permissions, vec![], false, None, None);
 
         assert_eq!(*ctx.user_id(), user_id);
         assert_eq!(*ctx.store_id(), store_id);
@@ -237,6 +260,7 @@ mod tests {
             vec![store1, store2],
             false,
             None,
+            None,
         );
         assert_eq!(ctx.accessible_store_ids(), &[store1, store2]);
         assert!(!ctx.is_super_admin());
@@ -250,6 +274,7 @@ mod tests {
             HashSet::new(),
             vec![],
             true,
+            None,
             None,
         );
         assert!(ctx.is_super_admin());

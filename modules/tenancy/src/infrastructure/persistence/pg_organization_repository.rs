@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::TenancyError;
@@ -93,6 +93,48 @@ impl OrganizationRepository for PgOrganizationRepository {
             .fetch_all(&self.pool)
             .await?;
         rows.into_iter().map(Organization::try_from).collect()
+    }
+
+    async fn find_by_id_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        id: OrganizationId,
+    ) -> Result<Option<Organization>, TenancyError> {
+        let row = sqlx::query_as::<_, OrgRow>(SELECT_BY_ID)
+            .bind(id.into_uuid())
+            .fetch_optional(&mut **tx)
+            .await?;
+        row.map(Organization::try_from).transpose()
+    }
+
+    async fn update_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        o: &Organization,
+    ) -> Result<(), TenancyError> {
+        let result = sqlx::query(
+            r#"
+            UPDATE organizations
+               SET name          = $2,
+                   contact_email = $3,
+                   contact_phone = $4,
+                   status        = $5,
+                   updated_at    = $6
+             WHERE id = $1
+            "#,
+        )
+        .bind(o.id().into_uuid())
+        .bind(o.name())
+        .bind(o.contact_email())
+        .bind(o.contact_phone())
+        .bind(o.status().as_str())
+        .bind(o.updated_at())
+        .execute(&mut **tx)
+        .await?;
+        if result.rows_affected() == 0 {
+            return Err(TenancyError::OrganizationNotFound(o.id().into_uuid()));
+        }
+        Ok(())
     }
 }
 

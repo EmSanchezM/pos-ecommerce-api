@@ -1,4 +1,5 @@
 use common::BackofficeClaims;
+use uuid::Uuid;
 
 use crate::domain::entities::BackofficeUser;
 use crate::error::BackofficeIdentityError;
@@ -21,4 +22,23 @@ pub trait BackofficeTokenService: Send + Sync {
         &self,
         token: &str,
     ) -> Result<BackofficeClaims, BackofficeIdentityError>;
+
+    /// Issues an impersonation token (aud: Tenant, 15-min expiry, act claim).
+    ///
+    /// The token is signed with `tenant_secret` (JWT_SECRET) so that `api-gateway`
+    /// can validate it with its own secret (Decision 2, sdd/backoffice-api/decisions).
+    ///
+    /// # Claims set
+    /// - `aud: Tenant`
+    /// - `sub: tenant_user_id`
+    /// - `act.sub: backoffice_user.id`
+    /// - `act.sub_type: "backoffice_user"`
+    /// - `act.email: backoffice_user.email`
+    /// - `exp: iat + 900` (NFR-SEC-4)
+    fn issue_impersonation_token(
+        &self,
+        backoffice_user: &BackofficeUser,
+        tenant_user_id: Uuid,
+        tenant_secret: &str,
+    ) -> Result<String, BackofficeIdentityError>;
 }

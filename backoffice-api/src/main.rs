@@ -12,11 +12,13 @@
 // - handlers/    — request handlers
 // - routes/      — route sub-modules
 
+pub mod audit;
 mod config;
 mod database;
 pub mod error;
 mod handlers;
 mod integration_tests;
+pub mod jobs;
 pub mod middleware;
 mod router;
 mod routes;
@@ -36,9 +38,17 @@ async fn main() {
         pool,
         config.backoffice_secret,
         config.backoffice_issuer,
+        config.tenant_secret,
     );
 
-    let app = router::build_router(app_state);
+    let app = router::build_router(app_state.clone());
+
+    // P4-T08: spawn event_dispatcher with BackofficeAuditSubscriber
+    jobs::spawn_event_dispatcher(
+        app_state.pool().clone(),
+        10, // 10-second interval; make configurable in Phase 6
+        50,
+    );
 
     let addr: SocketAddr = format!("0.0.0.0:{}", config.port)
         .parse()
