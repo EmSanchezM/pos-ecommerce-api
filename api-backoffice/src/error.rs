@@ -279,6 +279,36 @@ impl From<subscriptions::SubscriptionError> for AppError {
     }
 }
 
+// =============================================================================
+// From<AnalyticsError> — cross-org analytics reads (Phase 6)
+// =============================================================================
+
+impl From<analytics::AnalyticsError> for AppError {
+    fn from(err: analytics::AnalyticsError) -> Self {
+        use analytics::AnalyticsError as E;
+        let (status, body) = match &err {
+            E::DashboardNotFound(_) | E::WidgetNotFound(_) | E::SnapshotNotFound(_) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("NOT_FOUND", err.to_string()),
+            ),
+            E::UnknownKpiKey(_)
+            | E::UnknownReportKind(_)
+            | E::InvalidTimeWindow(_)
+            | E::InvalidWidgetKind(_)
+            | E::InvalidWidgetConfig(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("VALIDATION_ERROR", err.to_string()),
+            ),
+            E::Database(_) | E::Serialization(_) | E::Subscriber(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+
+        AppError::new(status, body)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

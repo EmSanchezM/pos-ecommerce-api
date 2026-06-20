@@ -13,6 +13,9 @@ services:
       # Run the demand-planning recompute job frequently in dev so end-to-end
       # tests don't have to wait 24h. Override per-workflow via env_file.
       DEMAND_PLANNING_RECOMPUTE_INTERVAL_SECS: "300"
+      # Recompute system-wide KPI snapshots quickly in dev so the backoffice
+      # analytics endpoints have data shortly after boot (prod uses ~30 min).
+      ANALYTICS_RECOMPUTE_INTERVAL_SECS: "20"
     depends_on:
       db:
         condition: service_healthy
