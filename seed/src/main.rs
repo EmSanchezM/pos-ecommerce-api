@@ -168,6 +168,12 @@ async fn main() -> Result<()> {
     info!("Seeding subscription plans...");
     seed_subscription_plans(&mut tx).await?;
 
+    // Seed the backoffice super-admin. Roles + the 13 platform permissions are
+    // seeded by migration 20260602000005; this gives them a user to log in as.
+    // Without it the backoffice-api has a working /auth/login but no account.
+    info!("Seeding backoffice super-admin...");
+    seed_backoffice_super_admin(&mut tx).await?;
+
     tx.commit().await?;
 
     info!("Seed completed successfully!");
@@ -1973,6 +1979,65 @@ async fn seed_subscription_plans(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>)
             name, currency, price_cents, tier, trial_days
         );
     }
+    Ok(())
+}
+
+/// Seeds the backoffice super-admin into the `backoffice_users` table and
+/// grants it the seeded `super_admin` backoffice role (all 13 `platform:*`
+/// permissions). Idempotent on email. The backoffice roles, permissions and
+/// role→permission grants come from migration `20260602000005`; this is the
+/// only place a `backoffice_users` row is created, so without it the
+/// backoffice-api has a login endpoint but no account to authenticate.
+async fn seed_backoffice_super_admin(tx: &mut sqlx::Transaction<'_, sqlx::Postgres>) -> Result<()> {
+    let (email, password) = data::BACKOFFICE_SUPER_ADMIN;
+
+    // Hash the password with Argon2, same as the tenant super-admin.
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let password_hash = argon2
+        .hash_password(password.as_bytes(), &salt)
+        .expect("Failed to hash backoffice super-admin password")
+        .to_string();
+
+    let id = Uuid::new_v7(Timestamp::now(NoContext));
+    sqlx::query(
+        r#"
+        INSERT INTO backoffice_users (id, email, password_hash, mfa_secret, is_active)
+        VALUES ($1, $2, $3, NULL, TRUE)
+        ON CONFLICT (email) DO NOTHING
+        "#,
+    )
+    .bind(id)
+    .bind(email)
+    .bind(&password_hash)
+    .execute(&mut **tx)
+    .await?;
+
+    // Resolve the actual id (in case the user already existed).
+    let user_id: (Uuid,) = sqlx::query_as("SELECT id FROM backoffice_users WHERE email = $1")
+        .bind(email)
+        .fetch_one(&mut **tx)
+        .await?;
+
+    let role_id = Uuid::parse_str(data::BACKOFFICE_SUPER_ADMIN_ROLE_ID)
+        .expect("backoffice super_admin role id must be a valid UUID");
+
+    sqlx::query(
+        r#"
+        INSERT INTO backoffice_user_roles (backoffice_user_id, role_id)
+        VALUES ($1, $2)
+        ON CONFLICT DO NOTHING
+        "#,
+    )
+    .bind(user_id.0)
+    .bind(role_id)
+    .execute(&mut **tx)
+    .await?;
+
+    info!(
+        "  Backoffice super-admin: {} (role=super_admin, password={})",
+        email, password
+    );
     Ok(())
 }
 

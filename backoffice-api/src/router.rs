@@ -15,7 +15,7 @@ use crate::state::BackofficeAppState;
 /// Route layout:
 /// - `GET /health`                    — public, no auth
 /// - `POST /backoffice/auth/login`    — public, no auth (FR-END-7)
-/// - `GET /backoffice/orgs`           — requires aud:Backoffice JWT (stub in Phase 3)
+/// - `GET /backoffice/orgs`           — requires aud:Backoffice JWT + platform:org.list
 pub fn build_router(state: BackofficeAppState) -> Router {
     // Public routes — no auth middleware
     let public_routes = Router::new()

@@ -10,6 +10,7 @@ use axum::{
 };
 use backoffice_identity::BackofficeIdentityError;
 use serde::{Deserialize, Serialize};
+use tenancy::TenancyError;
 
 // =============================================================================
 // ErrorResponse — standard JSON error shape
@@ -164,6 +165,49 @@ impl From<BackofficeIdentityError> for AppError {
     }
 }
 
+// =============================================================================
+// From<TenancyError>
+// =============================================================================
+
+impl From<TenancyError> for AppError {
+    fn from(err: TenancyError) -> Self {
+        let (status, body) = match &err {
+            TenancyError::OrganizationNotFound(_)
+            | TenancyError::OrganizationNotFoundBySlug(_)
+            | TenancyError::PlanNotFound(_)
+            | TenancyError::DomainNotFound(_)
+            | TenancyError::DomainNotFoundByHostname(_)
+            | TenancyError::BrandingNotFound(_) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("NOT_FOUND", err.to_string()),
+            ),
+            TenancyError::SlugAlreadyTaken(_) | TenancyError::DomainAlreadyTaken(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CONFLICT", err.to_string()),
+            ),
+            TenancyError::InvalidStatusTransition { .. }
+            | TenancyError::InvalidStatus(_)
+            | TenancyError::InvalidTier(_)
+            | TenancyError::InvalidTheme(_)
+            | TenancyError::InvalidSlug(_)
+            | TenancyError::InvalidDomain(_)
+            | TenancyError::InvalidColor(_)
+            | TenancyError::Validation(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("VALIDATION_ERROR", err.to_string()),
+            ),
+            TenancyError::Database(_)
+            | TenancyError::Serialization(_)
+            | TenancyError::Subscriber(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+
+        AppError::new(status, body)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -186,6 +230,19 @@ mod tests {
     fn database_error_maps_to_500() {
         let db_err = sqlx::Error::RowNotFound;
         let err: AppError = BackofficeIdentityError::Database(db_err).into();
+        assert_eq!(err.status, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn tenancy_org_not_found_maps_to_404() {
+        let err: AppError = TenancyError::OrganizationNotFound(uuid::Uuid::nil()).into();
+        assert_eq!(err.status, StatusCode::NOT_FOUND);
+        assert_eq!(err.body.code, "NOT_FOUND");
+    }
+
+    #[test]
+    fn tenancy_database_error_maps_to_500() {
+        let err: AppError = TenancyError::Database(sqlx::Error::RowNotFound).into();
         assert_eq!(err.status, StatusCode::INTERNAL_SERVER_ERROR);
     }
 }

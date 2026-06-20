@@ -10,6 +10,7 @@ path = "src/main.rs"
 [dependencies]
 backoffice_identity = { path = "../modules/backoffice_identity" }
 common = { path = "../modules/common" }
+tenancy = { path = "../modules/tenancy" }
 
 axum = { workspace = true, features = ["json"] }
 tokio = { workspace = true }

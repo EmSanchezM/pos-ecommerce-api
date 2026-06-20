@@ -1453,6 +1453,21 @@ pub const SUPER_ADMIN_USER: (&str, &str, &str, &str, &str) = (
     "SuperAdmin123!",
 );
 
+/// Backoffice super-admin (platform owner): (email, password).
+///
+/// Seeded into `backoffice_users` and granted the `super_admin` backoffice
+/// role so the `backoffice-api` binary has a working login on first boot.
+/// This account lives in the SEPARATE backoffice identity tables — it is NOT
+/// a tenant `users` row and authenticates only against `backoffice-api`
+/// (aud:Backoffice tokens). Password: BackofficeAdmin123!
+pub const BACKOFFICE_SUPER_ADMIN: (&str, &str) =
+    ("superadmin@platform.local", "BackofficeAdmin123!");
+
+/// Frozen UUID of the `super_admin` backoffice role, seeded by migration
+/// `20260602000005_seed_backoffice_identity.sql`. Pinned here so the seed can
+/// grant the role by id without a name-lookup round-trip.
+pub const BACKOFFICE_SUPER_ADMIN_ROLE_ID: &str = "b0cf0001-0000-7000-8000-000000000001";
+
 /// Default chart of accounts aligned with a basic Honduran SME plan.
 /// Format: (code, name, account_type)
 ///

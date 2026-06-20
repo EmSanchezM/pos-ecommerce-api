@@ -10,6 +10,7 @@ use backoffice_identity::{
     JwtBackofficeTokenService, PgBackofficeUserRepository,
 };
 use sqlx::PgPool;
+use tenancy::{OrganizationRepository, PgOrganizationRepository};
 
 /// Application state shared across all backoffice HTTP handlers.
 ///
@@ -24,6 +25,8 @@ pub struct BackofficeAppState {
     token_service: Arc<dyn BackofficeTokenService>,
     /// Use case: authenticate a backoffice user and issue a JWT.
     authenticate_use_case: Arc<AuthenticateBackofficeUserUseCase>,
+    /// Shared tenancy repository — backs the cross-org organization listing.
+    organization_repo: Arc<dyn OrganizationRepository>,
 }
 
 impl BackofficeAppState {
@@ -50,11 +53,15 @@ impl BackofficeAppState {
             token_service.clone(),
         ));
 
+        let organization_repo: Arc<dyn OrganizationRepository> =
+            Arc::new(PgOrganizationRepository::new((*pool_arc).clone()));
+
         Self {
             pool,
             user_repo,
             token_service,
             authenticate_use_case,
+            organization_repo,
         }
     }
 
@@ -76,6 +83,11 @@ impl BackofficeAppState {
     /// Returns the authenticate backoffice user use case.
     pub fn authenticate_use_case(&self) -> Arc<AuthenticateBackofficeUserUseCase> {
         self.authenticate_use_case.clone()
+    }
+
+    /// Returns the shared tenancy organization repository.
+    pub fn organization_repo(&self) -> Arc<dyn OrganizationRepository> {
+        self.organization_repo.clone()
     }
 }
 
@@ -108,6 +120,8 @@ mod tests {
         let _pool = state.pool();
         // user_repo is accessible
         let _repo = state.user_repo();
+        // organization_repo is wired and clone-able
+        let _org_repo = state.organization_repo();
     }
 
     #[tokio::test]

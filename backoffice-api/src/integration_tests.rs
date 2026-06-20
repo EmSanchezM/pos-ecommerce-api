@@ -83,16 +83,14 @@ mod tests {
         );
     }
 
-    /// P3-T07: GET /backoffice/orgs with a valid Backoffice token reaches the stub (501).
-    #[tokio::test]
-    async fn orgs_route_accepts_valid_backoffice_token() {
+    /// Issues a valid backoffice-audience token carrying `permissions`.
+    fn backoffice_token(permissions: &[&str]) -> String {
         use backoffice_identity::{
-            BackofficeEmail, BackofficeUser, BackofficeUserId, JwtBackofficeTokenService,
-            BackofficeTokenService,
+            BackofficeEmail, BackofficeTokenService, BackofficeUser, BackofficeUserId,
+            JwtBackofficeTokenService,
         };
         use chrono::Utc;
 
-        // Issue a valid backoffice-audience token
         let svc = JwtBackofficeTokenService::with_issuer(
             "backoffice-secret-at-least-32-bytes-long".to_string(),
             "backoffice-api:test".to_string(),
@@ -107,9 +105,17 @@ mod tests {
             Utc::now(),
             Utc::now(),
         );
-        let token = svc
-            .issue_backoffice_token(&user, &["platform:org.list".to_string()])
-            .unwrap();
+        let perms: Vec<String> = permissions.iter().map(|p| p.to_string()).collect();
+        svc.issue_backoffice_token(&user, &perms).unwrap()
+    }
+
+    /// GET /backoffice/orgs with a token that HAS `platform:org.list` passes
+    /// both auth and the permission gate, reaching the use case. Against the
+    /// lazy (unconnected) pool the query fails, so we get 500 — proving the
+    /// handler ran past authorization rather than short-circuiting at 403/401.
+    #[tokio::test]
+    async fn orgs_route_accepts_valid_backoffice_token() {
+        let token = backoffice_token(&["platform:org.list"]);
 
         let app = build_router(make_state());
         let request = Request::builder()
@@ -119,12 +125,31 @@ mod tests {
             .unwrap();
 
         let response = app.oneshot(request).await.unwrap();
-        // With a valid Backoffice token, middleware passes and we hit the stub
-        // which returns 501.
         assert_eq!(
             response.status(),
-            StatusCode::NOT_IMPLEMENTED,
-            "GET /backoffice/orgs with valid Backoffice token must reach stub handler"
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "with org.list the handler must reach the DB layer (500 on no DB), not 403/401"
+        );
+    }
+
+    /// GET /backoffice/orgs with a valid token that LACKS `platform:org.list`
+    /// is rejected by the permission gate with 403 — before any DB access.
+    #[tokio::test]
+    async fn orgs_route_denies_token_without_permission() {
+        let token = backoffice_token(&["platform:audit.read"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/orgs")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(
+            response.status(),
+            StatusCode::FORBIDDEN,
+            "missing platform:org.list must be rejected with 403"
         );
     }
 }
