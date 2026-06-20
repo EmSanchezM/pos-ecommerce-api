@@ -354,4 +354,71 @@ mod tests {
         let response = app.oneshot(request).await.unwrap();
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 6 — Slice D: cross-org analytics
+    // -------------------------------------------------------------------------
+
+    /// GET analytics overview without a token returns 401.
+    #[tokio::test]
+    async fn analytics_overview_requires_auth() {
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/analytics/overview")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    /// GET analytics overview with a token lacking `platform:analytics.read`
+    /// → 403, before any DB access.
+    #[tokio::test]
+    async fn analytics_overview_denied_without_permission() {
+        let token = backoffice_token(&["platform:org.list"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/analytics/overview")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    /// GET a single KPI with `platform:analytics.read` passes the gate and
+    /// reaches the repository; the lazy pool then fails → 500.
+    #[tokio::test]
+    async fn analytics_kpi_with_permission_reaches_db() {
+        let token = backoffice_token(&["platform:analytics.read"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/analytics/kpis/sales.revenue_total?window=this_month")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    /// An invalid `window` is rejected with 400 before touching the DB.
+    #[tokio::test]
+    async fn analytics_kpi_invalid_window_is_400() {
+        let token = backoffice_token(&["platform:analytics.read"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/analytics/kpis/sales.revenue_total?window=nope")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
 }

@@ -7,6 +7,7 @@ use std::sync::Arc;
 
 // BackofficeAuditSubscriber and PgBackofficeAuditLogRepository will be used
 // in P4-T08 when the event_dispatcher job is wired.
+use analytics::{KpiSnapshotRepository, PgKpiSnapshotRepository};
 #[allow(unused_imports)]
 use audit_infra::{BackofficeAuditSubscriber, PgBackofficeAuditLogRepository};
 use backoffice_identity::{
@@ -61,6 +62,8 @@ pub struct BackofficeAppState {
     dunning_repo: Arc<dyn DunningAttemptRepository>,
     /// Payment gateway used when manually firing a dunning attempt. v1.0 stub.
     dunning_payment_gateway: Arc<dyn BillingPaymentGateway>,
+    /// KPI snapshot repository — backs cross-org (system-wide) analytics reads.
+    kpi_snapshot_repo: Arc<dyn KpiSnapshotRepository>,
 }
 
 impl BackofficeAppState {
@@ -131,6 +134,9 @@ impl BackofficeAppState {
         let dunning_payment_gateway: Arc<dyn BillingPaymentGateway> =
             Arc::new(StubBillingPaymentGateway::new());
 
+        let kpi_snapshot_repo: Arc<dyn KpiSnapshotRepository> =
+            Arc::new(PgKpiSnapshotRepository::new((*pool_arc).clone()));
+
         Self {
             pool,
             user_repo,
@@ -146,6 +152,7 @@ impl BackofficeAppState {
             billing_cycle_repo,
             dunning_repo,
             dunning_payment_gateway,
+            kpi_snapshot_repo,
         }
     }
 
@@ -218,6 +225,11 @@ impl BackofficeAppState {
     pub fn dunning_payment_gateway(&self) -> Arc<dyn BillingPaymentGateway> {
         self.dunning_payment_gateway.clone()
     }
+
+    /// Returns the KPI snapshot repository (backs cross-org analytics reads).
+    pub fn kpi_snapshot_repo(&self) -> Arc<dyn KpiSnapshotRepository> {
+        self.kpi_snapshot_repo.clone()
+    }
 }
 
 #[cfg(test)]
@@ -260,6 +272,8 @@ mod tests {
         let _cyc = state.billing_cycle_repo();
         let _dun = state.dunning_repo();
         let _gw = state.dunning_payment_gateway();
+        // analytics wiring (P6 — cross-org KPI reads)
+        let _kpi = state.kpi_snapshot_repo();
     }
 
     #[tokio::test]

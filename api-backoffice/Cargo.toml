@@ -8,6 +8,7 @@ name = "api-backoffice"
 path = "src/main.rs"
 
 [dependencies]
+analytics = { path = "../modules/analytics" }
 audit_infra = { path = "../modules/audit_infra" }
 backoffice_identity = { path = "../modules/backoffice_identity" }
 common = { path = "../modules/common" }
