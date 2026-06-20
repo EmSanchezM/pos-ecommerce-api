@@ -29,8 +29,8 @@ impl UserRepository for PgUserRepository {
     async fn save(&self, user: &User) -> Result<(), IdentityError> {
         sqlx::query(
             r#"
-            INSERT INTO users (id, username, email, first_name, last_name, password_hash, is_active, organization_id, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            INSERT INTO users (id, username, email, first_name, last_name, password_hash, is_active, organization_id, created_at, updated_at, last_login_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             "#,
         )
         .bind(user.id().as_uuid())
@@ -43,6 +43,7 @@ impl UserRepository for PgUserRepository {
         .bind(user.organization_id())
         .bind(user.created_at())
         .bind(user.updated_at())
+        .bind(user.last_login_at())
         .execute(&self.pool)
         .await
         .map_err(|e| match &e {
@@ -65,7 +66,7 @@ impl UserRepository for PgUserRepository {
     async fn find_by_id(&self, id: UserId) -> Result<Option<User>, IdentityError> {
         let row = sqlx::query_as::<_, UserRow>(
             r#"
-            SELECT id, username, email, first_name, last_name, password_hash, is_active, organization_id, created_at, updated_at
+            SELECT id, username, email, first_name, last_name, password_hash, is_active, organization_id, created_at, updated_at, last_login_at
             FROM users
             WHERE id = $1
             "#,
@@ -80,7 +81,7 @@ impl UserRepository for PgUserRepository {
     async fn find_by_email(&self, email: &Email) -> Result<Option<User>, IdentityError> {
         let row = sqlx::query_as::<_, UserRow>(
             r#"
-            SELECT id, username, email, first_name, last_name, password_hash, is_active, organization_id, created_at, updated_at
+            SELECT id, username, email, first_name, last_name, password_hash, is_active, organization_id, created_at, updated_at, last_login_at
             FROM users
             WHERE email = $1
             "#,
@@ -95,7 +96,7 @@ impl UserRepository for PgUserRepository {
     async fn find_by_username(&self, username: &Username) -> Result<Option<User>, IdentityError> {
         let row = sqlx::query_as::<_, UserRow>(
             r#"
-            SELECT id, username, email, first_name, last_name, password_hash, is_active, organization_id, created_at, updated_at
+            SELECT id, username, email, first_name, last_name, password_hash, is_active, organization_id, created_at, updated_at, last_login_at
             FROM users
             WHERE username = $1
             "#,
@@ -112,7 +113,8 @@ impl UserRepository for PgUserRepository {
             r#"
             UPDATE users
             SET username = $2, email = $3, first_name = $4, last_name = $5,
-                password_hash = $6, is_active = $7, organization_id = $8, updated_at = $9
+                password_hash = $6, is_active = $7, organization_id = $8, updated_at = $9,
+                last_login_at = $10
             WHERE id = $1
             "#,
         )
@@ -125,6 +127,7 @@ impl UserRepository for PgUserRepository {
         .bind(user.is_active())
         .bind(user.organization_id())
         .bind(user.updated_at())
+        .bind(user.last_login_at())
         .execute(&self.pool)
         .await
         .map_err(|e| match &e {
@@ -484,6 +487,7 @@ struct UserRow {
     organization_id: Option<uuid::Uuid>,
     created_at: chrono::DateTime<chrono::Utc>,
     updated_at: chrono::DateTime<chrono::Utc>,
+    last_login_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl TryFrom<UserRow> for User {
@@ -503,6 +507,7 @@ impl TryFrom<UserRow> for User {
             row.organization_id,
             row.created_at,
             row.updated_at,
+            row.last_login_at,
         ))
     }
 }

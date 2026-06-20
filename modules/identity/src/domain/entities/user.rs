@@ -25,6 +25,9 @@ pub struct User {
     organization_id: Option<Uuid>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
+    /// Timestamp of the user's last successful login. `None` until the user
+    /// authenticates for the first time. Stamped by `record_login()`.
+    last_login_at: Option<DateTime<Utc>>,
 }
 
 impl User {
@@ -44,6 +47,7 @@ impl User {
         organization_id: Option<Uuid>,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
+        last_login_at: Option<DateTime<Utc>>,
     ) -> Self {
         Self {
             id,
@@ -56,6 +60,7 @@ impl User {
             organization_id,
             created_at,
             updated_at,
+            last_login_at,
         }
     }
 
@@ -81,6 +86,7 @@ impl User {
             organization_id: None,
             created_at: now,
             updated_at: now,
+            last_login_at: None,
         }
     }
 
@@ -126,6 +132,11 @@ impl User {
         self.updated_at
     }
 
+    /// Timestamp of the user's last successful login, if any.
+    pub fn last_login_at(&self) -> Option<DateTime<Utc>> {
+        self.last_login_at
+    }
+
     /// Returns the user's full name
     pub fn full_name(&self) -> String {
         format!("{} {}", self.first_name, self.last_name)
@@ -167,6 +178,15 @@ impl User {
     pub fn deactivate(&mut self) {
         self.is_active = false;
         self.updated_at = Utc::now();
+    }
+
+    /// Records a successful login by stamping `last_login_at` (and bumping
+    /// `updated_at`) to the current time. Persist via `UserRepository::update`
+    /// — never `save`, which INSERTs and collides on the existing row.
+    pub fn record_login(&mut self) {
+        let now = Utc::now();
+        self.last_login_at = Some(now);
+        self.updated_at = now;
     }
 
     /// Re-assigns the user to a different organization. Used by the
@@ -271,10 +291,30 @@ mod tests {
             None,
             Utc::now(),
             Utc::now(),
+            None,
         );
 
         // Users are equal if they have the same ID
         assert_eq!(user1, user2);
+    }
+
+    #[test]
+    fn test_user_record_login_stamps_last_login_at() {
+        let mut user = create_test_user();
+        assert!(user.last_login_at().is_none(), "fresh user has no login");
+
+        let before_updated = user.updated_at();
+        std::thread::sleep(std::time::Duration::from_millis(5));
+        user.record_login();
+
+        assert!(
+            user.last_login_at().is_some(),
+            "record_login must stamp last_login_at"
+        );
+        assert!(
+            user.updated_at() > before_updated,
+            "record_login must bump updated_at"
+        );
     }
 
     #[test]
