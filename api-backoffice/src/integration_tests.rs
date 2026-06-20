@@ -153,4 +153,272 @@ mod tests {
             "missing platform:org.list must be rejected with 403"
         );
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 6 — Slice A: plan catalog routes
+    // -------------------------------------------------------------------------
+
+    /// GET /backoffice/plans without a token returns 401 (auth middleware).
+    #[tokio::test]
+    async fn plans_route_requires_auth() {
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/plans")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    /// GET /backoffice/plans with a token lacking `platform:plan.read` → 403,
+    /// before any DB access.
+    #[tokio::test]
+    async fn plans_list_denied_without_permission() {
+        let token = backoffice_token(&["platform:org.list"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/plans")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(
+            response.status(),
+            StatusCode::FORBIDDEN,
+            "missing platform:plan.read must be rejected with 403"
+        );
+    }
+
+    /// GET /backoffice/plans with `platform:plan.read` passes the gate and
+    /// reaches the use case; the lazy pool then fails → 500 (proves the handler
+    /// ran past authorization).
+    #[tokio::test]
+    async fn plans_list_with_permission_reaches_db() {
+        let token = backoffice_token(&["platform:plan.read"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/plans")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(
+            response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "with plan.read the handler must reach the DB layer (500 on no DB)"
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 6 — Slice B: subscription admin routes
+    // -------------------------------------------------------------------------
+
+    fn org_path(suffix: &str) -> String {
+        format!("/backoffice/subscriptions/00000000-0000-0000-0000-000000000001{suffix}")
+    }
+
+    /// POST force-cancel without a token returns 401 (auth middleware).
+    #[tokio::test]
+    async fn subs_force_cancel_requires_auth() {
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(org_path("/force-cancel"))
+            .method("POST")
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({"reason": "fraud"}).to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    /// POST force-cancel with a token lacking `platform:subscription.force_cancel`
+    /// → 403, before any DB access.
+    #[tokio::test]
+    async fn subs_force_cancel_denied_without_permission() {
+        let token = backoffice_token(&["platform:org.list"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(org_path("/force-cancel"))
+            .method("POST")
+            .header("Authorization", format!("Bearer {token}"))
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({"reason": "fraud"}).to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    /// POST change-plan with a token lacking `platform:subscription.override_billing`
+    /// → 403.
+    #[tokio::test]
+    async fn subs_change_plan_denied_without_permission() {
+        let token = backoffice_token(&["platform:subscription.force_cancel"]);
+
+        let app = build_router(make_state());
+        let body = json!({
+            "reason": "promo migration",
+            "new_plan_id": "00000000-0000-0000-0000-000000000002"
+        });
+        let request = Request::builder()
+            .uri(org_path("/change-plan"))
+            .method("POST")
+            .header("Authorization", format!("Bearer {token}"))
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    /// GET subscription with `platform:org.list` passes the gate and reaches the
+    /// use case; the lazy pool then fails → 500.
+    #[tokio::test]
+    async fn subs_get_with_permission_reaches_db() {
+        let token = backoffice_token(&["platform:org.list"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(org_path(""))
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 6 — Slice C: manual dunning trigger
+    // -------------------------------------------------------------------------
+
+    const DUNNING_PATH: &str = "/backoffice/dunning/019ee5dd-0000-7000-8000-000000000abc/trigger";
+
+    /// POST dunning trigger without a token returns 401.
+    #[tokio::test]
+    async fn dunning_trigger_requires_auth() {
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(DUNNING_PATH)
+            .method("POST")
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({"reason": "manual retry"}).to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    /// POST dunning trigger with a token lacking `platform:dunning.trigger`
+    /// → 403, before any DB access.
+    #[tokio::test]
+    async fn dunning_trigger_denied_without_permission() {
+        let token = backoffice_token(&["platform:org.list"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(DUNNING_PATH)
+            .method("POST")
+            .header("Authorization", format!("Bearer {token}"))
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({"reason": "manual retry"}).to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    /// POST dunning trigger with `platform:dunning.trigger` passes the gate and
+    /// reaches the org-resolution lookup; the lazy pool then fails → 500.
+    #[tokio::test]
+    async fn dunning_trigger_with_permission_reaches_db() {
+        let token = backoffice_token(&["platform:dunning.trigger"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(DUNNING_PATH)
+            .method("POST")
+            .header("Authorization", format!("Bearer {token}"))
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({"reason": "manual retry"}).to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 6 — Slice D: cross-org analytics
+    // -------------------------------------------------------------------------
+
+    /// GET analytics overview without a token returns 401.
+    #[tokio::test]
+    async fn analytics_overview_requires_auth() {
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/analytics/overview")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    /// GET analytics overview with a token lacking `platform:analytics.read`
+    /// → 403, before any DB access.
+    #[tokio::test]
+    async fn analytics_overview_denied_without_permission() {
+        let token = backoffice_token(&["platform:org.list"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/analytics/overview")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    /// GET a single KPI with `platform:analytics.read` passes the gate and
+    /// reaches the repository; the lazy pool then fails → 500.
+    #[tokio::test]
+    async fn analytics_kpi_with_permission_reaches_db() {
+        let token = backoffice_token(&["platform:analytics.read"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/analytics/kpis/sales.revenue_total?window=this_month")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    /// An invalid `window` is rejected with 400 before touching the DB.
+    #[tokio::test]
+    async fn analytics_kpi_invalid_window_is_400() {
+        let token = backoffice_token(&["platform:analytics.read"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/analytics/kpis/sales.revenue_total?window=nope")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
 }

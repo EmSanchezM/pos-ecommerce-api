@@ -12,9 +12,11 @@
 use std::sync::Arc;
 
 use axum::http::StatusCode;
-use sqlx::{Postgres, Transaction};
+use sqlx::{PgPool, Postgres, Transaction};
+use uuid::Uuid;
 
-use audit_infra::BackofficeAuditEvent;
+use audit_infra::{BackofficeAuditEvent, OrgId};
+use backoffice_identity::BackofficeUserId;
 use events::PublishEventUseCase;
 
 use crate::error::{AppError, ErrorResponse};
@@ -58,6 +60,52 @@ pub async fn emit_audit_event(
             tracing::error!("failed to write audit event to outbox: {}", e);
             AppError::internal()
         })
+}
+
+/// Best-effort (fail-open) audit for a state change that has ALREADY been
+/// committed. Opens its own transaction, writes the `backoffice.audit.<action>`
+/// event, and commits; any failure is logged and swallowed so it never masks a
+/// successful action.
+///
+/// This is NOT atomic with the state change — the subscriptions/plan repos
+/// expose no tx-aware methods (unlike tenancy's, which is why the Phase 4 org
+/// suspend uses `emit_audit_event` inside the same tx). Callers MUST validate
+/// `reason` is non-empty before the state change, since this path swallows the
+/// reason-validation error.
+///
+/// `ip` is the Phase 4 placeholder `0.0.0.0`; Phase 5 wires ConnectInfo for the
+/// org endpoints and these follow the same upgrade path.
+pub async fn emit_state_change_audit(
+    pool: &PgPool,
+    publish: &Arc<PublishEventUseCase>,
+    actor_id: Uuid,
+    action: &str,
+    target_org_id: Option<Uuid>,
+    reason: String,
+) {
+    let event = BackofficeAuditEvent {
+        actor_type: "backoffice_user".to_string(),
+        actor_id: BackofficeUserId::from_uuid(actor_id),
+        action: action.to_string(),
+        target_org_id: target_org_id.map(OrgId::from_uuid),
+        reason,
+        ip: "0.0.0.0".to_string(),
+    };
+
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            tracing::error!(%action, "audit tx begin failed (fail-open): {e}");
+            return;
+        }
+    };
+    if let Err(e) = emit_audit_event(&mut tx, publish, event).await {
+        tracing::error!(%action, "audit emit failed (fail-open): {e:?}");
+        return;
+    }
+    if let Err(e) = tx.commit().await {
+        tracing::error!(%action, "audit commit failed (fail-open): {e}");
+    }
 }
 
 // =============================================================================
