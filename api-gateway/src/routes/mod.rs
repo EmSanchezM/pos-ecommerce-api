@@ -8,6 +8,7 @@ pub mod cash_management_routes;
 pub mod catalog_routes;
 pub mod demand_planning_routes;
 pub mod fiscal_routes;
+pub mod internal_routes;
 pub mod inventory_routes;
 pub mod loyalty_routes;
 pub mod payments_routes;
@@ -41,6 +42,7 @@ pub use demand_planning_routes::{
     replenishment_suggestions_router,
 };
 pub use fiscal_routes::{invoices_router, tax_rates_router};
+pub use internal_routes::internal_router;
 pub use inventory_routes::{
     categories_router, inventory_router, products_router, recipes_router, reports_router,
     transfers_router,

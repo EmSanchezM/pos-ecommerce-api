@@ -9,6 +9,7 @@ pub mod cash_management;
 pub mod catalog;
 pub mod demand_planning;
 pub mod fiscal;
+pub mod internal;
 pub mod inventory;
 pub mod loyalty;
 pub mod payments;

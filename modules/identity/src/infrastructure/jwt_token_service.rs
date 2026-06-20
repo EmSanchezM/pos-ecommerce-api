@@ -4,9 +4,10 @@
 // using the jsonwebtoken crate with HS256 algorithm.
 
 use chrono::{Duration, Utc};
-use common::TokenAudience;
+use common::{ActorClaim, TokenAudience};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use std::collections::HashMap;
 
@@ -257,6 +258,47 @@ impl TokenService for JwtTokenService {
         }
 
         Ok(UserId::from_uuid(token_data.claims.sub))
+    }
+
+    fn issue_impersonation_token(
+        &self,
+        user: &User,
+        store_permissions: &HashMap<String, Vec<String>>,
+        operator_id: Uuid,
+        operator_email: &str,
+    ) -> Result<String, AuthError> {
+        let now = Utc::now();
+        // Impersonation tokens are hard-capped at 15 min (NFR-SEC-4); no refresh.
+        let exp = now + Duration::minutes(15);
+        let global_permissions = collect_global_permissions(store_permissions);
+
+        // Same full tenant claims as a normal access token (so the gateway
+        // accepts it and the operator gets the user's permissions) plus the
+        // RFC 8693 `act` claim flagging the real backoffice operator.
+        let mut claims = TokenClaims::new(
+            user.id().as_uuid().to_owned(),
+            user.username().as_str().to_string(),
+            user.email().as_str().to_string(),
+            exp.timestamp(),
+            now.timestamp(),
+            store_permissions.clone(),
+            user.organization_id(),
+            global_permissions,
+            TokenAudience::Tenant,
+            self.issuer.clone(),
+        );
+        claims.act = Some(ActorClaim {
+            sub: operator_id,
+            sub_type: "backoffice_user".to_string(),
+            email: operator_email.to_string(),
+        });
+
+        encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(self.secret.as_bytes()),
+        )
+        .map_err(|_| AuthError::InvalidToken)
     }
 }
 

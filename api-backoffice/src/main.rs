@@ -17,6 +17,7 @@ mod config;
 mod database;
 pub mod error;
 mod handlers;
+pub mod impersonation_client;
 mod integration_tests;
 pub mod jobs;
 pub mod middleware;
@@ -38,7 +39,8 @@ async fn main() {
         pool,
         config.backoffice_secret,
         config.backoffice_issuer,
-        config.tenant_secret,
+        config.api_gateway_internal_url,
+        config.internal_service_secret,
     );
 
     let app = router::build_router(app_state.clone());

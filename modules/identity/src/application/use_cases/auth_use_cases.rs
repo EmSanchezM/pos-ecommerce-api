@@ -681,6 +681,16 @@ mod tests {
         fn validate_refresh_token(&self, _token: &str) -> Result<UserId, AuthError> {
             unimplemented!("Not needed for login tests")
         }
+
+        fn issue_impersonation_token(
+            &self,
+            _user: &User,
+            _store_permissions: &HashMap<String, Vec<String>>,
+            _operator_id: uuid::Uuid,
+            _operator_email: &str,
+        ) -> Result<String, AuthError> {
+            Ok("mock.impersonation.token".to_string())
+        }
     }
 
     /// Mock TokenService that supports refresh token validation for RefreshTokenUseCase tests
@@ -751,6 +761,16 @@ mod tests {
                 .get(token)
                 .copied()
                 .ok_or(AuthError::InvalidToken)
+        }
+
+        fn issue_impersonation_token(
+            &self,
+            _user: &User,
+            _store_permissions: &HashMap<String, Vec<String>>,
+            _operator_id: uuid::Uuid,
+            _operator_email: &str,
+        ) -> Result<String, AuthError> {
+            Ok("mock.impersonation.token".to_string())
         }
     }
 
