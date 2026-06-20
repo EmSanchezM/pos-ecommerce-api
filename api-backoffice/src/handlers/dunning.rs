@@ -22,7 +22,7 @@ use uuid::Uuid;
 
 use subscriptions::{DunningAttemptId, ProcessDunningAttemptUseCase, SubscriptionError};
 
-use crate::audit::emit_state_change_audit;
+use crate::audit::{begin_tx, commit_with_audit};
 use crate::error::AppError;
 use crate::handlers::reason_guard;
 use crate::handlers::subscriptions::ReasonRequest;
@@ -48,6 +48,9 @@ pub async fn trigger_dunning_handler(
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 
+    let mut tx = begin_tx(state.pool())
+        .await
+        .map_err(IntoResponse::into_response)?;
     let use_case = ProcessDunningAttemptUseCase::new(
         state.subscription_repo(),
         state.billing_cycle_repo(),
@@ -55,19 +58,19 @@ pub async fn trigger_dunning_handler(
         state.dunning_payment_gateway(),
     );
     use_case
-        .execute(aid)
+        .execute_in_tx(&mut tx, aid)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
-
-    emit_state_change_audit(
-        state.pool(),
+    commit_with_audit(
+        tx,
         &state.publish_event(),
         ctx.user_id,
         "dunning.trigger",
         org_id,
         body.reason,
     )
-    .await;
+    .await
+    .map_err(IntoResponse::into_response)?;
 
     Ok((
         StatusCode::OK,

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::PgPool;
+use sqlx::{PgExecutor, PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::SubscriptionError;
@@ -47,40 +47,30 @@ impl DunningAttemptRepository for PgDunningAttemptRepository {
     }
 
     async fn update(&self, a: &DunningAttempt) -> Result<(), SubscriptionError> {
-        let result = sqlx::query(
-            r#"
-            UPDATE dunning_attempts
-               SET executed_at    = $2,
-                   outcome        = $3,
-                   failure_reason = $4,
-                   transaction_id = $5
-             WHERE id = $1
-            "#,
-        )
-        .bind(a.id().into_uuid())
-        .bind(a.executed_at())
-        .bind(a.outcome().as_str())
-        .bind(a.failure_reason())
-        .bind(a.transaction_id())
-        .execute(&self.pool)
-        .await?;
-        if result.rows_affected() == 0 {
-            return Err(SubscriptionError::DunningAttemptNotFound(
-                a.id().into_uuid(),
-            ));
-        }
-        Ok(())
+        update_q(&self.pool, a).await
     }
 
     async fn find_by_id(
         &self,
         id: DunningAttemptId,
     ) -> Result<Option<DunningAttempt>, SubscriptionError> {
-        let row = sqlx::query_as::<_, AttemptRow>(SELECT_BY_ID)
-            .bind(id.into_uuid())
-            .fetch_optional(&self.pool)
-            .await?;
-        row.map(DunningAttempt::try_from).transpose()
+        find_by_id_q(&self.pool, id).await
+    }
+
+    async fn update_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        a: &DunningAttempt,
+    ) -> Result<(), SubscriptionError> {
+        update_q(&mut **tx, a).await
+    }
+
+    async fn find_by_id_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        id: DunningAttemptId,
+    ) -> Result<Option<DunningAttempt>, SubscriptionError> {
+        find_by_id_q(&mut **tx, id).await
     }
 
     async fn find_by_billing_cycle(
@@ -117,6 +107,48 @@ impl DunningAttemptRepository for PgDunningAttemptRepository {
             .await?;
         rows.into_iter().map(DunningAttempt::try_from).collect()
     }
+}
+
+// ---- Executor-generic query helpers ----------------------------------------
+
+async fn update_q<'e, E: PgExecutor<'e>>(
+    exec: E,
+    a: &DunningAttempt,
+) -> Result<(), SubscriptionError> {
+    let result = sqlx::query(
+        r#"
+        UPDATE dunning_attempts
+           SET executed_at    = $2,
+               outcome        = $3,
+               failure_reason = $4,
+               transaction_id = $5
+         WHERE id = $1
+        "#,
+    )
+    .bind(a.id().into_uuid())
+    .bind(a.executed_at())
+    .bind(a.outcome().as_str())
+    .bind(a.failure_reason())
+    .bind(a.transaction_id())
+    .execute(exec)
+    .await?;
+    if result.rows_affected() == 0 {
+        return Err(SubscriptionError::DunningAttemptNotFound(
+            a.id().into_uuid(),
+        ));
+    }
+    Ok(())
+}
+
+async fn find_by_id_q<'e, E: PgExecutor<'e>>(
+    exec: E,
+    id: DunningAttemptId,
+) -> Result<Option<DunningAttempt>, SubscriptionError> {
+    let row = sqlx::query_as::<_, AttemptRow>(SELECT_BY_ID)
+        .bind(id.into_uuid())
+        .fetch_optional(exec)
+        .await?;
+    row.map(DunningAttempt::try_from).transpose()
 }
 
 const SELECT_BY_ID: &str = r#"

@@ -106,46 +106,6 @@ pub async fn begin_tx(pool: &PgPool) -> Result<Transaction<'_, Postgres>, AppErr
     })
 }
 
-/// Best-effort (fail-open) audit for a state change that ALREADY committed.
-/// Opens its own transaction, writes the event, commits; failures are logged
-/// and swallowed. NOT atomic with the state change.
-///
-/// Transitional: subscription + dunning handlers still use this until their
-/// repos/use-cases gain `*_in_tx` variants and migrate to [`commit_with_audit`]
-/// (plan handlers already did). Tracked as the remaining atomic-audit slices.
-pub async fn emit_state_change_audit(
-    pool: &PgPool,
-    publish: &Arc<PublishEventUseCase>,
-    actor_id: Uuid,
-    action: &str,
-    target_org_id: Option<Uuid>,
-    reason: String,
-) {
-    let event = BackofficeAuditEvent {
-        actor_type: "backoffice_user".to_string(),
-        actor_id: BackofficeUserId::from_uuid(actor_id),
-        action: action.to_string(),
-        target_org_id: target_org_id.map(OrgId::from_uuid),
-        reason,
-        ip: "0.0.0.0".to_string(),
-    };
-
-    let mut tx = match pool.begin().await {
-        Ok(tx) => tx,
-        Err(e) => {
-            tracing::error!(%action, "audit tx begin failed (fail-open): {e}");
-            return;
-        }
-    };
-    if let Err(e) = emit_audit_event(&mut tx, publish, event).await {
-        tracing::error!(%action, "audit emit failed (fail-open): {e:?}");
-        return;
-    }
-    if let Err(e) = tx.commit().await {
-        tracing::error!(%action, "audit commit failed (fail-open): {e}");
-    }
-}
-
 // =============================================================================
 // Tests
 // =============================================================================

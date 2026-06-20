@@ -29,7 +29,7 @@ use subscriptions::{
     GetSubscriptionUseCase, ResumeSubscriptionCommand, ResumeSubscriptionUseCase,
 };
 
-use crate::audit::emit_state_change_audit;
+use crate::audit::{begin_tx, commit_with_audit};
 use crate::error::AppError;
 use crate::handlers::reason_guard;
 use crate::middleware::auth::BackofficeUserContext;
@@ -76,24 +76,30 @@ pub async fn force_cancel_handler(
     require_backoffice_permission(&ctx, "platform:subscription.force_cancel")?;
     reason_guard(&body.reason)?;
 
+    let mut tx = begin_tx(state.pool())
+        .await
+        .map_err(IntoResponse::into_response)?;
     let use_case = CancelSubscriptionUseCase::new(state.subscription_repo());
     let subscription = use_case
-        .execute(CancelSubscriptionCommand {
-            organization_id: org_id,
-            immediately: true,
-        })
+        .execute_in_tx(
+            &mut tx,
+            CancelSubscriptionCommand {
+                organization_id: org_id,
+                immediately: true,
+            },
+        )
         .await
         .map_err(|e| AppError::from(e).into_response())?;
-
-    emit_state_change_audit(
-        state.pool(),
+    commit_with_audit(
+        tx,
         &state.publish_event(),
         ctx.user_id,
         "subscription.force_cancel",
         Some(org_id),
         body.reason,
     )
-    .await;
+    .await
+    .map_err(IntoResponse::into_response)?;
 
     Ok((StatusCode::OK, Json(subscription)))
 }
@@ -108,25 +114,31 @@ pub async fn change_plan_handler(
     require_backoffice_permission(&ctx, "platform:subscription.override_billing")?;
     reason_guard(&body.reason)?;
 
+    let mut tx = begin_tx(state.pool())
+        .await
+        .map_err(IntoResponse::into_response)?;
     let use_case =
         ChangePlanUseCase::new(state.subscription_plan_repo(), state.subscription_repo());
     let subscription = use_case
-        .execute(ChangePlanCommand {
-            organization_id: org_id,
-            new_plan_id: body.new_plan_id,
-        })
+        .execute_in_tx(
+            &mut tx,
+            ChangePlanCommand {
+                organization_id: org_id,
+                new_plan_id: body.new_plan_id,
+            },
+        )
         .await
         .map_err(|e| AppError::from(e).into_response())?;
-
-    emit_state_change_audit(
-        state.pool(),
+    commit_with_audit(
+        tx,
         &state.publish_event(),
         ctx.user_id,
         "subscription.change_plan",
         Some(org_id),
         body.reason,
     )
-    .await;
+    .await
+    .map_err(IntoResponse::into_response)?;
 
     Ok((StatusCode::OK, Json(subscription)))
 }
@@ -141,23 +153,29 @@ pub async fn resume_handler(
     require_backoffice_permission(&ctx, "platform:subscription.override_billing")?;
     reason_guard(&body.reason)?;
 
+    let mut tx = begin_tx(state.pool())
+        .await
+        .map_err(IntoResponse::into_response)?;
     let use_case = ResumeSubscriptionUseCase::new(state.subscription_repo());
     let subscription = use_case
-        .execute(ResumeSubscriptionCommand {
-            organization_id: org_id,
-        })
+        .execute_in_tx(
+            &mut tx,
+            ResumeSubscriptionCommand {
+                organization_id: org_id,
+            },
+        )
         .await
         .map_err(|e| AppError::from(e).into_response())?;
-
-    emit_state_change_audit(
-        state.pool(),
+    commit_with_audit(
+        tx,
         &state.publish_event(),
         ctx.user_id,
         "subscription.resume",
         Some(org_id),
         body.reason,
     )
-    .await;
+    .await
+    .map_err(IntoResponse::into_response)?;
 
     Ok((StatusCode::OK, Json(subscription)))
 }
