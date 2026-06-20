@@ -8,7 +8,7 @@ use axum::{Router, middleware, routing::get};
 use crate::handlers::health::health_handler;
 use crate::middleware::auth::backoffice_auth_middleware;
 use crate::routes::{
-    auth_router, impersonate_router, org_router, plan_router, subscription_router,
+    auth_router, dunning_router, impersonate_router, org_router, plan_router, subscription_router,
 };
 use crate::state::BackofficeAppState;
 
@@ -27,6 +27,7 @@ use crate::state::BackofficeAppState;
 /// - `POST /backoffice/subscriptions/{org_id}/force-cancel` — platform:subscription.force_cancel
 /// - `POST /backoffice/subscriptions/{org_id}/change-plan`  — platform:subscription.override_billing
 /// - `POST /backoffice/subscriptions/{org_id}/resume`       — platform:subscription.override_billing
+/// - `POST /backoffice/dunning/{attempt_id}/trigger`        — platform:dunning.trigger
 pub fn build_router(state: BackofficeAppState) -> Router {
     // Public routes — no auth middleware
     let public_routes = Router::new()
@@ -42,6 +43,7 @@ pub fn build_router(state: BackofficeAppState) -> Router {
             "/backoffice/subscriptions",
             subscription_router(state.clone()),
         )
+        .nest("/backoffice/dunning", dunning_router(state.clone()))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             backoffice_auth_middleware,

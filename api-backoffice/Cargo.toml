@@ -16,6 +16,7 @@ identity = { path = "../modules/identity" }
 subscriptions = { path = "../modules/subscriptions" }
 tenancy = { path = "../modules/tenancy" }
 
+async-trait = { workspace = true }
 axum = { workspace = true, features = ["json"] }
 tokio = { workspace = true }
 serde = { workspace = true }
