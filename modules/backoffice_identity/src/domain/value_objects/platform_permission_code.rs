@@ -6,9 +6,8 @@ use std::sync::OnceLock;
 static PLATFORM_PERM_REGEX: OnceLock<Regex> = OnceLock::new();
 
 fn platform_perm_regex() -> &'static Regex {
-    PLATFORM_PERM_REGEX.get_or_init(|| {
-        Regex::new(r"^platform:[a-z]+\.[a-z_]+$").expect("valid regex")
-    })
+    PLATFORM_PERM_REGEX
+        .get_or_init(|| Regex::new(r"^platform:[a-z]+\.[a-z_]+$").expect("valid regex"))
 }
 
 /// Validated platform permission code following the format `platform:resource.action`.

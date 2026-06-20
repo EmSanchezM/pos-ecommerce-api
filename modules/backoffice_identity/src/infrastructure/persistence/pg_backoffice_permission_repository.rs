@@ -41,10 +41,7 @@ impl TryFrom<PermissionRow> for BackofficePermission {
 
 #[async_trait]
 impl BackofficePermissionRepository for PgBackofficePermissionRepository {
-    async fn save(
-        &self,
-        permission: &BackofficePermission,
-    ) -> Result<(), BackofficeIdentityError> {
+    async fn save(&self, permission: &BackofficePermission) -> Result<(), BackofficeIdentityError> {
         sqlx::query(
             r#"
             INSERT INTO backoffice_permissions (id, code, description, created_at)
@@ -113,7 +110,9 @@ impl BackofficePermissionRepository for PgBackofficePermissionRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        rows.into_iter().map(BackofficePermission::try_from).collect()
+        rows.into_iter()
+            .map(BackofficePermission::try_from)
+            .collect()
     }
 }
 
@@ -159,7 +158,10 @@ mod tests {
 
         assert_eq!(found.id(), &perm_id);
         assert_eq!(found.code().as_str(), "platform:test.fixture_id");
-        assert_eq!(found.description(), Some("Description for platform:test.fixture_id"));
+        assert_eq!(
+            found.description(),
+            Some("Description for platform:test.fixture_id")
+        );
     }
 
     #[sqlx::test(migrations = "../../migrations")]
@@ -184,8 +186,7 @@ mod tests {
     #[sqlx::test(migrations = "../../migrations")]
     async fn find_by_id_missing_returns_none(pool: PgPool) {
         let repo = PgBackofficePermissionRepository::new(pool);
-        let missing_id =
-            BackofficePermissionId::from_uuid(Uuid::new_v7(Timestamp::now(NoContext)));
+        let missing_id = BackofficePermissionId::from_uuid(Uuid::new_v7(Timestamp::now(NoContext)));
 
         let result = repo
             .find_by_id(missing_id)

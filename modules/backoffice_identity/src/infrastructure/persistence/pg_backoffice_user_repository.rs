@@ -320,7 +320,10 @@ mod tests {
         assert_eq!(found.password_hash(), "argon2_hash_placeholder");
         assert!(found.mfa_secret().is_none(), "mfa_secret must be None");
         assert!(found.is_active(), "is_active must default to true");
-        assert!(found.last_login_at().is_none(), "last_login_at must be None");
+        assert!(
+            found.last_login_at().is_none(),
+            "last_login_at must be None"
+        );
     }
 
     #[sqlx::test(migrations = "../../migrations")]
@@ -401,8 +404,14 @@ mod tests {
             .expect("find_by_id should not error")
             .expect("user should still exist");
 
-        assert!(!found.is_active(), "is_active should be false after deactivate");
-        assert!(found.last_login_at().is_some(), "last_login_at should be set");
+        assert!(
+            !found.is_active(),
+            "is_active should be false after deactivate"
+        );
+        assert!(
+            found.last_login_at().is_some(),
+            "last_login_at should be set"
+        );
     }
 
     #[sqlx::test(migrations = "../../migrations")]
@@ -417,8 +426,9 @@ mod tests {
         repo.save(&user).await.expect("save should succeed");
 
         // The seeded super_admin role has a known constant UUID from the seed migration.
-        let super_admin_role_id =
-            BackofficeRoleId::from_uuid(Uuid::parse_str("b0cf0001-0000-7000-8000-000000000001").unwrap());
+        let super_admin_role_id = BackofficeRoleId::from_uuid(
+            Uuid::parse_str("b0cf0001-0000-7000-8000-000000000001").unwrap(),
+        );
 
         repo.assign_role(user_id, super_admin_role_id)
             .await
@@ -433,7 +443,10 @@ mod tests {
             permissions.len(),
             13,
             "super_admin must have all 13 permissions; got: {:?}",
-            permissions.iter().map(|p| p.code().as_str()).collect::<Vec<_>>()
+            permissions
+                .iter()
+                .map(|p| p.code().as_str())
+                .collect::<Vec<_>>()
         );
 
         // Verify the 6 required FR-ID-4 permissions are present

@@ -58,10 +58,7 @@ mod tests {
     }
 
     fn ctx_with(perms: &[&str]) -> BackofficeUserContext {
-        BackofficeUserContext::new(
-            test_uuid(),
-            perms.iter().map(|p| p.to_string()).collect(),
-        )
+        BackofficeUserContext::new(test_uuid(), perms.iter().map(|p| p.to_string()).collect())
     }
 
     /// P3-T05: user with permission passes gate.

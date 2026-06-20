@@ -152,7 +152,10 @@ mod tests {
         assert_eq!(found.id(), &role_id);
         assert_eq!(found.name(), "test_admin_role");
         assert_eq!(found.description(), Some("Description for test_admin_role"));
-        assert!(found.is_system_protected(), "is_system_protected must survive round-trip");
+        assert!(
+            found.is_system_protected(),
+            "is_system_protected must survive round-trip"
+        );
     }
 
     #[sqlx::test(migrations = "../../migrations")]
