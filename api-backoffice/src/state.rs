@@ -18,9 +18,12 @@ use events::{PgOutboxRepository, PublishEventUseCase};
 use identity::{PgUserRepository, UserRepository};
 use sqlx::PgPool;
 use subscriptions::{
-    PgSubscriptionPlanRepository, PgSubscriptionRepository, SubscriptionPlanRepository,
-    SubscriptionRepository,
+    BillingCycleRepository, BillingPaymentGateway, DunningAttemptRepository,
+    PgBillingCycleRepository, PgDunningAttemptRepository, PgSubscriptionPlanRepository,
+    PgSubscriptionRepository, SubscriptionPlanRepository, SubscriptionRepository,
 };
+
+use crate::adapters::StubBillingPaymentGateway;
 use tenancy::{OrganizationRepository, PgOrganizationRepository};
 
 /// Application state shared across all backoffice HTTP handlers.
@@ -52,6 +55,12 @@ pub struct BackofficeAppState {
     /// Subscription repository — backs subscription admin (force-cancel,
     /// change-plan, resume).
     subscription_repo: Arc<dyn SubscriptionRepository>,
+    /// Billing-cycle repository — needed by manual dunning trigger.
+    billing_cycle_repo: Arc<dyn BillingCycleRepository>,
+    /// Dunning-attempt repository — backs manual dunning trigger.
+    dunning_repo: Arc<dyn DunningAttemptRepository>,
+    /// Payment gateway used when manually firing a dunning attempt. v1.0 stub.
+    dunning_payment_gateway: Arc<dyn BillingPaymentGateway>,
 }
 
 impl BackofficeAppState {
@@ -113,6 +122,15 @@ impl BackofficeAppState {
         let subscription_repo: Arc<dyn SubscriptionRepository> =
             Arc::new(PgSubscriptionRepository::new((*pool_arc).clone()));
 
+        let billing_cycle_repo: Arc<dyn BillingCycleRepository> =
+            Arc::new(PgBillingCycleRepository::new((*pool_arc).clone()));
+
+        let dunning_repo: Arc<dyn DunningAttemptRepository> =
+            Arc::new(PgDunningAttemptRepository::new((*pool_arc).clone()));
+
+        let dunning_payment_gateway: Arc<dyn BillingPaymentGateway> =
+            Arc::new(StubBillingPaymentGateway::new());
+
         Self {
             pool,
             user_repo,
@@ -125,6 +143,9 @@ impl BackofficeAppState {
             publish_event,
             subscription_plan_repo,
             subscription_repo,
+            billing_cycle_repo,
+            dunning_repo,
+            dunning_payment_gateway,
         }
     }
 
@@ -182,6 +203,21 @@ impl BackofficeAppState {
     pub fn subscription_repo(&self) -> Arc<dyn SubscriptionRepository> {
         self.subscription_repo.clone()
     }
+
+    /// Returns the billing-cycle repository.
+    pub fn billing_cycle_repo(&self) -> Arc<dyn BillingCycleRepository> {
+        self.billing_cycle_repo.clone()
+    }
+
+    /// Returns the dunning-attempt repository.
+    pub fn dunning_repo(&self) -> Arc<dyn DunningAttemptRepository> {
+        self.dunning_repo.clone()
+    }
+
+    /// Returns the payment gateway used for manual dunning triggers.
+    pub fn dunning_payment_gateway(&self) -> Arc<dyn BillingPaymentGateway> {
+        self.dunning_payment_gateway.clone()
+    }
 }
 
 #[cfg(test)]
@@ -220,6 +256,10 @@ mod tests {
         let _plans = state.subscription_plan_repo();
         // subscription_repo is wired (P6 — subscription admin)
         let _subs = state.subscription_repo();
+        // dunning wiring (P6 — manual dunning trigger)
+        let _cyc = state.billing_cycle_repo();
+        let _dun = state.dunning_repo();
+        let _gw = state.dunning_payment_gateway();
     }
 
     #[tokio::test]

@@ -295,4 +295,63 @@ mod tests {
         let response = app.oneshot(request).await.unwrap();
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 6 — Slice C: manual dunning trigger
+    // -------------------------------------------------------------------------
+
+    const DUNNING_PATH: &str = "/backoffice/dunning/019ee5dd-0000-7000-8000-000000000abc/trigger";
+
+    /// POST dunning trigger without a token returns 401.
+    #[tokio::test]
+    async fn dunning_trigger_requires_auth() {
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(DUNNING_PATH)
+            .method("POST")
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({"reason": "manual retry"}).to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    /// POST dunning trigger with a token lacking `platform:dunning.trigger`
+    /// → 403, before any DB access.
+    #[tokio::test]
+    async fn dunning_trigger_denied_without_permission() {
+        let token = backoffice_token(&["platform:org.list"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(DUNNING_PATH)
+            .method("POST")
+            .header("Authorization", format!("Bearer {token}"))
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({"reason": "manual retry"}).to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    /// POST dunning trigger with `platform:dunning.trigger` passes the gate and
+    /// reaches the org-resolution lookup; the lazy pool then fails → 500.
+    #[tokio::test]
+    async fn dunning_trigger_with_permission_reaches_db() {
+        let token = backoffice_token(&["platform:dunning.trigger"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(DUNNING_PATH)
+            .method("POST")
+            .header("Authorization", format!("Bearer {token}"))
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({"reason": "manual retry"}).to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
 }
