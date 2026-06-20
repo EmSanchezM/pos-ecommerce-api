@@ -27,6 +27,7 @@ service_orders = { path = "../modules/service_orders" }
 restaurant_operations = { path = "../modules/restaurant_operations" }
 tenancy = { path = "../modules/tenancy" }
 subscriptions = { path = "../modules/subscriptions" }
+subscription_billing = { path = "../modules/subscription_billing" }
 
 axum = { workspace = true, features = ["json", "multipart"] }
 async-trait = { workspace = true }

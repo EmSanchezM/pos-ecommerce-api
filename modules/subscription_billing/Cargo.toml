@@ -1,0 +1,12 @@
+[package]
+name = "subscription_billing"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+subscriptions = { path = "../subscriptions" }
+tenancy = { path = "../tenancy" }
+
+async-trait = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }

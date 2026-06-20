@@ -15,6 +15,7 @@ common = { path = "../modules/common" }
 events = { path = "../modules/events" }
 identity = { path = "../modules/identity" }
 subscriptions = { path = "../modules/subscriptions" }
+subscription_billing = { path = "../modules/subscription_billing" }
 tenancy = { path = "../modules/tenancy" }
 
 async-trait = { workspace = true }
