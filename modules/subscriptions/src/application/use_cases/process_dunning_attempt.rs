@@ -5,6 +5,8 @@
 //! attempt, and leaves the outcome `Pending` until the webhook resolves it.
 
 use std::sync::Arc;
+
+use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::SubscriptionError;
@@ -73,6 +75,56 @@ impl ProcessDunningAttemptUseCase {
         // webhook subscriber resolves it via `RecordPaymentOutcomeUseCase`.
         let stamped = stamp_transaction(attempt, charge.transaction_id);
         self.dunning_repo.update(&stamped).await?;
+        Ok(())
+    }
+
+    /// Transactional path — the attempt reads and the `transaction_id` stamp run
+    /// inside the caller's tx so the stamp commits atomically with an
+    /// audit-outbox event.
+    ///
+    /// Tradeoff: the payment-gateway call happens while the tx is open. With the
+    /// v1.0 stub this is instant; a real (HTTP) gateway would hold the tx during
+    /// the network round-trip. Acceptable here because the audited unit is the
+    /// `transaction_id` stamp, not the charge itself (the charge is inherently
+    /// non-transactional with the DB regardless).
+    pub async fn execute_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        attempt_id: DunningAttemptId,
+    ) -> Result<(), SubscriptionError> {
+        let attempt = self
+            .dunning_repo
+            .find_by_id_in_tx(tx, attempt_id)
+            .await?
+            .ok_or_else(|| SubscriptionError::DunningAttemptNotFound(attempt_id.into_uuid()))?;
+
+        // Already fired? Nothing to do — webhook will resolve it.
+        if attempt.transaction_id().is_some() {
+            return Ok(());
+        }
+
+        let cycle = self
+            .cycle_repo
+            .find_by_id_in_tx(tx, attempt.billing_cycle_id())
+            .await?
+            .ok_or_else(|| {
+                SubscriptionError::BillingCycleNotFound(attempt.billing_cycle_id().into_uuid())
+            })?;
+        let subscription = self
+            .sub_repo
+            .find_by_id_in_tx(tx, cycle.subscription_id())
+            .await?
+            .ok_or_else(|| {
+                SubscriptionError::SubscriptionNotFound(cycle.subscription_id().into_uuid())
+            })?;
+
+        let charge = self
+            .payment_gw
+            .create_pending_charge(subscription.organization_id(), &cycle)
+            .await?;
+
+        let stamped = stamp_transaction(attempt, charge.transaction_id);
+        self.dunning_repo.update_in_tx(tx, &stamped).await?;
         Ok(())
     }
 }

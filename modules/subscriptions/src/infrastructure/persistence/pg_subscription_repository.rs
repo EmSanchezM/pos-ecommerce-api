@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::PgPool;
+use sqlx::{PgExecutor, PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use tenancy::OrganizationId;
@@ -54,66 +54,45 @@ impl SubscriptionRepository for PgSubscriptionRepository {
     }
 
     async fn update_with_version(&self, s: &Subscription) -> Result<(), SubscriptionError> {
-        // Optimistic lock: the entity already advanced its `version`, so the
-        // row in PG must still be at `version - 1`.
-        let expected = s
-            .version()
-            .checked_sub(1)
-            .ok_or(SubscriptionError::OptimisticLockFailed)?;
-        let result = sqlx::query(
-            r#"
-            UPDATE subscriptions
-               SET plan_id              = $2,
-                   status               = $3,
-                   current_period_start = $4,
-                   current_period_end   = $5,
-                   trial_end            = $6,
-                   cancel_at_period_end = $7,
-                   canceled_at          = $8,
-                   version              = $9,
-                   updated_at           = $10
-             WHERE id = $1 AND version = $11
-            "#,
-        )
-        .bind(s.id().into_uuid())
-        .bind(s.plan_id().into_uuid())
-        .bind(s.status().as_str())
-        .bind(s.current_period_start())
-        .bind(s.current_period_end())
-        .bind(s.trial_end())
-        .bind(s.cancel_at_period_end())
-        .bind(s.canceled_at())
-        .bind(s.version())
-        .bind(s.updated_at())
-        .bind(expected)
-        .execute(&self.pool)
-        .await?;
-        if result.rows_affected() == 0 {
-            return Err(SubscriptionError::OptimisticLockFailed);
-        }
-        Ok(())
+        update_with_version_q(&self.pool, s).await
     }
 
     async fn find_by_id(
         &self,
         id: SubscriptionId,
     ) -> Result<Option<Subscription>, SubscriptionError> {
-        let row = sqlx::query_as::<_, SubscriptionRow>(SELECT_BY_ID)
-            .bind(id.into_uuid())
-            .fetch_optional(&self.pool)
-            .await?;
-        row.map(Subscription::try_from).transpose()
+        find_by_id_q(&self.pool, id).await
     }
 
     async fn find_active_by_organization(
         &self,
         organization_id: OrganizationId,
     ) -> Result<Option<Subscription>, SubscriptionError> {
-        let row = sqlx::query_as::<_, SubscriptionRow>(SELECT_ACTIVE_BY_ORG)
-            .bind(organization_id.into_uuid())
-            .fetch_optional(&self.pool)
-            .await?;
-        row.map(Subscription::try_from).transpose()
+        find_active_by_organization_q(&self.pool, organization_id).await
+    }
+
+    async fn update_with_version_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        s: &Subscription,
+    ) -> Result<(), SubscriptionError> {
+        update_with_version_q(&mut **tx, s).await
+    }
+
+    async fn find_by_id_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        id: SubscriptionId,
+    ) -> Result<Option<Subscription>, SubscriptionError> {
+        find_by_id_q(&mut **tx, id).await
+    }
+
+    async fn find_active_by_organization_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        organization_id: OrganizationId,
+    ) -> Result<Option<Subscription>, SubscriptionError> {
+        find_active_by_organization_q(&mut **tx, organization_id).await
     }
 
     async fn find_by_organization(
@@ -150,6 +129,74 @@ impl SubscriptionRepository for PgSubscriptionRepository {
             .await?;
         rows.into_iter().map(Subscription::try_from).collect()
     }
+}
+
+// ---- Executor-generic query helpers ----------------------------------------
+
+async fn update_with_version_q<'e, E: PgExecutor<'e>>(
+    exec: E,
+    s: &Subscription,
+) -> Result<(), SubscriptionError> {
+    // Optimistic lock: the entity already advanced its `version`, so the row in
+    // PG must still be at `version - 1`.
+    let expected = s
+        .version()
+        .checked_sub(1)
+        .ok_or(SubscriptionError::OptimisticLockFailed)?;
+    let result = sqlx::query(
+        r#"
+        UPDATE subscriptions
+           SET plan_id              = $2,
+               status               = $3,
+               current_period_start = $4,
+               current_period_end   = $5,
+               trial_end            = $6,
+               cancel_at_period_end = $7,
+               canceled_at          = $8,
+               version              = $9,
+               updated_at           = $10
+         WHERE id = $1 AND version = $11
+        "#,
+    )
+    .bind(s.id().into_uuid())
+    .bind(s.plan_id().into_uuid())
+    .bind(s.status().as_str())
+    .bind(s.current_period_start())
+    .bind(s.current_period_end())
+    .bind(s.trial_end())
+    .bind(s.cancel_at_period_end())
+    .bind(s.canceled_at())
+    .bind(s.version())
+    .bind(s.updated_at())
+    .bind(expected)
+    .execute(exec)
+    .await?;
+    if result.rows_affected() == 0 {
+        return Err(SubscriptionError::OptimisticLockFailed);
+    }
+    Ok(())
+}
+
+async fn find_by_id_q<'e, E: PgExecutor<'e>>(
+    exec: E,
+    id: SubscriptionId,
+) -> Result<Option<Subscription>, SubscriptionError> {
+    let row = sqlx::query_as::<_, SubscriptionRow>(SELECT_BY_ID)
+        .bind(id.into_uuid())
+        .fetch_optional(exec)
+        .await?;
+    row.map(Subscription::try_from).transpose()
+}
+
+async fn find_active_by_organization_q<'e, E: PgExecutor<'e>>(
+    exec: E,
+    organization_id: OrganizationId,
+) -> Result<Option<Subscription>, SubscriptionError> {
+    let row = sqlx::query_as::<_, SubscriptionRow>(SELECT_ACTIVE_BY_ORG)
+        .bind(organization_id.into_uuid())
+        .fetch_optional(exec)
+        .await?;
+    row.map(Subscription::try_from).transpose()
 }
 
 const ALL_COLUMNS: &str = r#"

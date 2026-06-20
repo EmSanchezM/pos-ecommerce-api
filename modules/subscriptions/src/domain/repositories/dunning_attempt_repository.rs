@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::SubscriptionError;
@@ -36,4 +37,18 @@ pub trait DunningAttemptRepository: Send + Sync {
         now: DateTime<Utc>,
         limit: i64,
     ) -> Result<Vec<DunningAttempt>, SubscriptionError>;
+
+    // ---- Transactional variants (atomic state change + audit) ------------
+
+    async fn update_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        attempt: &DunningAttempt,
+    ) -> Result<(), SubscriptionError>;
+
+    async fn find_by_id_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        id: DunningAttemptId,
+    ) -> Result<Option<DunningAttempt>, SubscriptionError>;
 }
