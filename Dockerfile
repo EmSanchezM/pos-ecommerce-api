@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ============================================================================
-# Build stage — compiles api-gateway + seed + backoffice-api against the
+# Build stage — compiles api-gateway + seed + api-backoffice against the
 # workspace. Uses cargo's release profile; the migrations directory is embedded
 # into the `seed` binary at compile time via the `sqlx::migrate!` macro, so the
 # runtime image doesn't ship the migrations dir or sqlx-cli.
@@ -18,9 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY . .
 
-# Builds release binaries for api-gateway, seed and backoffice-api in a single
+# Builds release binaries for api-gateway, seed and api-backoffice in a single
 # cargo invocation so the build artifact cache is shared.
-RUN cargo build --release -p api-gateway -p seed -p backoffice-api
+RUN cargo build --release -p api-gateway -p seed -p api-backoffice
 
 # ============================================================================
 # Runtime stage — slim debian with only what the binaries need at runtime:
@@ -36,12 +36,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=builder /app/target/release/api-gateway /usr/local/bin/api-gateway
 COPY --from=builder /app/target/release/seed /usr/local/bin/seed
-COPY --from=builder /app/target/release/backoffice-api /usr/local/bin/backoffice-api
+COPY --from=builder /app/target/release/api-backoffice /usr/local/bin/api-backoffice
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # Default entrypoint runs the tenant stack (seed + api-gateway on :8000). The
-# backoffice service in compose overrides the entrypoint to run backoffice-api
+# backoffice service in compose overrides the entrypoint to run api-backoffice
 # (:8001) from this same image — it must NOT re-run the seed.
 EXPOSE 8000 8001
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

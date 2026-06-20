@@ -1,10 +1,10 @@
 [package]
-name = "backoffice-api"
+name = "api-backoffice"
 version = { workspace = true }
 edition = { workspace = true }
 
 [[bin]]
-name = "backoffice-api"
+name = "api-backoffice"
 path = "src/main.rs"
 
 [dependencies]

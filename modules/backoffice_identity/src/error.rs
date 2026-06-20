@@ -52,7 +52,6 @@ pub enum BackofficeIdentityError {
     Database(#[from] sqlx::Error),
 
     // --- Variants added for Phase 4 (SuspendOrganizationWithAuditUseCase) ---
-
     #[error("Invalid input: {0}")]
     InvalidInput(String),
 

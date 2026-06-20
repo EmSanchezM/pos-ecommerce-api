@@ -117,7 +117,7 @@ mod tests {
         OutboxEvent::create(
             "backoffice",
             &actor_id_str,
-            &audit_event.event_type(),
+            audit_event.event_type(),
             payload,
         )
     }

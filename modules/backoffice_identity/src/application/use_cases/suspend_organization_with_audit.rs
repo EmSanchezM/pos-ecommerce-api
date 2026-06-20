@@ -200,7 +200,10 @@ mod tests {
 
         match result {
             Err(BackofficeIdentityError::InvalidInput(msg)) => {
-                assert!(msg.contains("reason"), "error message should mention 'reason'");
+                assert!(
+                    msg.contains("reason"),
+                    "error message should mention 'reason'"
+                );
             }
             other => panic!("expected InvalidInput, got {:?}", other),
         }

@@ -19,13 +19,13 @@ services:
     restart: unless-stopped
 
   # Platform-owner backoffice. Reuses the image built by `app` but overrides the
-  # entrypoint to run the backoffice-api binary directly — it must NOT run the
+  # entrypoint to run the api-backoffice binary directly — it must NOT run the
   # seed (the `app` service owns migrations + seeding). Listens on :8001 with
   # its own JWT_BACKOFFICE_SECRET (two-secret isolation from the tenant API).
-  backoffice:
+  api-backoffice:
     container_name: api-backoffice
     image: pos-ecommerce-api:latest
-    entrypoint: ["/usr/local/bin/backoffice-api"]
+    entrypoint: ["/usr/local/bin/api-backoffice"]
     ports:
       - "8001:8001"
     env_file:

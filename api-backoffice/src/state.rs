@@ -14,10 +14,10 @@ use backoffice_identity::{
     IssueImpersonationTokenWithAuditUseCase, JwtBackofficeTokenService, PgBackofficeUserRepository,
     SuspendOrganizationWithAuditUseCase,
 };
-use events::{PublishEventUseCase, PgOutboxRepository};
+use events::{PgOutboxRepository, PublishEventUseCase};
 use identity::{PgUserRepository, UserRepository};
-use tenancy::{OrganizationRepository, PgOrganizationRepository};
 use sqlx::PgPool;
+use tenancy::{OrganizationRepository, PgOrganizationRepository};
 
 /// Application state shared across all backoffice HTTP handlers.
 ///

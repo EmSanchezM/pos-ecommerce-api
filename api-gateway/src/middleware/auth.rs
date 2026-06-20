@@ -352,7 +352,10 @@ mod tests {
             .values()
             .any(|perms| perms.iter().any(|p| p == "organization:admin"));
 
-        assert!(is_super_admin_new, "organization:admin must grant super admin");
+        assert!(
+            is_super_admin_new,
+            "organization:admin must grant super admin"
+        );
         assert!(
             !is_super_admin_old,
             "system:admin must NOT grant super admin after rename"
@@ -532,10 +535,7 @@ mod tests {
         .unwrap();
 
         let result = identity::TokenService::validate_access_token(&tenant_service, &token);
-        assert!(
-            result.is_err(),
-            "Legacy token without aud must be rejected"
-        );
+        assert!(result.is_err(), "Legacy token without aud must be rejected");
     }
 
     // -------------------------------------------------------------------------
@@ -573,6 +573,9 @@ mod tests {
     }
 
     #[test]
+    // The None is a deliberate stand-in for "no ConnectInfo, no header"; clippy
+    // flags unwrapping a literal None, but that is exactly the fallback under test.
+    #[allow(clippy::unnecessary_literal_unwrap)]
     fn ip_falls_back_to_zeros_when_no_source_available() {
         // When neither ConnectInfo nor X-Forwarded-For is present, use "0.0.0.0"
         let ip: Option<String> = None; // simulates no ConnectInfo, no header
@@ -594,7 +597,13 @@ mod tests {
         let should_emit_audit = actor_with_impersonation.is_some();
         let should_not_emit_audit = actor_without_impersonation.is_some();
 
-        assert!(should_emit_audit, "impersonated request must trigger audit emit");
-        assert!(!should_not_emit_audit, "normal request must NOT trigger audit emit");
+        assert!(
+            should_emit_audit,
+            "impersonated request must trigger audit emit"
+        );
+        assert!(
+            !should_not_emit_audit,
+            "normal request must NOT trigger audit emit"
+        );
     }
 }
