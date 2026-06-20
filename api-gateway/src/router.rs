@@ -2,6 +2,8 @@ use axum::{Router, routing::get};
 use common::health::infrastructure::health_check_simple;
 
 use crate::config::AppConfig;
+use crate::handlers::internal::InternalState;
+use crate::routes::internal_router;
 use crate::routes::{
     abc_classification_router, accounting_router, admin_subscriptions_router, analytics_router,
     auth_router, bank_accounts_router, bank_reconciliations_router, bank_transactions_router,
@@ -28,6 +30,14 @@ use crate::routes::{
 use crate::state::AppState;
 
 pub fn build_router(app_state: AppState, config: &AppConfig) -> Router {
+    // Internal service-to-service router — its own state + shared-secret auth,
+    // deliberately outside the tenant auth middleware. Backs impersonation v2.
+    let internal_state = InternalState {
+        token_service: app_state.token_service(),
+        user_repo: app_state.user_repo(),
+        internal_secret: config.internal_service_secret.clone().into(),
+    };
+
     Router::new()
         .route("/health", get(health_check_simple))
         .nest("/api/v1/auth", auth_router())
@@ -259,4 +269,7 @@ pub fn build_router(app_state: AppState, config: &AppConfig) -> Router {
             tower_http::services::ServeDir::new(&config.image_storage.root),
         )
         .with_state(app_state)
+        // Internal router carries its own state, so it is nested after the
+        // tenant router is fully stated (both are `Router<()>` here).
+        .nest("/internal", internal_router(internal_state))
 }

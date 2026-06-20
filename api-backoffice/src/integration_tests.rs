@@ -23,7 +23,8 @@ mod tests {
             pool,
             "backoffice-secret-at-least-32-bytes-long".to_string(),
             "backoffice-api:test".to_string(),
-            "tenant-secret-at-least-32-bytes-long-xx".to_string(),
+            "http://localhost:8000".to_string(),
+            "internal-secret-test".to_string(),
         )
     }
 
