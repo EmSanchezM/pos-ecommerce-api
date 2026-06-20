@@ -203,7 +203,12 @@ mod tests {
         let tenant_user_id = Uuid::new_v7(Timestamp::now(NoContext));
 
         let result = uc
-            .execute(actor_id, tenant_user_id, "".to_string(), "127.0.0.1".to_string())
+            .execute(
+                actor_id,
+                tenant_user_id,
+                "".to_string(),
+                "127.0.0.1".to_string(),
+            )
             .await;
 
         assert!(

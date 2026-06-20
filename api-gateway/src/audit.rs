@@ -188,8 +188,8 @@ mod tests {
         use sqlx::postgres::PgPoolOptions;
         use std::env;
 
-        let database_url = env::var("DATABASE_URL")
-            .expect("DATABASE_URL must be set for this integration test");
+        let database_url =
+            env::var("DATABASE_URL").expect("DATABASE_URL must be set for this integration test");
 
         let pool = PgPoolOptions::new()
             .max_connections(1)

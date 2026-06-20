@@ -89,7 +89,7 @@ impl CalculateShippingUseCase {
         }
 
         // Cheapest first.
-        options.sort_by(|a, b| a.rate.cmp(&b.rate));
+        options.sort_by_key(|a| a.rate);
 
         if options.is_empty() {
             return Err(ShippingError::NoRatesAvailable);

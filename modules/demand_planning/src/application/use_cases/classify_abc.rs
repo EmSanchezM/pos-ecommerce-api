@@ -55,7 +55,7 @@ impl ClassifyAbcUseCase {
 
         let mut to_save: Vec<AbcClassification> = Vec::new();
         for (store_id, mut rows) in by_store {
-            rows.sort_by(|a, b| b.1.cmp(&a.1));
+            rows.sort_by_key(|r| std::cmp::Reverse(r.1));
             let total: Decimal = rows.iter().map(|(_, r)| *r).sum();
             if total <= Decimal::ZERO {
                 continue;

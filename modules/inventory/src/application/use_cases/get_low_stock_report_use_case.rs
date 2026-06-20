@@ -116,7 +116,7 @@ where
         }
 
         // Sort by shortage (highest first) to prioritize critical items
-        items.sort_by(|a, b| b.shortage.cmp(&a.shortage));
+        items.sort_by_key(|i| std::cmp::Reverse(i.shortage));
 
         Ok(LowStockReportResponse {
             items: items.clone(),

@@ -80,6 +80,7 @@ pub async fn backoffice_auth_middleware(
     next.run(request).await
 }
 
+#[allow(clippy::result_large_err)]
 fn extract_bearer_token(request: &Request<Body>) -> Result<String, Response> {
     let auth_header = request
         .headers()

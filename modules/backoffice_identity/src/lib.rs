@@ -36,11 +36,11 @@ pub use domain::auth::BackofficeTokenService;
 
 // Application — Use Cases
 pub use application::use_cases::AuthenticateBackofficeUserUseCase;
-pub use application::use_cases::{
-    IssueImpersonationTokenUseCase, IssueImpersonationTokenWithAuditUseCase,
-    IMPERSONATION_TOKEN_EXPIRY_SECONDS,
-};
 pub use application::use_cases::SuspendOrganizationWithAuditUseCase;
+pub use application::use_cases::{
+    IMPERSONATION_TOKEN_EXPIRY_SECONDS, IssueImpersonationTokenUseCase,
+    IssueImpersonationTokenWithAuditUseCase,
+};
 
 // Application — DTOs
 pub use application::dtos::{

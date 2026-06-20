@@ -167,7 +167,7 @@ impl From<BackofficeIdentityError> for AppError {
             ),
             BackofficeIdentityError::OrgNotFound(id) => (
                 StatusCode::NOT_FOUND,
-                ErrorResponse::new("ORG_NOT_FOUND", &format!("Organization {} not found", id)),
+                ErrorResponse::new("ORG_NOT_FOUND", format!("Organization {} not found", id)),
             ),
             BackofficeIdentityError::Tenancy(msg) => {
                 tracing::error!("org state transition error: {}", msg);

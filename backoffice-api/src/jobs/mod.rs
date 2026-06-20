@@ -37,10 +37,7 @@ pub fn spawn_event_dispatcher(pool: PgPool, interval_secs: u64, batch_size: i64)
             match use_case.execute(batch_size).await {
                 Ok(count) => {
                     if count > 0 {
-                        tracing::info!(
-                            "[backoffice-event-dispatcher] processed {} events",
-                            count
-                        );
+                        tracing::info!("[backoffice-event-dispatcher] processed {} events", count);
                     }
                 }
                 Err(e) => {

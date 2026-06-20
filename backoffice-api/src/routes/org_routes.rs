@@ -1,4 +1,7 @@
-use axum::{Router, routing::{get, post}};
+use axum::{
+    Router,
+    routing::{get, post},
+};
 
 use crate::handlers::orgs::{list_orgs_handler, suspend_org_handler};
 use crate::state::BackofficeAppState;

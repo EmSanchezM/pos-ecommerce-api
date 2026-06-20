@@ -98,7 +98,7 @@ pub async fn impersonate_handler(
             StatusCode::NOT_FOUND,
             ErrorResponse::new(
                 "TENANT_USER_NOT_FOUND",
-                &format!("Tenant user {} does not exist", tenant_user_id),
+                format!("Tenant user {} does not exist", tenant_user_id),
             ),
         ));
     }

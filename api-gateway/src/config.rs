@@ -54,8 +54,7 @@ impl AppConfig {
             image_storage: ImageStorageConfig {
                 public_url: env::var("IMAGE_STORAGE_PUBLIC_URL")
                     .unwrap_or_else(|_| "/uploads".to_string()),
-                root: env::var("IMAGE_STORAGE_ROOT")
-                    .unwrap_or_else(|_| "./uploads".to_string()),
+                root: env::var("IMAGE_STORAGE_ROOT").unwrap_or_else(|_| "./uploads".to_string()),
             },
             jobs: JobsConfig {
                 reservation_expiry_interval: env_or("RESERVATION_EXPIRY_INTERVAL_SECS", 300),
@@ -65,10 +64,7 @@ impl AppConfig {
                 notification_retry_interval: env_or("NOTIFICATION_RETRY_INTERVAL_SECS", 60),
                 notification_retry_batch_size: env_or("NOTIFICATION_RETRY_BATCH_SIZE", 50),
                 analytics_recompute_interval: env_or("ANALYTICS_RECOMPUTE_INTERVAL_SECS", 1800),
-                demand_planning_interval: env_or(
-                    "DEMAND_PLANNING_RECOMPUTE_INTERVAL_SECS",
-                    86_400,
-                ),
+                demand_planning_interval: env_or("DEMAND_PLANNING_RECOMPUTE_INTERVAL_SECS", 86_400),
                 subscription_billing_interval: env_or("SUBSCRIPTION_BILLING_INTERVAL_SECS", 3600),
             },
         }

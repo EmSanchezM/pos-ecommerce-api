@@ -15,6 +15,7 @@ use analytics::{
     PgAnalyticsQueryRepository, PgDashboardRepository, PgKpiSnapshotRepository, PgWidgetRepository,
     WidgetRepository,
 };
+use audit_infra::{BackofficeAuditSubscriber, PgBackofficeAuditLogRepository};
 use booking::{
     AppointmentRepository, BookingEventSubscriber, BookingPolicyRepository,
     PgAppointmentRepository, PgBookingPolicyRepository, PgResourceCalendarRepository,
@@ -38,7 +39,6 @@ use demand_planning::{
     ReorderPolicyRepository, ReplenishmentSuggestionRepository, SalesHistoryRepository,
     StockSnapshotRepository,
 };
-use audit_infra::{BackofficeAuditSubscriber, PgBackofficeAuditLogRepository};
 use events::{OutboxRepository, PgOutboxRepository, SubscriberRegistry};
 use fiscal::{PgFiscalSequenceRepository, PgInvoiceRepository, PgTaxRateRepository};
 use identity::{JwtTokenService, PgAuditRepository, PgStoreRepository, PgUserRepository};
