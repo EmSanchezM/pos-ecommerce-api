@@ -17,7 +17,10 @@ use backoffice_identity::{
 use events::{PgOutboxRepository, PublishEventUseCase};
 use identity::{PgUserRepository, UserRepository};
 use sqlx::PgPool;
-use subscriptions::{PgSubscriptionPlanRepository, SubscriptionPlanRepository};
+use subscriptions::{
+    PgSubscriptionPlanRepository, PgSubscriptionRepository, SubscriptionPlanRepository,
+    SubscriptionRepository,
+};
 use tenancy::{OrganizationRepository, PgOrganizationRepository};
 
 /// Application state shared across all backoffice HTTP handlers.
@@ -46,6 +49,9 @@ pub struct BackofficeAppState {
     publish_event: Arc<PublishEventUseCase>,
     /// Subscription plan repository (subscriptions module) — backs plan CRUD.
     subscription_plan_repo: Arc<dyn SubscriptionPlanRepository>,
+    /// Subscription repository — backs subscription admin (force-cancel,
+    /// change-plan, resume).
+    subscription_repo: Arc<dyn SubscriptionRepository>,
 }
 
 impl BackofficeAppState {
@@ -104,6 +110,9 @@ impl BackofficeAppState {
         let subscription_plan_repo: Arc<dyn SubscriptionPlanRepository> =
             Arc::new(PgSubscriptionPlanRepository::new((*pool_arc).clone()));
 
+        let subscription_repo: Arc<dyn SubscriptionRepository> =
+            Arc::new(PgSubscriptionRepository::new((*pool_arc).clone()));
+
         Self {
             pool,
             user_repo,
@@ -115,6 +124,7 @@ impl BackofficeAppState {
             impersonation_use_case,
             publish_event,
             subscription_plan_repo,
+            subscription_repo,
         }
     }
 
@@ -167,6 +177,11 @@ impl BackofficeAppState {
     pub fn subscription_plan_repo(&self) -> Arc<dyn SubscriptionPlanRepository> {
         self.subscription_plan_repo.clone()
     }
+
+    /// Returns the subscription repository (backs subscription admin).
+    pub fn subscription_repo(&self) -> Arc<dyn SubscriptionRepository> {
+        self.subscription_repo.clone()
+    }
 }
 
 #[cfg(test)]
@@ -203,6 +218,8 @@ mod tests {
         let _imp = state.impersonation_use_case();
         // subscription_plan_repo is wired (P6 — plan CRUD)
         let _plans = state.subscription_plan_repo();
+        // subscription_repo is wired (P6 — subscription admin)
+        let _subs = state.subscription_repo();
     }
 
     #[tokio::test]

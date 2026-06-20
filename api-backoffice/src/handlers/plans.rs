@@ -26,15 +26,13 @@ use axum::{
 use serde::Deserialize;
 use uuid::Uuid;
 
-use audit_infra::BackofficeAuditEvent;
-use backoffice_identity::BackofficeUserId;
 use subscriptions::{
     CreatePlanCommand, CreatePlanUseCase, DeactivatePlanUseCase, GetPlanUseCase, ListPlansQuery,
     ListPlansUseCase, UpdatePlanCommand, UpdatePlanUseCase,
 };
 
-use crate::audit::emit_audit_event;
-use crate::error::{AppError, ErrorResponse};
+use crate::audit::emit_state_change_audit;
+use crate::error::AppError;
 use crate::middleware::auth::BackofficeUserContext;
 use crate::middleware::permission::require_backoffice_permission;
 use crate::state::BackofficeAppState;
@@ -100,7 +98,7 @@ pub async fn create_plan_handler(
     Json(body): Json<CreatePlanRequest>,
 ) -> Result<impl IntoResponse, Response> {
     require_backoffice_permission(&ctx, "platform:plan.create")?;
-    reason_guard(&body.reason)?;
+    crate::handlers::reason_guard(&body.reason)?;
 
     let use_case = CreatePlanUseCase::new(state.subscription_plan_repo());
     let plan = use_case
@@ -108,7 +106,15 @@ pub async fn create_plan_handler(
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 
-    emit_plan_audit(&state, ctx.user_id, "plan.create", body.reason).await;
+    emit_state_change_audit(
+        state.pool(),
+        &state.publish_event(),
+        ctx.user_id,
+        "plan.create",
+        None,
+        body.reason,
+    )
+    .await;
 
     Ok((StatusCode::CREATED, Json(plan)))
 }
@@ -121,7 +127,7 @@ pub async fn update_plan_handler(
     Json(body): Json<UpdatePlanRequest>,
 ) -> Result<impl IntoResponse, Response> {
     require_backoffice_permission(&ctx, "platform:plan.update")?;
-    reason_guard(&body.reason)?;
+    crate::handlers::reason_guard(&body.reason)?;
 
     let use_case = UpdatePlanUseCase::new(state.subscription_plan_repo());
     let plan = use_case
@@ -129,7 +135,15 @@ pub async fn update_plan_handler(
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 
-    emit_plan_audit(&state, ctx.user_id, "plan.update", body.reason).await;
+    emit_state_change_audit(
+        state.pool(),
+        &state.publish_event(),
+        ctx.user_id,
+        "plan.update",
+        None,
+        body.reason,
+    )
+    .await;
 
     Ok((StatusCode::OK, Json(plan)))
 }
@@ -142,7 +156,7 @@ pub async fn deactivate_plan_handler(
     Json(body): Json<DeactivatePlanRequest>,
 ) -> Result<impl IntoResponse, Response> {
     require_backoffice_permission(&ctx, "platform:plan.update")?;
-    reason_guard(&body.reason)?;
+    crate::handlers::reason_guard(&body.reason)?;
 
     let use_case = DeactivatePlanUseCase::new(state.subscription_plan_repo());
     use_case
@@ -150,7 +164,15 @@ pub async fn deactivate_plan_handler(
         .await
         .map_err(|e| AppError::from(e).into_response())?;
 
-    emit_plan_audit(&state, ctx.user_id, "plan.deactivate", body.reason).await;
+    emit_state_change_audit(
+        state.pool(),
+        &state.publish_event(),
+        ctx.user_id,
+        "plan.deactivate",
+        None,
+        body.reason,
+    )
+    .await;
 
     Ok((
         StatusCode::OK,
@@ -160,68 +182,4 @@ pub async fn deactivate_plan_handler(
             "message": "Plan deactivated",
         })),
     ))
-}
-
-/// 400 if `reason` is blank — enforced before any state change (NFR-SEC-5).
-#[allow(clippy::result_large_err)]
-fn reason_guard(reason: &str) -> Result<(), Response> {
-    if reason.trim().is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse::new(
-                "REASON_REQUIRED",
-                "The 'reason' field is required for all state-mutating backoffice actions",
-            )),
-        )
-            .into_response());
-    }
-    Ok(())
-}
-
-/// Best-effort audit emission for a plan mutation. Fail-open: a failed audit is
-/// logged and swallowed so it never masks a successful plan change. Plans are a
-/// global catalog, so `target_org_id` is None.
-async fn emit_plan_audit(state: &BackofficeAppState, actor_id: Uuid, action: &str, reason: String) {
-    let event = BackofficeAuditEvent {
-        actor_type: "backoffice_user".to_string(),
-        actor_id: BackofficeUserId::from_uuid(actor_id),
-        action: action.to_string(),
-        target_org_id: None,
-        reason,
-        // Phase 4 placeholder IP — Phase 5 wires ConnectInfo for org endpoints;
-        // plan endpoints follow the same upgrade path.
-        ip: "0.0.0.0".to_string(),
-    };
-
-    let publish = state.publish_event();
-    let mut tx = match state.pool().begin().await {
-        Ok(tx) => tx,
-        Err(e) => {
-            tracing::error!(%action, "plan audit tx begin failed (fail-open): {e}");
-            return;
-        }
-    };
-    if let Err(e) = emit_audit_event(&mut tx, &publish, event).await {
-        tracing::error!(%action, "plan audit emit failed (fail-open): {e:?}");
-        return;
-    }
-    if let Err(e) = tx.commit().await {
-        tracing::error!(%action, "plan audit commit failed (fail-open): {e}");
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn empty_reason_is_rejected() {
-        assert!(reason_guard("").is_err());
-        assert!(reason_guard("   \t\n").is_err());
-    }
-
-    #[test]
-    fn non_empty_reason_passes() {
-        assert!(reason_guard("price correction for 2026 catalogue").is_ok());
-    }
 }
