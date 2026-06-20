@@ -68,9 +68,11 @@ impl AuthenticateBackofficeUserUseCase {
             .token_service
             .issue_backoffice_token(&user, &permissions)?;
 
-        // Record login and persist
+        // Record login and persist. The user already exists, so this is an
+        // UPDATE of last_login_at/updated_at — NOT a save() (which INSERTs and
+        // would collide with the unique email on every second login).
         user.record_login();
-        self.user_repo.save(&user).await?;
+        self.user_repo.update(&user).await?;
 
         Ok(BackofficeAuthResponse {
             access_token,
@@ -147,7 +149,9 @@ mod tests {
             Ok(self.user.clone())
         }
 
-        async fn update(&self, _user: &BackofficeUser) -> Result<(), BackofficeIdentityError> {
+        async fn update(&self, user: &BackofficeUser) -> Result<(), BackofficeIdentityError> {
+            // Track persisted users so `last_saved()` reflects the login update.
+            self.saved.lock().unwrap().push(user.clone());
             Ok(())
         }
 
@@ -371,5 +375,59 @@ mod tests {
             saved.last_login_at().is_some(),
             "last_login_at must be set after successful login"
         );
+    }
+
+    /// Regression (DB-backed): logging in an existing user must persist the
+    /// login via UPDATE, not INSERT. The original code called `save()` (an
+    /// INSERT) which collided with the unique email on the SECOND login,
+    /// returning DuplicateEmail. Mocks couldn't catch it — only a real repo.
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn login_twice_persists_via_update_not_insert(pool: sqlx::PgPool) {
+        use crate::infrastructure::JwtBackofficeTokenService;
+        use crate::infrastructure::persistence::PgBackofficeUserRepository;
+
+        let password = "correct_password";
+        let repo: Arc<dyn BackofficeUserRepository> =
+            Arc::new(PgBackofficeUserRepository::new(pool.clone()));
+
+        let user = BackofficeUser::new(
+            BackofficeUserId::new(),
+            BackofficeEmail::new("login-twice@example.com").unwrap(),
+            hash_password(password),
+            None,
+            true,
+            None,
+            Utc::now(),
+            Utc::now(),
+        );
+        repo.save(&user)
+            .await
+            .expect("seed user save should succeed");
+
+        let token_service: Arc<dyn BackofficeTokenService> =
+            Arc::new(JwtBackofficeTokenService::with_issuer(
+                "backoffice-secret-at-least-32-bytes-long".to_string(),
+                "backoffice-api:test".to_string(),
+            ));
+        let uc = AuthenticateBackofficeUserUseCase::new(repo.clone(), token_service);
+
+        let cmd = || AuthenticateBackofficeCommand {
+            email: "login-twice@example.com".to_string(),
+            password: password.to_string(),
+        };
+
+        uc.execute(cmd()).await.expect("first login should succeed");
+        uc.execute(cmd())
+            .await
+            .expect("second login must succeed — persist is UPDATE, not INSERT");
+
+        // Sanity: still exactly one row for that email.
+        let count: (i64,) =
+            sqlx::query_as("SELECT COUNT(*)::BIGINT FROM backoffice_users WHERE email = $1")
+                .bind("login-twice@example.com")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(count.0, 1, "login must not insert duplicate user rows");
     }
 }
