@@ -12,7 +12,6 @@
 // - handlers/    — request handlers
 // - routes/      — route sub-modules
 
-pub mod adapters;
 pub mod audit;
 mod config;
 mod database;

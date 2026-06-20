@@ -24,7 +24,7 @@ use subscriptions::{
     PgSubscriptionRepository, SubscriptionPlanRepository, SubscriptionRepository,
 };
 
-use crate::adapters::StubBillingPaymentGateway;
+use subscription_billing::StubBillingPaymentGateway;
 use tenancy::{OrganizationRepository, PgOrganizationRepository};
 
 /// Application state shared across all backoffice HTTP handlers.

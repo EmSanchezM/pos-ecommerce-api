@@ -777,9 +777,9 @@ impl AppState {
         // exact `GenerateInvoiceCommand` / `ProcessOnlinePaymentCommand`
         // contracts to call.
         let subscription_invoice_gateway: Arc<dyn SubscriptionInvoiceGateway> =
-            Arc::new(crate::adapters::subscription_billing_stubs::StubBillingInvoiceGateway::new());
+            Arc::new(subscription_billing::StubBillingInvoiceGateway::new());
         let subscription_payment_gateway: Arc<dyn SubscriptionPaymentGateway> =
-            Arc::new(crate::adapters::subscription_billing_stubs::StubBillingPaymentGateway::new());
+            Arc::new(subscription_billing::StubBillingPaymentGateway::new());
         let record_payment_outcome = Arc::new(RecordPaymentOutcomeUseCase::new(
             Arc::clone(&subscription_repo),
             Arc::clone(&billing_cycle_repo),
