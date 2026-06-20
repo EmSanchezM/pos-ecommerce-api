@@ -62,19 +62,57 @@ pub async fn emit_audit_event(
         })
 }
 
-/// Best-effort (fail-open) audit for a state change that has ALREADY been
-/// committed. Opens its own transaction, writes the `backoffice.audit.<action>`
-/// event, and commits; any failure is logged and swallowed so it never masks a
-/// successful action.
+/// Writes the `backoffice.audit.<action>` event into the caller's transaction
+/// and commits — making the audit event land ATOMICALLY with the state change
+/// the caller already applied inside `tx`. If the audit write or the commit
+/// fails, `tx` is dropped (rolled back), so the state change is undone too: no
+/// un-audited mutations, no audit of a rolled-back change.
 ///
-/// This is NOT atomic with the state change — the subscriptions/plan repos
-/// expose no tx-aware methods (unlike tenancy's, which is why the Phase 4 org
-/// suspend uses `emit_audit_event` inside the same tx). Callers MUST validate
-/// `reason` is non-empty before the state change, since this path swallows the
-/// reason-validation error.
+/// Pattern: `let mut tx = pool.begin()?; uc.execute_in_tx(&mut tx, cmd)?;`
+/// `commit_with_audit(tx, …)`.
 ///
 /// `ip` is the Phase 4 placeholder `0.0.0.0`; Phase 5 wires ConnectInfo for the
 /// org endpoints and these follow the same upgrade path.
+pub async fn commit_with_audit(
+    mut tx: Transaction<'_, Postgres>,
+    publish: &Arc<PublishEventUseCase>,
+    actor_id: Uuid,
+    action: &str,
+    target_org_id: Option<Uuid>,
+    reason: String,
+) -> Result<(), AppError> {
+    let event = BackofficeAuditEvent {
+        actor_type: "backoffice_user".to_string(),
+        actor_id: BackofficeUserId::from_uuid(actor_id),
+        action: action.to_string(),
+        target_org_id: target_org_id.map(OrgId::from_uuid),
+        reason,
+        ip: "0.0.0.0".to_string(),
+    };
+
+    emit_audit_event(&mut tx, publish, event).await?;
+    tx.commit().await.map_err(|e| {
+        tracing::error!(%action, "audit commit failed: {e}");
+        AppError::internal()
+    })
+}
+
+/// Opens a transaction, mapping the begin failure to an `AppError`. Companion
+/// to [`commit_with_audit`] for the atomic state-change + audit pattern.
+pub async fn begin_tx(pool: &PgPool) -> Result<Transaction<'_, Postgres>, AppError> {
+    pool.begin().await.map_err(|e| {
+        tracing::error!("audit tx begin failed: {e}");
+        AppError::internal()
+    })
+}
+
+/// Best-effort (fail-open) audit for a state change that ALREADY committed.
+/// Opens its own transaction, writes the event, commits; failures are logged
+/// and swallowed. NOT atomic with the state change.
+///
+/// Transitional: subscription + dunning handlers still use this until their
+/// repos/use-cases gain `*_in_tx` variants and migrate to [`commit_with_audit`]
+/// (plan handlers already did). Tracked as the remaining atomic-audit slices.
 pub async fn emit_state_change_audit(
     pool: &PgPool,
     publish: &Arc<PublishEventUseCase>,

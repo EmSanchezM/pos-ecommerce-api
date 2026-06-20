@@ -8,14 +8,11 @@
 //   PUT  /backoffice/plans/{id}            update           — platform:plan.update
 //   POST /backoffice/plans/{id}/deactivate deactivate       — platform:plan.update
 //
-// Mutations require a `reason` and emit a `backoffice.audit.plan.*` event.
-//
-// Audit posture: the event is emitted AFTER the plan write, in its own
-// transaction, and is fail-open (a failed audit is logged, the request still
-// succeeds) — mirroring the api-gateway impersonated-request audit. It is NOT
-// atomic with the plan write because the subscriptions plan repository exposes
-// no tx-aware methods (unlike tenancy's repo, which is why the Phase 4 org
-// suspend is atomic). Making plan audit atomic is a tracked follow-up.
+// Mutations require a `reason` and emit a `backoffice.audit.plan.*` event
+// ATOMICALLY with the plan write: the handler opens a transaction, runs the
+// use case via `execute_in_tx`, then `commit_with_audit` writes the outbox
+// event and commits. A failed plan op (or audit write) rolls everything back —
+// no un-audited mutations, no audit of a rolled-back change.
 
 use axum::{
     Extension, Json,
@@ -31,7 +28,7 @@ use subscriptions::{
     ListPlansUseCase, UpdatePlanCommand, UpdatePlanUseCase,
 };
 
-use crate::audit::emit_state_change_audit;
+use crate::audit::{begin_tx, commit_with_audit};
 use crate::error::AppError;
 use crate::middleware::auth::BackofficeUserContext;
 use crate::middleware::permission::require_backoffice_permission;
@@ -100,21 +97,24 @@ pub async fn create_plan_handler(
     require_backoffice_permission(&ctx, "platform:plan.create")?;
     crate::handlers::reason_guard(&body.reason)?;
 
+    let mut tx = begin_tx(state.pool())
+        .await
+        .map_err(IntoResponse::into_response)?;
     let use_case = CreatePlanUseCase::new(state.subscription_plan_repo());
     let plan = use_case
-        .execute(body.plan)
+        .execute_in_tx(&mut tx, body.plan)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
-
-    emit_state_change_audit(
-        state.pool(),
+    commit_with_audit(
+        tx,
         &state.publish_event(),
         ctx.user_id,
         "plan.create",
         None,
         body.reason,
     )
-    .await;
+    .await
+    .map_err(IntoResponse::into_response)?;
 
     Ok((StatusCode::CREATED, Json(plan)))
 }
@@ -129,21 +129,24 @@ pub async fn update_plan_handler(
     require_backoffice_permission(&ctx, "platform:plan.update")?;
     crate::handlers::reason_guard(&body.reason)?;
 
+    let mut tx = begin_tx(state.pool())
+        .await
+        .map_err(IntoResponse::into_response)?;
     let use_case = UpdatePlanUseCase::new(state.subscription_plan_repo());
     let plan = use_case
-        .execute(plan_id, body.plan)
+        .execute_in_tx(&mut tx, plan_id, body.plan)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
-
-    emit_state_change_audit(
-        state.pool(),
+    commit_with_audit(
+        tx,
         &state.publish_event(),
         ctx.user_id,
         "plan.update",
         None,
         body.reason,
     )
-    .await;
+    .await
+    .map_err(IntoResponse::into_response)?;
 
     Ok((StatusCode::OK, Json(plan)))
 }
@@ -158,21 +161,24 @@ pub async fn deactivate_plan_handler(
     require_backoffice_permission(&ctx, "platform:plan.update")?;
     crate::handlers::reason_guard(&body.reason)?;
 
+    let mut tx = begin_tx(state.pool())
+        .await
+        .map_err(IntoResponse::into_response)?;
     let use_case = DeactivatePlanUseCase::new(state.subscription_plan_repo());
     use_case
-        .execute(plan_id)
+        .execute_in_tx(&mut tx, plan_id)
         .await
         .map_err(|e| AppError::from(e).into_response())?;
-
-    emit_state_change_audit(
-        state.pool(),
+    commit_with_audit(
+        tx,
         &state.publish_event(),
         ctx.user_id,
         "plan.deactivate",
         None,
         body.reason,
     )
-    .await;
+    .await
+    .map_err(IntoResponse::into_response)?;
 
     Ok((
         StatusCode::OK,
