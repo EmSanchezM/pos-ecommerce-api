@@ -7,7 +7,7 @@ use axum::{Router, middleware, routing::get};
 
 use crate::handlers::health::health_handler;
 use crate::middleware::auth::backoffice_auth_middleware;
-use crate::routes::{auth_router, impersonate_router, org_router};
+use crate::routes::{auth_router, impersonate_router, org_router, plan_router};
 use crate::state::BackofficeAppState;
 
 /// Build the complete backoffice API router.
@@ -18,6 +18,9 @@ use crate::state::BackofficeAppState;
 /// - `GET /backoffice/orgs`                       — requires aud:Backoffice JWT
 /// - `POST /backoffice/orgs/{id}/suspend`         — requires platform:org.suspend
 /// - `POST /backoffice/impersonate/{user_id}`     — requires platform:user.impersonate
+/// - `GET/POST /backoffice/plans`                 — requires platform:plan.read/create
+/// - `PUT /backoffice/plans/{id}`                 — requires platform:plan.update
+/// - `POST /backoffice/plans/{id}/deactivate`     — requires platform:plan.update
 pub fn build_router(state: BackofficeAppState) -> Router {
     // Public routes — no auth middleware
     let public_routes = Router::new()
@@ -28,6 +31,7 @@ pub fn build_router(state: BackofficeAppState) -> Router {
     let authenticated_routes = Router::new()
         .nest("/backoffice/orgs", org_router(state.clone()))
         .nest("/backoffice/impersonate", impersonate_router(state.clone()))
+        .nest("/backoffice/plans", plan_router(state.clone()))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             backoffice_auth_middleware,

@@ -153,4 +153,64 @@ mod tests {
             "missing platform:org.list must be rejected with 403"
         );
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 6 — Slice A: plan catalog routes
+    // -------------------------------------------------------------------------
+
+    /// GET /backoffice/plans without a token returns 401 (auth middleware).
+    #[tokio::test]
+    async fn plans_route_requires_auth() {
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/plans")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    /// GET /backoffice/plans with a token lacking `platform:plan.read` → 403,
+    /// before any DB access.
+    #[tokio::test]
+    async fn plans_list_denied_without_permission() {
+        let token = backoffice_token(&["platform:org.list"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/plans")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(
+            response.status(),
+            StatusCode::FORBIDDEN,
+            "missing platform:plan.read must be rejected with 403"
+        );
+    }
+
+    /// GET /backoffice/plans with `platform:plan.read` passes the gate and
+    /// reaches the use case; the lazy pool then fails → 500 (proves the handler
+    /// ran past authorization).
+    #[tokio::test]
+    async fn plans_list_with_permission_reaches_db() {
+        let token = backoffice_token(&["platform:plan.read"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/plans")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(
+            response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "with plan.read the handler must reach the DB layer (500 on no DB)"
+        );
+    }
 }

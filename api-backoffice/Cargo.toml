@@ -13,6 +13,7 @@ backoffice_identity = { path = "../modules/backoffice_identity" }
 common = { path = "../modules/common" }
 events = { path = "../modules/events" }
 identity = { path = "../modules/identity" }
+subscriptions = { path = "../modules/subscriptions" }
 tenancy = { path = "../modules/tenancy" }
 
 axum = { workspace = true, features = ["json"] }

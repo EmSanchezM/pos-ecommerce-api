@@ -17,6 +17,7 @@ use backoffice_identity::{
 use events::{PgOutboxRepository, PublishEventUseCase};
 use identity::{PgUserRepository, UserRepository};
 use sqlx::PgPool;
+use subscriptions::{PgSubscriptionPlanRepository, SubscriptionPlanRepository};
 use tenancy::{OrganizationRepository, PgOrganizationRepository};
 
 /// Application state shared across all backoffice HTTP handlers.
@@ -43,6 +44,8 @@ pub struct BackofficeAppState {
     impersonation_use_case: Arc<IssueImpersonationTokenWithAuditUseCase>,
     /// Publish event use case — writes to outbox in a transaction.
     publish_event: Arc<PublishEventUseCase>,
+    /// Subscription plan repository (subscriptions module) — backs plan CRUD.
+    subscription_plan_repo: Arc<dyn SubscriptionPlanRepository>,
 }
 
 impl BackofficeAppState {
@@ -98,6 +101,9 @@ impl BackofficeAppState {
             tenant_secret,
         ));
 
+        let subscription_plan_repo: Arc<dyn SubscriptionPlanRepository> =
+            Arc::new(PgSubscriptionPlanRepository::new((*pool_arc).clone()));
+
         Self {
             pool,
             user_repo,
@@ -108,6 +114,7 @@ impl BackofficeAppState {
             suspend_with_audit_use_case,
             impersonation_use_case,
             publish_event,
+            subscription_plan_repo,
         }
     }
 
@@ -155,6 +162,11 @@ impl BackofficeAppState {
     pub fn publish_event(&self) -> Arc<PublishEventUseCase> {
         self.publish_event.clone()
     }
+
+    /// Returns the subscription plan repository (backs plan CRUD).
+    pub fn subscription_plan_repo(&self) -> Arc<dyn SubscriptionPlanRepository> {
+        self.subscription_plan_repo.clone()
+    }
 }
 
 #[cfg(test)]
@@ -189,6 +201,8 @@ mod tests {
         let _repo = state.user_repo();
         // impersonation_use_case is accessible (P5)
         let _imp = state.impersonation_use_case();
+        // subscription_plan_repo is wired (P6 — plan CRUD)
+        let _plans = state.subscription_plan_repo();
     }
 
     #[tokio::test]

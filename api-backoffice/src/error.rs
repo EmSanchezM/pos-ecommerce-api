@@ -232,6 +232,53 @@ impl From<TenancyError> for AppError {
     }
 }
 
+// =============================================================================
+// From<SubscriptionError> — plan/subscription admin endpoints (Phase 6)
+// =============================================================================
+
+impl From<subscriptions::SubscriptionError> for AppError {
+    fn from(err: subscriptions::SubscriptionError) -> Self {
+        use subscriptions::SubscriptionError as E;
+        let (status, body) = match &err {
+            E::PlanNotFound(_)
+            | E::SubscriptionNotFound(_)
+            | E::BillingCycleNotFound(_)
+            | E::DunningAttemptNotFound(_) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse::new("NOT_FOUND", err.to_string()),
+            ),
+            E::CodeAlreadyTaken(_) | E::OrganizationAlreadySubscribed(_) => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CONFLICT", err.to_string()),
+            ),
+            E::OptimisticLockFailed => (
+                StatusCode::CONFLICT,
+                ErrorResponse::new("CONCURRENT_MODIFICATION", err.to_string()),
+            ),
+            E::InvalidStatusTransition { .. }
+            | E::PlanInactive(_)
+            | E::InvalidPlanCode(_)
+            | E::InvalidStatus(_)
+            | E::InvalidCycleStatus(_)
+            | E::InvalidInterval(_)
+            | E::InvalidDunningOutcome(_)
+            | E::Validation(_) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("VALIDATION_ERROR", err.to_string()),
+            ),
+            E::FiscalIntegration(_)
+            | E::PaymentIntegration(_)
+            | E::Database(_)
+            | E::Serialization(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse::internal_error(),
+            ),
+        };
+
+        AppError::new(status, body)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
