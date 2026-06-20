@@ -6,6 +6,8 @@
 
 use std::collections::HashMap;
 
+use uuid::Uuid;
+
 use crate::domain::auth::{AuthError, TokenClaims};
 use crate::domain::entities::User;
 use crate::domain::value_objects::UserId;
@@ -92,4 +94,20 @@ pub trait TokenService: Send + Sync {
     /// * `Err(AuthError::InvalidToken)` - If the token is malformed or has invalid signature
     ///
     fn validate_refresh_token(&self, token: &str) -> Result<UserId, AuthError>;
+
+    /// Mints a short-lived (15 min) impersonation token for `user`: a full
+    /// tenant access token (same claims as [`generate_access_token`], so the
+    /// gateway accepts it and the operator acts with the user's permissions)
+    /// PLUS an RFC 8693 `act` claim identifying the real backoffice operator.
+    ///
+    /// v2 path: the backoffice no longer signs tenant tokens — it calls the
+    /// api-gateway internal endpoint, which loads the tenant user and delegates
+    /// here, so JWT_SECRET stays inside api-gateway.
+    fn issue_impersonation_token(
+        &self,
+        user: &User,
+        store_permissions: &HashMap<String, Vec<String>>,
+        operator_id: Uuid,
+        operator_email: &str,
+    ) -> Result<String, AuthError>;
 }

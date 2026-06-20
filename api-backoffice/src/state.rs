@@ -12,8 +12,8 @@ use analytics::{KpiSnapshotRepository, PgKpiSnapshotRepository};
 use audit_infra::{BackofficeAuditSubscriber, PgBackofficeAuditLogRepository};
 use backoffice_identity::{
     AuthenticateBackofficeUserUseCase, BackofficeTokenService, BackofficeUserRepository,
-    IssueImpersonationTokenWithAuditUseCase, JwtBackofficeTokenService, PgBackofficeUserRepository,
-    SuspendOrganizationWithAuditUseCase,
+    ImpersonationTokenIssuer, IssueImpersonationTokenWithAuditUseCase, JwtBackofficeTokenService,
+    PgBackofficeUserRepository, SuspendOrganizationWithAuditUseCase,
 };
 use events::{PgOutboxRepository, PublishEventUseCase};
 use identity::{PgUserRepository, UserRepository};
@@ -24,7 +24,9 @@ use subscriptions::{
     PgSubscriptionRepository, SubscriptionPlanRepository, SubscriptionRepository,
 };
 
-use crate::adapters::StubBillingPaymentGateway;
+use subscription_billing::StubBillingPaymentGateway;
+
+use crate::impersonation_client::HttpImpersonationTokenIssuer;
 use tenancy::{OrganizationRepository, PgOrganizationRepository};
 
 /// Application state shared across all backoffice HTTP handlers.
@@ -74,12 +76,14 @@ impl BackofficeAppState {
     /// * `pool` - PostgreSQL connection pool
     /// * `backoffice_secret` - Secret for signing/validating backoffice JWTs
     /// * `backoffice_issuer` - Issuer string embedded in backoffice tokens
-    /// * `tenant_secret` - JWT_SECRET for signing impersonation tokens (Decision 2)
+    /// * `api_gateway_internal_url` - Base URL of api-gateway's internal endpoint
+    /// * `internal_service_secret` - Shared secret for the internal endpoint
     pub fn from_pool(
         pool: PgPool,
         backoffice_secret: String,
         backoffice_issuer: String,
-        tenant_secret: String,
+        api_gateway_internal_url: String,
+        internal_service_secret: String,
     ) -> Self {
         let pool_arc = Arc::new(pool.clone());
 
@@ -111,12 +115,16 @@ impl BackofficeAppState {
             publish_event.clone(),
         ));
 
+        // v2: impersonation tokens are minted by api-gateway's internal endpoint
+        // (this client calls it); the tenant signing key never lives here.
+        let impersonation_token_issuer: Arc<dyn ImpersonationTokenIssuer> = Arc::new(
+            HttpImpersonationTokenIssuer::new(&api_gateway_internal_url, internal_service_secret),
+        );
         let impersonation_use_case = Arc::new(IssueImpersonationTokenWithAuditUseCase::new(
             (*pool_arc).clone(),
             user_repo.clone(),
-            token_service.clone(),
+            impersonation_token_issuer,
             publish_event.clone(),
-            tenant_secret,
         ));
 
         let subscription_plan_repo: Arc<dyn SubscriptionPlanRepository> =
@@ -253,7 +261,8 @@ mod tests {
             pool,
             "backoffice-secret-at-least-32-bytes-long".to_string(),
             "backoffice-api:test".to_string(),
-            "tenant-secret-at-least-32-bytes-long-x".to_string(),
+            "http://localhost:8000".to_string(),
+            "internal-secret-test".to_string(),
         );
 
         // authenticate_use_case is Arc-wrapped and clone-able
@@ -285,7 +294,8 @@ mod tests {
             pool,
             "backoffice-secret-at-least-32-bytes-long".to_string(),
             "backoffice-api:test".to_string(),
-            "tenant-secret-at-least-32-bytes-long-x".to_string(),
+            "http://localhost:8000".to_string(),
+            "internal-secret-test".to_string(),
         );
 
         // State must be Clone so Axum can share it across handlers.

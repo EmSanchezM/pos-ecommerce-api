@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::PgPool;
+use sqlx::{PgExecutor, PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::SubscriptionError;
@@ -85,11 +85,15 @@ impl BillingCycleRepository for PgBillingCycleRepository {
         &self,
         id: BillingCycleId,
     ) -> Result<Option<BillingCycle>, SubscriptionError> {
-        let row = sqlx::query_as::<_, CycleRow>(SELECT_BY_ID)
-            .bind(id.into_uuid())
-            .fetch_optional(&self.pool)
-            .await?;
-        row.map(BillingCycle::try_from).transpose()
+        find_by_id_q(&self.pool, id).await
+    }
+
+    async fn find_by_id_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        id: BillingCycleId,
+    ) -> Result<Option<BillingCycle>, SubscriptionError> {
+        find_by_id_q(&mut **tx, id).await
     }
 
     async fn find_by_transaction_id(
@@ -142,6 +146,17 @@ impl BillingCycleRepository for PgBillingCycleRepository {
             .await?;
         rows.into_iter().map(BillingCycle::try_from).collect()
     }
+}
+
+async fn find_by_id_q<'e, E: PgExecutor<'e>>(
+    exec: E,
+    id: BillingCycleId,
+) -> Result<Option<BillingCycle>, SubscriptionError> {
+    let row = sqlx::query_as::<_, CycleRow>(SELECT_BY_ID)
+        .bind(id.into_uuid())
+        .fetch_optional(exec)
+        .await?;
+    row.map(BillingCycle::try_from).transpose()
 }
 
 const SELECT_BY_ID: &str = r#"

@@ -32,14 +32,13 @@ pub use domain::repositories::{
 };
 
 // Domain — Auth Traits
-pub use domain::auth::BackofficeTokenService;
+pub use domain::auth::{BackofficeTokenService, ImpersonationTokenIssuer};
 
 // Application — Use Cases
 pub use application::use_cases::AuthenticateBackofficeUserUseCase;
 pub use application::use_cases::SuspendOrganizationWithAuditUseCase;
 pub use application::use_cases::{
-    IMPERSONATION_TOKEN_EXPIRY_SECONDS, IssueImpersonationTokenUseCase,
-    IssueImpersonationTokenWithAuditUseCase,
+    IMPERSONATION_TOKEN_EXPIRY_SECONDS, IssueImpersonationTokenWithAuditUseCase,
 };
 
 // Application — DTOs

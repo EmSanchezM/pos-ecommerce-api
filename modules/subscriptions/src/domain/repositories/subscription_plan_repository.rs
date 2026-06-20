@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use sqlx::{Postgres, Transaction};
 
 use crate::SubscriptionError;
 use crate::domain::entities::SubscriptionPlan;
@@ -35,4 +36,33 @@ pub trait SubscriptionPlanRepository: Send + Sync {
         page: i64,
         page_size: i64,
     ) -> Result<(Vec<SubscriptionPlan>, i64), SubscriptionError>;
+
+    // ---- Transactional variants ------------------------------------------
+    // Used by atomic "state change + audit event" flows (backoffice), where
+    // the mutation and the outbox write must commit together. Mirror the
+    // non-tx methods above but run inside a caller-owned transaction.
+
+    async fn save_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        plan: &SubscriptionPlan,
+    ) -> Result<(), SubscriptionError>;
+
+    async fn update_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        plan: &SubscriptionPlan,
+    ) -> Result<(), SubscriptionError>;
+
+    async fn find_by_id_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        id: SubscriptionPlanId,
+    ) -> Result<Option<SubscriptionPlan>, SubscriptionError>;
+
+    async fn find_by_code_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        code: &PlanCode,
+    ) -> Result<Option<SubscriptionPlan>, SubscriptionError>;
 }

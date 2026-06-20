@@ -4,8 +4,6 @@ mod issue_impersonation_token_with_audit;
 mod suspend_organization_with_audit;
 
 pub use authenticate_backoffice_user::AuthenticateBackofficeUserUseCase;
-pub use issue_impersonation_token::{
-    IMPERSONATION_TOKEN_EXPIRY_SECONDS, IssueImpersonationTokenUseCase,
-};
+pub use issue_impersonation_token::IMPERSONATION_TOKEN_EXPIRY_SECONDS;
 pub use issue_impersonation_token_with_audit::IssueImpersonationTokenWithAuditUseCase;
 pub use suspend_organization_with_audit::SuspendOrganizationWithAuditUseCase;

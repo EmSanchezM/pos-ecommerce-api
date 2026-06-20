@@ -1,6 +1,5 @@
 use std::net::SocketAddr;
 
-mod adapters;
 mod audit;
 mod bootstrap;
 mod config;

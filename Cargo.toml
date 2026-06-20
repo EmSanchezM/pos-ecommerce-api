@@ -25,6 +25,7 @@ members = [
     "modules/restaurant_operations",
     "modules/tenancy",
     "modules/subscriptions",
+    "modules/subscription_billing",
     "api-gateway",
     "api-backoffice",
     "seed",
@@ -57,3 +58,4 @@ governor = "0.10"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors", "fs"] }
 tower_governor = "0.8"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

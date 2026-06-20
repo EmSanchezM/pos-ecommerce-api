@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use sqlx::{Postgres, Transaction};
 
 use tenancy::OrganizationId;
 
@@ -55,4 +56,24 @@ pub trait SubscriptionRepository: Send + Sync {
         &self,
         cutoff: DateTime<Utc>,
     ) -> Result<Vec<Subscription>, SubscriptionError>;
+
+    // ---- Transactional variants (atomic state change + audit) ------------
+
+    async fn update_with_version_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        subscription: &Subscription,
+    ) -> Result<(), SubscriptionError>;
+
+    async fn find_by_id_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        id: SubscriptionId,
+    ) -> Result<Option<Subscription>, SubscriptionError>;
+
+    async fn find_active_by_organization_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        organization_id: OrganizationId,
+    ) -> Result<Option<Subscription>, SubscriptionError>;
 }

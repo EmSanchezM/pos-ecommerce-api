@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use sqlx::{Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::SubscriptionError;
@@ -39,4 +40,11 @@ pub trait BillingCycleRepository: Send + Sync {
         now: DateTime<Utc>,
         limit: i64,
     ) -> Result<Vec<BillingCycle>, SubscriptionError>;
+
+    /// Transactional read — used by the atomic dunning-trigger + audit flow.
+    async fn find_by_id_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        id: BillingCycleId,
+    ) -> Result<Option<BillingCycle>, SubscriptionError>;
 }

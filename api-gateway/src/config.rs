@@ -4,6 +4,10 @@ use std::str::FromStr;
 pub struct AppConfig {
     pub database: DatabaseConfig,
     pub jwt_secret: String,
+    /// Shared secret authenticating service-to-service calls to `/internal/*`
+    /// (e.g. backoffice-api requesting an impersonation token). Both binaries
+    /// must be configured with the same value.
+    pub internal_service_secret: String,
     pub cors_allowed_origins: Option<String>,
     pub image_storage: ImageStorageConfig,
     pub jobs: JobsConfig,
@@ -46,6 +50,8 @@ impl AppConfig {
                 idle_timeout_secs: env_or("DB_IDLE_TIMEOUT_SECS", 300),
                 max_lifetime_secs: env_or("DB_MAX_LIFETIME_SECS", 1800),
             },
+            internal_service_secret: env::var("INTERNAL_SERVICE_SECRET")
+                .expect("INTERNAL_SERVICE_SECRET must be set"),
             jwt_secret: env::var("JWT_SECRET")
                 .expect("JWT_SECRET environment variable must be set"),
             cors_allowed_origins: env::var("CORS_ALLOWED_ORIGINS")

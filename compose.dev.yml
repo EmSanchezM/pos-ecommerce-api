@@ -16,6 +16,9 @@ services:
       # Recompute system-wide KPI snapshots quickly in dev so the backoffice
       # analytics endpoints have data shortly after boot (prod uses ~30 min).
       ANALYTICS_RECOMPUTE_INTERVAL_SECS: "20"
+      # Shared secret for /internal service-to-service calls (impersonation v2).
+      # Must match the backoffice service below. Dev value — set a real one in prod.
+      INTERNAL_SERVICE_SECRET: "dev-internal-service-secret-change-me"
     depends_on:
       db:
         condition: service_healthy
@@ -35,6 +38,11 @@ services:
       - .env
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Reach api-gateway's /internal mint endpoint (impersonation v2). The
+      # service name `app` resolves on the compose network.
+      API_GATEWAY_INTERNAL_URL: "http://app:8000"
+      # Must match the app service's INTERNAL_SERVICE_SECRET.
+      INTERNAL_SERVICE_SECRET: "dev-internal-service-secret-change-me"
     depends_on:
       db:
         condition: service_healthy

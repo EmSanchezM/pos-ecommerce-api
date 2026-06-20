@@ -33,7 +33,7 @@ use uuid::Uuid;
 
 use crate::application::dtos::ImpersonationTokenResponse;
 use crate::application::use_cases::IMPERSONATION_TOKEN_EXPIRY_SECONDS;
-use crate::domain::auth::BackofficeTokenService;
+use crate::domain::auth::ImpersonationTokenIssuer;
 use crate::domain::repositories::BackofficeUserRepository;
 use crate::domain::value_objects::BackofficeUserId;
 use crate::error::BackofficeIdentityError;
@@ -45,25 +45,22 @@ const AUDIT_EVENT_TYPE_PREFIX: &str = "backoffice.audit.";
 pub struct IssueImpersonationTokenWithAuditUseCase {
     pool: PgPool,
     user_repo: Arc<dyn BackofficeUserRepository>,
-    token_service: Arc<dyn BackofficeTokenService>,
+    token_issuer: Arc<dyn ImpersonationTokenIssuer>,
     publish_event: Arc<PublishEventUseCase>,
-    tenant_secret: String,
 }
 
 impl IssueImpersonationTokenWithAuditUseCase {
     pub fn new(
         pool: PgPool,
         user_repo: Arc<dyn BackofficeUserRepository>,
-        token_service: Arc<dyn BackofficeTokenService>,
+        token_issuer: Arc<dyn ImpersonationTokenIssuer>,
         publish_event: Arc<PublishEventUseCase>,
-        tenant_secret: String,
     ) -> Self {
         Self {
             pool,
             user_repo,
-            token_service,
+            token_issuer,
             publish_event,
-            tenant_secret,
         }
     }
 
@@ -103,12 +100,18 @@ impl IssueImpersonationTokenWithAuditUseCase {
             .await?
             .ok_or_else(|| BackofficeIdentityError::UserNotFound(*actor_id.as_uuid()))?;
 
-        // 3. Issue the impersonation token (pure CPU, no DB).
-        let access_token = self.token_service.issue_impersonation_token(
-            &backoffice_user,
-            tenant_user_id,
-            &self.tenant_secret,
-        )?;
+        // 3. Mint the impersonation token via the issuer. v2: this crosses a
+        //    service boundary (api-gateway internal endpoint) so the tenant
+        //    signing key never lives here. Done before the audit tx — minting
+        //    has no DB side effect, and the token isn't usable until returned.
+        let access_token = self
+            .token_issuer
+            .issue_impersonation_token(
+                tenant_user_id,
+                *backoffice_user.id().as_uuid(),
+                backoffice_user.email().as_str(),
+            )
+            .await?;
 
         // 4. Begin transaction for the audit outbox write.
         let mut tx = self
@@ -166,10 +169,23 @@ mod tests {
     use super::*;
     use uuid::{NoContext, Timestamp};
 
+    /// Test issuer — returns a fixed token without crossing a service boundary.
+    struct MockImpersonationTokenIssuer;
+
+    #[async_trait::async_trait]
+    impl ImpersonationTokenIssuer for MockImpersonationTokenIssuer {
+        async fn issue_impersonation_token(
+            &self,
+            _tenant_user_id: Uuid,
+            _operator_id: Uuid,
+            _operator_email: &str,
+        ) -> Result<String, BackofficeIdentityError> {
+            Ok("mock.impersonation.token".to_string())
+        }
+    }
+
     fn make_use_case() -> IssueImpersonationTokenWithAuditUseCase {
-        use crate::infrastructure::{
-            JwtBackofficeTokenService, persistence::PgBackofficeUserRepository,
-        };
+        use crate::infrastructure::persistence::PgBackofficeUserRepository;
 
         let pool = PgPool::connect_lazy("postgres://test:test@localhost/test")
             .expect("connect_lazy should not fail");
@@ -177,22 +193,13 @@ mod tests {
         let user_repo: Arc<dyn BackofficeUserRepository> =
             Arc::new(PgBackofficeUserRepository::new(pool.clone()));
 
-        let token_service: Arc<dyn BackofficeTokenService> =
-            Arc::new(JwtBackofficeTokenService::with_issuer(
-                "backoffice-secret-at-least-32-bytes".to_string(),
-                "backoffice-api:test".to_string(),
-            ));
+        let token_issuer: Arc<dyn ImpersonationTokenIssuer> =
+            Arc::new(MockImpersonationTokenIssuer);
 
         let outbox_repo = Arc::new(events::PgOutboxRepository::new(pool.clone()));
         let publish_event = Arc::new(PublishEventUseCase::new(outbox_repo));
 
-        IssueImpersonationTokenWithAuditUseCase::new(
-            pool,
-            user_repo,
-            token_service,
-            publish_event,
-            "tenant-secret-at-least-32-bytes-long".to_string(),
-        )
+        IssueImpersonationTokenWithAuditUseCase::new(pool, user_repo, token_issuer, publish_event)
     }
 
     /// Empty reason is rejected BEFORE any DB access.
