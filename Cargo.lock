@@ -84,6 +84,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 
 [[package]]
+name = "api-backoffice"
+version = "0.1.0"
+dependencies = [
+ "audit_infra",
+ "axum",
+ "backoffice_identity",
+ "chrono",
+ "common",
+ "dotenvy",
+ "events",
+ "identity",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tenancy",
+ "thiserror 2.0.17",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "api-gateway"
 version = "0.1.0"
 dependencies = [
@@ -256,31 +281,6 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
-]
-
-[[package]]
-name = "backoffice-api"
-version = "0.1.0"
-dependencies = [
- "audit_infra",
- "axum",
- "backoffice_identity",
- "chrono",
- "common",
- "dotenvy",
- "events",
- "identity",
- "serde",
- "serde_json",
- "sqlx",
- "tenancy",
- "thiserror 2.0.17",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "uuid",
 ]
 
 [[package]]
