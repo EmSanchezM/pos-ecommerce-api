@@ -124,7 +124,7 @@ mod tests {
         use backoffice_identity::{BackofficeEmail, BackofficeUserId};
         use chrono::Utc;
         backoffice_identity::BackofficeUser::new(
-            BackofficeUserId::new(),  // uses Uuid::new_v7 internally
+            BackofficeUserId::new(), // uses Uuid::new_v7 internally
             BackofficeEmail::new("admin@platform.com").unwrap(),
             "hashed".to_string(),
             None,
@@ -189,7 +189,10 @@ mod tests {
     fn backoffice_user_context_has_permission() {
         let ctx = BackofficeUserContext::new(
             test_uuid(),
-            vec!["platform:org.list".to_string(), "platform:org.suspend".to_string()],
+            vec![
+                "platform:org.list".to_string(),
+                "platform:org.suspend".to_string(),
+            ],
         );
         assert!(ctx.has_permission("platform:org.list"));
         assert!(ctx.has_permission("platform:org.suspend"));

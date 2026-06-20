@@ -161,7 +161,7 @@ impl StoreRepository for PgStoreRepository {
     async fn get_users(&self, store_id: StoreId) -> Result<Vec<User>, IdentityError> {
         let rows = sqlx::query_as::<_, UserRow>(
             r#"
-            SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.password_hash, u.is_active, u.organization_id, u.created_at, u.updated_at
+            SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.password_hash, u.is_active, u.organization_id, u.created_at, u.updated_at, u.last_login_at
             FROM users u
             INNER JOIN user_stores us ON u.id = us.user_id
             WHERE us.store_id = $1
@@ -215,6 +215,7 @@ struct UserRow {
     organization_id: Option<uuid::Uuid>,
     created_at: chrono::DateTime<chrono::Utc>,
     updated_at: chrono::DateTime<chrono::Utc>,
+    last_login_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl TryFrom<UserRow> for User {
@@ -234,6 +235,7 @@ impl TryFrom<UserRow> for User {
             row.organization_id,
             row.created_at,
             row.updated_at,
+            row.last_login_at,
         ))
     }
 }

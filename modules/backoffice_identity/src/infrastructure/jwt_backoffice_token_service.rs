@@ -49,8 +49,8 @@ impl JwtBackofficeTokenService {
     ///
     /// Reads `JWT_BACKOFFICE_ISSUER` from env; defaults to `"backoffice-api"`.
     pub fn new(secret: String) -> Self {
-        let issuer = std::env::var("JWT_BACKOFFICE_ISSUER")
-            .unwrap_or_else(|_| "backoffice-api".to_string());
+        let issuer =
+            std::env::var("JWT_BACKOFFICE_ISSUER").unwrap_or_else(|_| "backoffice-api".to_string());
         Self { secret, issuer }
     }
 
@@ -302,9 +302,6 @@ mod tests {
         .unwrap();
 
         let result = svc.validate_backoffice_token(&token);
-        assert!(matches!(
-            result,
-            Err(BackofficeIdentityError::TokenExpired)
-        ));
+        assert!(matches!(result, Err(BackofficeIdentityError::TokenExpired)));
     }
 }

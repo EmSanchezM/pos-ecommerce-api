@@ -226,7 +226,7 @@ where
         };
 
         // Return InvalidCredentials if user not found (Requirement 3.6)
-        let user = user.ok_or(AuthError::InvalidCredentials)?;
+        let mut user = user.ok_or(AuthError::InvalidCredentials)?;
 
         // Verify password using Argon2 (Requirement 3.5)
         if !verify_password(&command.password, user.password_hash())? {
@@ -251,6 +251,14 @@ where
             .token_service
             .generate_access_token(&user, &store_permissions)?;
         let refresh_token = self.token_service.generate_refresh_token(*user.id())?;
+
+        // Record the successful login. This is an UPDATE of an existing user —
+        // never save() (an INSERT), which would collide with the unique email.
+        user.record_login();
+        self.user_repo
+            .update(&user)
+            .await
+            .map_err(|e| AuthError::Internal(e.to_string()))?;
 
         // Return login response with tokens
         // expires_in is 900 seconds (15 minutes) as per Requirement 4.2
@@ -945,6 +953,33 @@ mod tests {
         let response = result.unwrap();
         assert!(response.access_token.starts_with("access_token_for_"));
         assert!(response.refresh_token.starts_with("refresh_token_for_"));
+    }
+
+    #[tokio::test]
+    async fn test_login_records_last_login_at() {
+        let user = create_user_with_password("testuser", "test@example.com", "password123", true);
+        assert!(user.last_login_at().is_none(), "fresh user has no login");
+        let user_repo = Arc::new(MockUserRepository::new().with_user(user));
+        let token_service = Arc::new(MockTokenService);
+        let use_case = LoginUseCase::new(user_repo.clone(), token_service);
+
+        use_case
+            .execute(LoginCommand {
+                identifier: "test@example.com".to_string(),
+                password: "password123".to_string(),
+            })
+            .await
+            .expect("login should succeed");
+
+        let persisted = user_repo
+            .find_by_email(&Email::new("test@example.com").unwrap())
+            .await
+            .unwrap()
+            .expect("user should still exist after login");
+        assert!(
+            persisted.last_login_at().is_some(),
+            "login must persist last_login_at via update()"
+        );
     }
 
     #[tokio::test]
