@@ -213,4 +213,86 @@ mod tests {
             "with plan.read the handler must reach the DB layer (500 on no DB)"
         );
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 6 — Slice B: subscription admin routes
+    // -------------------------------------------------------------------------
+
+    fn org_path(suffix: &str) -> String {
+        format!("/backoffice/subscriptions/00000000-0000-0000-0000-000000000001{suffix}")
+    }
+
+    /// POST force-cancel without a token returns 401 (auth middleware).
+    #[tokio::test]
+    async fn subs_force_cancel_requires_auth() {
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(org_path("/force-cancel"))
+            .method("POST")
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({"reason": "fraud"}).to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    /// POST force-cancel with a token lacking `platform:subscription.force_cancel`
+    /// → 403, before any DB access.
+    #[tokio::test]
+    async fn subs_force_cancel_denied_without_permission() {
+        let token = backoffice_token(&["platform:org.list"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(org_path("/force-cancel"))
+            .method("POST")
+            .header("Authorization", format!("Bearer {token}"))
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({"reason": "fraud"}).to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    /// POST change-plan with a token lacking `platform:subscription.override_billing`
+    /// → 403.
+    #[tokio::test]
+    async fn subs_change_plan_denied_without_permission() {
+        let token = backoffice_token(&["platform:subscription.force_cancel"]);
+
+        let app = build_router(make_state());
+        let body = json!({
+            "reason": "promo migration",
+            "new_plan_id": "00000000-0000-0000-0000-000000000002"
+        });
+        let request = Request::builder()
+            .uri(org_path("/change-plan"))
+            .method("POST")
+            .header("Authorization", format!("Bearer {token}"))
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    /// GET subscription with `platform:org.list` passes the gate and reaches the
+    /// use case; the lazy pool then fails → 500.
+    #[tokio::test]
+    async fn subs_get_with_permission_reaches_db() {
+        let token = backoffice_token(&["platform:org.list"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(org_path(""))
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
 }
