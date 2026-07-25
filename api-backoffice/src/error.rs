@@ -309,9 +309,43 @@ impl From<analytics::AnalyticsError> for AppError {
     }
 }
 
+// =============================================================================
+// From<AuditInfraError> — audit log reads
+// =============================================================================
+
+impl From<audit_infra::AuditInfraError> for AppError {
+    fn from(err: audit_infra::AuditInfraError) -> Self {
+        use audit_infra::AuditInfraError as E;
+        // Every variant is a server-side failure — none of them is caused by
+        // the caller's input, so nothing here maps to a 4xx. The detail is
+        // logged rather than returned: audit internals are not client business.
+        match &err {
+            E::Database(_) | E::Serialization(_) | E::Internal(_) => {
+                tracing::error!("audit log read failed: {}", err);
+            }
+        }
+        AppError::internal()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn audit_infra_database_error_maps_to_500() {
+        let err: AppError = audit_infra::AuditInfraError::Database(sqlx::Error::RowNotFound).into();
+        assert_eq!(err.status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(err.body.code, "INTERNAL_ERROR");
+    }
+
+    /// The audit failure detail must not leak into the response body.
+    #[test]
+    fn audit_infra_error_body_does_not_leak_internals() {
+        let err: AppError =
+            audit_infra::AuditInfraError::Internal("connection string: secret".to_string()).into();
+        assert!(!err.body.message.contains("secret"));
+    }
 
     #[test]
     fn invalid_credentials_maps_to_401() {

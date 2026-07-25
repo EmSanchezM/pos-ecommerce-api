@@ -102,8 +102,11 @@ mod tests {
             _filters: crate::domain::repositories::AuditLogFilters,
             _page: u32,
             _page_size: u32,
-        ) -> Result<Vec<BackofficeAuditLogEntry>, AuditInfraError> {
-            Ok(self.rows())
+        ) -> Result<Vec<crate::domain::repositories::BackofficeAuditLogRecord>, AuditInfraError>
+        {
+            // This mock exists to exercise the WRITE path; reads are not part of
+            // what these tests assert, so an empty page is enough.
+            Ok(vec![])
         }
     }
 
