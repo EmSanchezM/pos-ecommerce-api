@@ -28,7 +28,8 @@ pub use error::AuditInfraError;
 // Domain
 pub use domain::events::{AUDIT_EVENT_TYPE_PREFIX, BackofficeAuditEvent, OrgId};
 pub use domain::repositories::{
-    AuditLogFilters, BackofficeAuditLogEntry, BackofficeAuditLogRepository,
+    AuditLogFilters, BackofficeAuditLogEntry, BackofficeAuditLogRecord,
+    BackofficeAuditLogRepository,
 };
 
 // Infrastructure

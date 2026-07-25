@@ -260,7 +260,10 @@ mod tests {
     // extension/header precedence is actually verified rather than simulated.
     // -------------------------------------------------------------------------
 
-    fn request_with(connect_info: Option<SocketAddr>, forwarded_for: Option<&str>) -> Request<Body> {
+    fn request_with(
+        connect_info: Option<SocketAddr>,
+        forwarded_for: Option<&str>,
+    ) -> Request<Body> {
         let mut builder = Request::builder().uri("/backoffice/orgs");
         if let Some(xff) = forwarded_for {
             builder = builder.header("X-Forwarded-For", xff);
