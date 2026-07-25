@@ -112,6 +112,7 @@ pub async fn create_plan_handler(
         "plan.create",
         None,
         body.reason,
+        ctx.ip.clone(),
     )
     .await
     .map_err(IntoResponse::into_response)?;
@@ -144,6 +145,7 @@ pub async fn update_plan_handler(
         "plan.update",
         None,
         body.reason,
+        ctx.ip.clone(),
     )
     .await
     .map_err(IntoResponse::into_response)?;
@@ -176,6 +178,7 @@ pub async fn deactivate_plan_handler(
         "plan.deactivate",
         None,
         body.reason,
+        ctx.ip.clone(),
     )
     .await
     .map_err(IntoResponse::into_response)?;

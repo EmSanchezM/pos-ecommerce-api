@@ -71,8 +71,8 @@ pub async fn emit_audit_event(
 /// Pattern: `let mut tx = pool.begin()?; uc.execute_in_tx(&mut tx, cmd)?;`
 /// `commit_with_audit(tx, …)`.
 ///
-/// `ip` is the Phase 4 placeholder `0.0.0.0`; Phase 5 wires ConnectInfo for the
-/// org endpoints and these follow the same upgrade path.
+/// `ip` is the caller's client IP, resolved once by the auth middleware and
+/// carried on `BackofficeUserContext::ip` — pass `ctx.ip.clone()`.
 pub async fn commit_with_audit(
     mut tx: Transaction<'_, Postgres>,
     publish: &Arc<PublishEventUseCase>,
@@ -80,6 +80,7 @@ pub async fn commit_with_audit(
     action: &str,
     target_org_id: Option<Uuid>,
     reason: String,
+    ip: String,
 ) -> Result<(), AppError> {
     let event = BackofficeAuditEvent {
         actor_type: "backoffice_user".to_string(),
@@ -87,7 +88,7 @@ pub async fn commit_with_audit(
         action: action.to_string(),
         target_org_id: target_org_id.map(OrgId::from_uuid),
         reason,
-        ip: "0.0.0.0".to_string(),
+        ip,
     };
 
     emit_audit_event(&mut tx, publish, event).await?;
