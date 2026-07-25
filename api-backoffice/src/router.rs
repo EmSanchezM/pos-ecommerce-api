@@ -11,8 +11,8 @@ use crate::handlers::health::health_handler;
 use crate::middleware::auth::backoffice_auth_middleware;
 use crate::middleware::rate_limit::api_rate_limit_layer;
 use crate::routes::{
-    analytics_router, audit_router, auth_router, dunning_router, impersonate_router, org_router,
-    plan_router, subscription_router,
+    analytics_router, audit_router, auth_router, dunning_router, impersonate_router, mfa_router,
+    org_router, plan_router, subscription_router,
 };
 use crate::state::BackofficeAppState;
 
@@ -35,6 +35,7 @@ use crate::state::BackofficeAppState;
 /// - `GET /backoffice/analytics/overview`                   — platform:analytics.read
 /// - `GET /backoffice/analytics/kpis/{kpi_key}`             — platform:analytics.read
 /// - `GET /backoffice/audit`                                — platform:audit.read
+/// - `GET/POST /backoffice/mfa/*`                           — self-service, no permission gate
 pub fn build_router(state: BackofficeAppState, trusted_proxies: TrustedProxies) -> Router {
     // Public routes — no auth middleware
     let public_routes = Router::new().route("/health", get(health_handler)).nest(
@@ -54,6 +55,7 @@ pub fn build_router(state: BackofficeAppState, trusted_proxies: TrustedProxies) 
         .nest("/backoffice/dunning", dunning_router(state.clone()))
         .nest("/backoffice/analytics", analytics_router(state.clone()))
         .nest("/backoffice/audit", audit_router(state.clone()))
+        .nest("/backoffice/mfa", mfa_router(state.clone()))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             backoffice_auth_middleware,
