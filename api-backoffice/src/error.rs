@@ -147,6 +147,38 @@ impl From<BackofficeIdentityError> for AppError {
                 StatusCode::FORBIDDEN,
                 ErrorResponse::new("PROTECTED_ROLE", "Cannot modify system-protected role"),
             ),
+            // --- MFA ---
+            //
+            // An invalid code is a normal outcome of a login attempt, so it maps
+            // to 401 like any other failed credential. The other three describe
+            // server-side or request-shape problems and must not be conflated
+            // with "wrong code", or a client cannot tell "try again" from
+            // "you have nothing enrolled".
+            BackofficeIdentityError::InvalidMfaCode => (
+                StatusCode::UNAUTHORIZED,
+                ErrorResponse::new("INVALID_MFA_CODE", "Invalid MFA code"),
+            ),
+            BackofficeIdentityError::MfaNotEnrolled => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse::new("MFA_NOT_ENROLLED", "MFA is not enrolled for this user"),
+            ),
+            BackofficeIdentityError::InvalidMfaSecret => {
+                // The secret is generated server-side and validated on the way
+                // into storage, so reaching here means stored state is corrupt.
+                tracing::error!("stored MFA secret failed validation");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    ErrorResponse::internal_error(),
+                )
+            }
+            BackofficeIdentityError::MfaError(msg) => {
+                tracing::error!("MFA failure: {}", msg);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    ErrorResponse::internal_error(),
+                )
+            }
+
             BackofficeIdentityError::PasswordHashError(_) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 ErrorResponse::internal_error(),

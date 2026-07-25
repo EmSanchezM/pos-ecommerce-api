@@ -42,6 +42,18 @@ pub enum BackofficeIdentityError {
     #[error("Token has expired")]
     TokenExpired,
 
+    #[error("Invalid MFA secret")]
+    InvalidMfaSecret,
+
+    #[error("MFA is not enrolled for this user")]
+    MfaNotEnrolled,
+
+    #[error("Invalid MFA code")]
+    InvalidMfaCode,
+
+    #[error("MFA error: {0}")]
+    MfaError(String),
+
     #[error("Password hash error: {0}")]
     PasswordHashError(String),
 

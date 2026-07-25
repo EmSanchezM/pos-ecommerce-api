@@ -1,7 +1,9 @@
 mod pg_backoffice_permission_repository;
 mod pg_backoffice_role_repository;
 mod pg_backoffice_user_repository;
+mod pg_mfa_recovery_code_repository;
 
 pub use pg_backoffice_permission_repository::PgBackofficePermissionRepository;
 pub use pg_backoffice_role_repository::PgBackofficeRoleRepository;
 pub use pg_backoffice_user_repository::PgBackofficeUserRepository;
+pub use pg_mfa_recovery_code_repository::PgMfaRecoveryCodeRepository;
