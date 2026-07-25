@@ -765,6 +765,127 @@ mod tests {
         );
     }
 
+    // -------------------------------------------------------------------------
+    // MFA self-service routes
+    // -------------------------------------------------------------------------
+
+    fn mfa_post(uri: &str, token: &str, body: serde_json::Value) -> Request<Body> {
+        Request::builder()
+            .uri(uri)
+            .method("POST")
+            .header("Authorization", format!("Bearer {token}"))
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap()
+    }
+
+    /// Every MFA route sits behind the auth middleware.
+    #[tokio::test]
+    async fn mfa_routes_require_auth() {
+        for (method, uri) in [
+            ("GET", "/backoffice/mfa"),
+            ("POST", "/backoffice/mfa/enroll"),
+            ("POST", "/backoffice/mfa/activate"),
+            ("POST", "/backoffice/mfa/disable"),
+            ("POST", "/backoffice/mfa/recovery-codes"),
+        ] {
+            let app = make_app();
+            let request = Request::builder()
+                .uri(uri)
+                .method(method)
+                .header(CONTENT_TYPE, "application/json")
+                .body(Body::from("{}"))
+                .unwrap();
+
+            let status = app.oneshot(request).await.unwrap().status();
+            assert_eq!(
+                status,
+                StatusCode::UNAUTHORIZED,
+                "{method} {uri} must require authentication"
+            );
+        }
+    }
+
+    /// MFA management is self-service: authentication IS the authorization, so
+    /// a token with NO platform permissions must still reach the handler.
+    /// A permission gate here would lock operators out of their own security
+    /// settings.
+    #[tokio::test]
+    async fn mfa_status_needs_no_platform_permission() {
+        let token = backoffice_token(&[]);
+
+        let app = make_app();
+        let request = Request::builder()
+            .uri("/backoffice/mfa")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let status = app.oneshot(request).await.unwrap().status();
+        assert_eq!(
+            status,
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "must reach the DB layer (500 on no DB), not 403"
+        );
+    }
+
+    #[tokio::test]
+    async fn mfa_enroll_needs_no_platform_permission() {
+        let token = backoffice_token(&[]);
+
+        let app = make_app();
+        let response = app
+            .oneshot(mfa_post("/backoffice/mfa/enroll", &token, json!({})))
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    /// A first enrollment has nothing to prove, so the body may be empty.
+    #[tokio::test]
+    async fn mfa_enroll_accepts_an_empty_body() {
+        let token = backoffice_token(&[]);
+
+        let app = make_app();
+        let response = app
+            .oneshot(mfa_post("/backoffice/mfa/enroll", &token, json!({})))
+            .await
+            .unwrap();
+
+        assert_ne!(
+            response.status(),
+            StatusCode::BAD_REQUEST,
+            "an empty enroll body must be valid"
+        );
+    }
+
+    /// The possession-proving routes must reject a body with no code before
+    /// touching anything.
+    #[tokio::test]
+    async fn mfa_code_routes_reject_a_missing_code() {
+        let token = backoffice_token(&[]);
+
+        for uri in [
+            "/backoffice/mfa/activate",
+            "/backoffice/mfa/disable",
+            "/backoffice/mfa/recovery-codes",
+        ] {
+            let app = make_app();
+            let status = app
+                .oneshot(mfa_post(uri, &token, json!({})))
+                .await
+                .unwrap()
+                .status();
+
+            assert_eq!(
+                status,
+                StatusCode::UNPROCESSABLE_ENTITY,
+                "{uri} must require a code field"
+            );
+        }
+    }
+
     /// Health must stay reachable — it is public and outside the authenticated
     /// router, so the API limiter must not cover it.
     #[tokio::test]

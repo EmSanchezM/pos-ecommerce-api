@@ -13,7 +13,8 @@ use audit_infra::{
 use backoffice_identity::{
     AuthenticateBackofficeUserUseCase, BackofficeTokenService, BackofficeUserRepository,
     ImpersonationTokenIssuer, IssueImpersonationTokenWithAuditUseCase, JwtBackofficeTokenService,
-    PgBackofficeUserRepository, SuspendOrganizationWithAuditUseCase,
+    ManageMfaEnrollmentUseCase, MfaRecoveryCodeRepository, PgBackofficeUserRepository,
+    PgMfaRecoveryCodeRepository, SuspendOrganizationWithAuditUseCase, TotpRsService, TotpService,
 };
 use events::{PgOutboxRepository, PublishEventUseCase};
 use identity::{PgUserRepository, UserRepository};
@@ -68,6 +69,8 @@ pub struct BackofficeAppState {
     kpi_snapshot_repo: Arc<dyn KpiSnapshotRepository>,
     /// Append-only audit log repository — backs `GET /backoffice/audit`.
     audit_log_repo: Arc<dyn BackofficeAuditLogRepository>,
+    /// Self-service MFA enrollment — backs `/backoffice/mfa/*`.
+    manage_mfa_use_case: Arc<ManageMfaEnrollmentUseCase>,
 }
 
 impl BackofficeAppState {
@@ -150,6 +153,17 @@ impl BackofficeAppState {
         let audit_log_repo: Arc<dyn BackofficeAuditLogRepository> =
             Arc::new(PgBackofficeAuditLogRepository::new((*pool_arc).clone()));
 
+        let recovery_code_repo: Arc<dyn MfaRecoveryCodeRepository> =
+            Arc::new(PgMfaRecoveryCodeRepository::new((*pool_arc).clone()));
+
+        let totp_service: Arc<dyn TotpService> = Arc::new(TotpRsService::new());
+
+        let manage_mfa_use_case = Arc::new(ManageMfaEnrollmentUseCase::new(
+            user_repo.clone(),
+            recovery_code_repo,
+            totp_service,
+        ));
+
         Self {
             pool,
             user_repo,
@@ -167,6 +181,7 @@ impl BackofficeAppState {
             dunning_payment_gateway,
             kpi_snapshot_repo,
             audit_log_repo,
+            manage_mfa_use_case,
         }
     }
 
@@ -249,6 +264,11 @@ impl BackofficeAppState {
     pub fn audit_log_repo(&self) -> Arc<dyn BackofficeAuditLogRepository> {
         self.audit_log_repo.clone()
     }
+
+    /// Returns the self-service MFA enrollment use case.
+    pub fn manage_mfa_use_case(&self) -> Arc<ManageMfaEnrollmentUseCase> {
+        self.manage_mfa_use_case.clone()
+    }
 }
 
 #[cfg(test)]
@@ -296,6 +316,8 @@ mod tests {
         let _kpi = state.kpi_snapshot_repo();
         // audit log wiring (backs GET /backoffice/audit)
         let _audit = state.audit_log_repo();
+        // MFA wiring (backs /backoffice/mfa/*)
+        let _mfa = state.manage_mfa_use_case();
     }
 
     #[tokio::test]

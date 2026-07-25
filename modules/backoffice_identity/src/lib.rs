@@ -41,6 +41,10 @@ pub use application::use_cases::SuspendOrganizationWithAuditUseCase;
 pub use application::use_cases::{
     IMPERSONATION_TOKEN_EXPIRY_SECONDS, IssueImpersonationTokenWithAuditUseCase,
 };
+pub use application::use_cases::{
+    ManageMfaEnrollmentUseCase, MfaEnrollmentStarted, MfaRecoveryCodesIssued, MfaStatus,
+    verify_recovery_code,
+};
 
 // Application — DTOs
 pub use application::dtos::{
