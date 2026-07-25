@@ -68,6 +68,7 @@ pub async fn trigger_dunning_handler(
         "dunning.trigger",
         org_id,
         body.reason,
+        ctx.ip.clone(),
     )
     .await
     .map_err(IntoResponse::into_response)?;
