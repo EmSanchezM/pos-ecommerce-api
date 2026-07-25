@@ -19,6 +19,12 @@ services:
       # Shared secret for /internal service-to-service calls (impersonation v2).
       # Must match the backoffice service below. Dev value — set a real one in prod.
       INTERNAL_SERVICE_SECRET: "dev-internal-service-secret-change-me"
+      # Reverse proxies whose X-Forwarded-For may be trusted when rate limiting.
+      # Empty in dev: ports are published straight to the host, so the peer IS
+      # the client. In production this MUST list the Caddy address (an IP or a
+      # CIDR such as 172.16.0.0/12), or every tenant shares one auth-rate-limit
+      # bucket. See modules/common/src/rate_limit.rs.
+      TRUSTED_PROXY_IPS: ""
     depends_on:
       db:
         condition: service_healthy
@@ -43,6 +49,8 @@ services:
       API_GATEWAY_INTERNAL_URL: "http://app:8000"
       # Must match the app service's INTERNAL_SERVICE_SECRET.
       INTERNAL_SERVICE_SECRET: "dev-internal-service-secret-change-me"
+      # See the app service above. Empty in dev; must list Caddy in production.
+      TRUSTED_PROXY_IPS: ""
     depends_on:
       db:
         condition: service_healthy

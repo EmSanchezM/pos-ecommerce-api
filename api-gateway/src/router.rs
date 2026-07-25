@@ -40,7 +40,7 @@ pub fn build_router(app_state: AppState, config: &AppConfig) -> Router {
 
     Router::new()
         .route("/health", get(health_check_simple))
-        .nest("/api/v1/auth", auth_router())
+        .nest("/api/v1/auth", auth_router(config.trusted_proxies.clone()))
         .nest("/api/v1/stores", store_router(app_state.clone()))
         .nest(
             "/api/v1/stores/{store_id}/terminals",

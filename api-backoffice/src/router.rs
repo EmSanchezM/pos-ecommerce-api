@@ -5,8 +5,11 @@
 
 use axum::{Router, middleware, routing::get};
 
+use common::TrustedProxies;
+
 use crate::handlers::health::health_handler;
 use crate::middleware::auth::backoffice_auth_middleware;
+use crate::middleware::rate_limit::api_rate_limit_layer;
 use crate::routes::{
     analytics_router, audit_router, auth_router, dunning_router, impersonate_router, org_router,
     plan_router, subscription_router,
@@ -32,11 +35,12 @@ use crate::state::BackofficeAppState;
 /// - `GET /backoffice/analytics/overview`                   — platform:analytics.read
 /// - `GET /backoffice/analytics/kpis/{kpi_key}`             — platform:analytics.read
 /// - `GET /backoffice/audit`                                — platform:audit.read
-pub fn build_router(state: BackofficeAppState) -> Router {
+pub fn build_router(state: BackofficeAppState, trusted_proxies: TrustedProxies) -> Router {
     // Public routes — no auth middleware
-    let public_routes = Router::new()
-        .route("/health", get(health_handler))
-        .nest("/backoffice/auth", auth_router(state.clone()));
+    let public_routes = Router::new().route("/health", get(health_handler)).nest(
+        "/backoffice/auth",
+        auth_router(state.clone(), trusted_proxies.clone()),
+    );
 
     // Authenticated routes — backoffice JWT middleware applied
     let authenticated_routes = Router::new()
@@ -53,7 +57,11 @@ pub fn build_router(state: BackofficeAppState) -> Router {
         .layer(middleware::from_fn_with_state(
             state.clone(),
             backoffice_auth_middleware,
-        ));
+        ))
+        // Outermost: throttle before spending work on JWT validation. This is a
+        // blast-radius cap on a stolen token, not a limit a human operator
+        // should ever reach.
+        .layer(api_rate_limit_layer(trusted_proxies));
 
     public_routes.merge(authenticated_routes)
 }

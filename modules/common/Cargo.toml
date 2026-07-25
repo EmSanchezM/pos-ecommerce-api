@@ -5,6 +5,9 @@ edition = { workspace = true }
 
 [dependencies]
 axum = { workspace = true }
+http = { workspace = true }
+ipnetwork = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+tower_governor = { workspace = true }
 uuid = { workspace = true }
