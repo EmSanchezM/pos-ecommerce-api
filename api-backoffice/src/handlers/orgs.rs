@@ -108,8 +108,8 @@ pub async fn suspend_org_handler(
         ));
     }
 
-    // Phase 4 placeholder IP — Phase 5 wires ConnectInfo.
-    let ip = "0.0.0.0".to_string(); // TODO(phase5): extract from ConnectInfo
+    // Client IP for the audit trail, resolved by the auth middleware.
+    let ip = ctx.ip.clone();
 
     let org = state
         .suspend_with_audit_use_case()

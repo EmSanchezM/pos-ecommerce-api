@@ -62,5 +62,14 @@ async fn main() {
 
     println!("Backoffice API running on http://{addr}");
 
-    axum::serve(listener, app).await.unwrap();
+    // `into_make_service_with_connect_info` is what puts `ConnectInfo<SocketAddr>`
+    // into every request's extensions — without it the auth middleware cannot
+    // resolve the client IP and every audit event would fall back to the
+    // `UNKNOWN_IP` sentinel.
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }

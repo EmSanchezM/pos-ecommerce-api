@@ -103,8 +103,8 @@ pub async fn impersonate_handler(
         ));
     }
 
-    // Step 4: extract IP (Phase 4 placeholder — Phase 5 wires ConnectInfo if needed).
-    let ip = "0.0.0.0".to_string();
+    // Step 4: client IP for the audit trail, resolved by the auth middleware.
+    let ip = ctx.ip.clone();
 
     // Step 5: delegate to the use case which handles token issuance + audit in one tx.
     let response = state

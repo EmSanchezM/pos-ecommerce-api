@@ -97,6 +97,7 @@ pub async fn force_cancel_handler(
         "subscription.force_cancel",
         Some(org_id),
         body.reason,
+        ctx.ip.clone(),
     )
     .await
     .map_err(IntoResponse::into_response)?;
@@ -136,6 +137,7 @@ pub async fn change_plan_handler(
         "subscription.change_plan",
         Some(org_id),
         body.reason,
+        ctx.ip.clone(),
     )
     .await
     .map_err(IntoResponse::into_response)?;
@@ -173,6 +175,7 @@ pub async fn resume_handler(
         "subscription.resume",
         Some(org_id),
         body.reason,
+        ctx.ip.clone(),
     )
     .await
     .map_err(IntoResponse::into_response)?;
