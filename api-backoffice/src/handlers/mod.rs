@@ -4,6 +4,7 @@ pub mod auth;
 pub mod dunning;
 pub mod health;
 pub mod impersonate;
+pub mod mfa;
 pub mod orgs;
 pub mod plans;
 pub mod subscriptions;

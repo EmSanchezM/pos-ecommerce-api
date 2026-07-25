@@ -37,6 +37,7 @@ jsonwebtoken = { workspace = true }
 
 # Regex for PlatformPermissionCode validation
 regex = "1.11"
+totp-rs = { version = "5.7.2", features = ["otpauth", "gen_secret"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros"] }

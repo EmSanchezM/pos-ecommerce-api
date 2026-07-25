@@ -19,12 +19,22 @@ impl PgBackofficeUserRepository {
     }
 }
 
+/// Columns selected by every user query. Kept in one place so a new column
+/// cannot be added to some reads and forgotten in others — which for
+/// `mfa_activated_at` would mean silently treating active MFA as absent.
+const USER_COLUMNS: &str = "id, email, password_hash, mfa_secret, mfa_activated_at, \
+     mfa_last_used_step, is_active, last_login_at, created_at, updated_at";
+
 #[derive(sqlx::FromRow)]
 struct UserRow {
     id: uuid::Uuid,
     email: String,
     password_hash: String,
     mfa_secret: Option<String>,
+    mfa_activated_at: Option<chrono::DateTime<chrono::Utc>>,
+    /// Stored as BIGINT because Postgres has no unsigned integers; TOTP steps
+    /// are far below `i64::MAX` (step ~1.8e9 in 2026), so the cast is safe.
+    mfa_last_used_step: Option<i64>,
     is_active: bool,
     last_login_at: Option<chrono::DateTime<chrono::Utc>>,
     created_at: chrono::DateTime<chrono::Utc>,
@@ -46,6 +56,13 @@ impl TryFrom<UserRow> for BackofficeUser {
             r.last_login_at,
             r.created_at,
             r.updated_at,
+        )
+        .with_mfa_state(
+            r.mfa_activated_at,
+            // A negative value cannot come from `record_mfa_step`; treat it as
+            // absent rather than wrapping into a huge watermark that would
+            // reject every future code.
+            r.mfa_last_used_step.and_then(|s| u64::try_from(s).ok()),
         ))
     }
 }
@@ -73,14 +90,17 @@ impl BackofficeUserRepository for PgBackofficeUserRepository {
         sqlx::query(
             r#"
             INSERT INTO backoffice_users
-                (id, email, password_hash, mfa_secret, is_active, last_login_at, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                (id, email, password_hash, mfa_secret, mfa_activated_at, mfa_last_used_step,
+                 is_active, last_login_at, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             "#,
         )
         .bind(user.id().as_uuid())
         .bind(user.email().as_str())
         .bind(user.password_hash())
         .bind(user.mfa_secret())
+        .bind(user.mfa_activated_at())
+        .bind(user.mfa_last_used_step().map(|s| s as i64))
         .bind(user.is_active())
         .bind(user.last_login_at())
         .bind(user.created_at())
@@ -100,13 +120,9 @@ impl BackofficeUserRepository for PgBackofficeUserRepository {
         &self,
         id: BackofficeUserId,
     ) -> Result<Option<BackofficeUser>, BackofficeIdentityError> {
-        let row: Option<UserRow> = sqlx::query_as(
-            r#"
-            SELECT id, email, password_hash, mfa_secret, is_active, last_login_at, created_at, updated_at
-            FROM backoffice_users
-            WHERE id = $1
-            "#,
-        )
+        let row: Option<UserRow> = sqlx::query_as(&format!(
+            "SELECT {USER_COLUMNS} FROM backoffice_users WHERE id = $1"
+        ))
         .bind(id.as_uuid())
         .fetch_optional(&self.pool)
         .await?;
@@ -118,13 +134,9 @@ impl BackofficeUserRepository for PgBackofficeUserRepository {
         &self,
         email: &BackofficeEmail,
     ) -> Result<Option<BackofficeUser>, BackofficeIdentityError> {
-        let row: Option<UserRow> = sqlx::query_as(
-            r#"
-            SELECT id, email, password_hash, mfa_secret, is_active, last_login_at, created_at, updated_at
-            FROM backoffice_users
-            WHERE email = $1
-            "#,
-        )
+        let row: Option<UserRow> = sqlx::query_as(&format!(
+            "SELECT {USER_COLUMNS} FROM backoffice_users WHERE email = $1"
+        ))
         .bind(email.as_str())
         .fetch_optional(&self.pool)
         .await?;
@@ -139,15 +151,19 @@ impl BackofficeUserRepository for PgBackofficeUserRepository {
             SET email = $1,
                 password_hash = $2,
                 mfa_secret = $3,
-                is_active = $4,
-                last_login_at = $5,
-                updated_at = $6
-            WHERE id = $7
+                mfa_activated_at = $4,
+                mfa_last_used_step = $5,
+                is_active = $6,
+                last_login_at = $7,
+                updated_at = $8
+            WHERE id = $9
             "#,
         )
         .bind(user.email().as_str())
         .bind(user.password_hash())
         .bind(user.mfa_secret())
+        .bind(user.mfa_activated_at())
+        .bind(user.mfa_last_used_step().map(|s| s as i64))
         .bind(user.is_active())
         .bind(user.last_login_at())
         .bind(user.updated_at())
@@ -159,13 +175,9 @@ impl BackofficeUserRepository for PgBackofficeUserRepository {
     }
 
     async fn list(&self) -> Result<Vec<BackofficeUser>, BackofficeIdentityError> {
-        let rows: Vec<UserRow> = sqlx::query_as(
-            r#"
-            SELECT id, email, password_hash, mfa_secret, is_active, last_login_at, created_at, updated_at
-            FROM backoffice_users
-            ORDER BY created_at ASC
-            "#,
-        )
+        let rows: Vec<UserRow> = sqlx::query_as(&format!(
+            "SELECT {USER_COLUMNS} FROM backoffice_users ORDER BY created_at ASC"
+        ))
         .fetch_all(&self.pool)
         .await?;
 

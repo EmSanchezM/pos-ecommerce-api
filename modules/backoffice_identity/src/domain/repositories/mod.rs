@@ -1,7 +1,9 @@
 mod backoffice_permission_repository;
 mod backoffice_role_repository;
 mod backoffice_user_repository;
+mod mfa_recovery_code_repository;
 
 pub use backoffice_permission_repository::BackofficePermissionRepository;
 pub use backoffice_role_repository::BackofficeRoleRepository;
 pub use backoffice_user_repository::BackofficeUserRepository;
+pub use mfa_recovery_code_repository::MfaRecoveryCodeRepository;
