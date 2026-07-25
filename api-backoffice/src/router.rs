@@ -7,6 +7,7 @@ use axum::{Router, middleware, routing::get};
 
 use crate::handlers::health::health_handler;
 use crate::middleware::auth::backoffice_auth_middleware;
+use crate::middleware::rate_limit::api_rate_limit_layer;
 use crate::routes::{
     analytics_router, audit_router, auth_router, dunning_router, impersonate_router, org_router,
     plan_router, subscription_router,
@@ -53,7 +54,11 @@ pub fn build_router(state: BackofficeAppState) -> Router {
         .layer(middleware::from_fn_with_state(
             state.clone(),
             backoffice_auth_middleware,
-        ));
+        ))
+        // Outermost: throttle before spending work on JWT validation. This is a
+        // blast-radius cap on a stolen token, not a limit a human operator
+        // should ever reach.
+        .layer(api_rate_limit_layer());
 
     public_routes.merge(authenticated_routes)
 }

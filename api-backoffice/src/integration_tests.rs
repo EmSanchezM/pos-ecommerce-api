@@ -5,8 +5,12 @@
 
 #[cfg(test)]
 mod tests {
+    use std::net::SocketAddr;
+
     use axum::{
+        Extension, Router,
         body::Body,
+        extract::ConnectInfo,
         http::{Request, StatusCode, header::CONTENT_TYPE},
     };
     use serde_json::json;
@@ -28,10 +32,32 @@ mod tests {
         )
     }
 
+    /// Builds the router the way `main` serves it.
+    ///
+    /// Stands in for `into_make_service_with_connect_info`: the rate limiters
+    /// key on the peer IP, and without a `ConnectInfo` in the extensions every
+    /// request is rejected with 500 (`GovernorError::UnableToExtractKey`)
+    /// before it ever reaches the route.
+    ///
+    /// NOTE: this deliberately does NOT use `axum::extract::MockConnectInfo`.
+    /// That layer inserts a `MockConnectInfo<SocketAddr>` extension, which only
+    /// axum's own `ConnectInfo` *extractor* knows to fall back to. Middleware
+    /// that reads the extension directly — `tower_governor` does
+    /// `extensions().get::<ConnectInfo<SocketAddr>>()` — finds nothing and
+    /// fails. Inserting the real `ConnectInfo` is what mirrors production.
+    ///
+    /// Each call builds a fresh router, so each test gets its own quota state.
+    fn make_app() -> Router {
+        build_router(make_state()).layer(Extension(ConnectInfo(SocketAddr::from((
+            [127, 0, 0, 1],
+            9999,
+        )))))
+    }
+
     /// P3-T07: GET /health returns 200.
     #[tokio::test]
     async fn health_returns_200() {
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/health")
             .body(Body::empty())
@@ -46,7 +72,7 @@ mod tests {
     /// We verify the route exists by asserting we do NOT get 404.
     #[tokio::test]
     async fn login_route_is_registered() {
-        let app = build_router(make_state());
+        let app = make_app();
         let body = json!({
             "email": "admin@platform.com",
             "password": "wrong-password"
@@ -71,7 +97,7 @@ mod tests {
     /// P3-T07: GET /backoffice/orgs without auth returns 401 (middleware applied).
     #[tokio::test]
     async fn orgs_route_requires_auth() {
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/orgs")
             .body(Body::empty())
@@ -119,7 +145,7 @@ mod tests {
     async fn orgs_route_accepts_valid_backoffice_token() {
         let token = backoffice_token(&["platform:org.list"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/orgs")
             .header("Authorization", format!("Bearer {token}"))
@@ -140,7 +166,7 @@ mod tests {
     async fn orgs_route_denies_token_without_permission() {
         let token = backoffice_token(&["platform:audit.read"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/orgs")
             .header("Authorization", format!("Bearer {token}"))
@@ -162,7 +188,7 @@ mod tests {
     /// GET /backoffice/plans without a token returns 401 (auth middleware).
     #[tokio::test]
     async fn plans_route_requires_auth() {
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/plans")
             .body(Body::empty())
@@ -178,7 +204,7 @@ mod tests {
     async fn plans_list_denied_without_permission() {
         let token = backoffice_token(&["platform:org.list"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/plans")
             .header("Authorization", format!("Bearer {token}"))
@@ -200,7 +226,7 @@ mod tests {
     async fn plans_list_with_permission_reaches_db() {
         let token = backoffice_token(&["platform:plan.read"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/plans")
             .header("Authorization", format!("Bearer {token}"))
@@ -226,7 +252,7 @@ mod tests {
     /// POST force-cancel without a token returns 401 (auth middleware).
     #[tokio::test]
     async fn subs_force_cancel_requires_auth() {
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri(org_path("/force-cancel"))
             .method("POST")
@@ -244,7 +270,7 @@ mod tests {
     async fn subs_force_cancel_denied_without_permission() {
         let token = backoffice_token(&["platform:org.list"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri(org_path("/force-cancel"))
             .method("POST")
@@ -263,7 +289,7 @@ mod tests {
     async fn subs_change_plan_denied_without_permission() {
         let token = backoffice_token(&["platform:subscription.force_cancel"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let body = json!({
             "reason": "promo migration",
             "new_plan_id": "00000000-0000-0000-0000-000000000002"
@@ -286,7 +312,7 @@ mod tests {
     async fn subs_get_with_permission_reaches_db() {
         let token = backoffice_token(&["platform:org.list"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri(org_path(""))
             .header("Authorization", format!("Bearer {token}"))
@@ -306,7 +332,7 @@ mod tests {
     /// POST dunning trigger without a token returns 401.
     #[tokio::test]
     async fn dunning_trigger_requires_auth() {
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri(DUNNING_PATH)
             .method("POST")
@@ -324,7 +350,7 @@ mod tests {
     async fn dunning_trigger_denied_without_permission() {
         let token = backoffice_token(&["platform:org.list"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri(DUNNING_PATH)
             .method("POST")
@@ -343,7 +369,7 @@ mod tests {
     async fn dunning_trigger_with_permission_reaches_db() {
         let token = backoffice_token(&["platform:dunning.trigger"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri(DUNNING_PATH)
             .method("POST")
@@ -363,7 +389,7 @@ mod tests {
     /// GET analytics overview without a token returns 401.
     #[tokio::test]
     async fn analytics_overview_requires_auth() {
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/analytics/overview")
             .body(Body::empty())
@@ -379,7 +405,7 @@ mod tests {
     async fn analytics_overview_denied_without_permission() {
         let token = backoffice_token(&["platform:org.list"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/analytics/overview")
             .header("Authorization", format!("Bearer {token}"))
@@ -396,7 +422,7 @@ mod tests {
     async fn analytics_kpi_with_permission_reaches_db() {
         let token = backoffice_token(&["platform:analytics.read"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/analytics/kpis/sales.revenue_total?window=this_month")
             .header("Authorization", format!("Bearer {token}"))
@@ -412,7 +438,7 @@ mod tests {
     async fn analytics_kpi_invalid_window_is_400() {
         let token = backoffice_token(&["platform:analytics.read"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/analytics/kpis/sales.revenue_total?window=nope")
             .header("Authorization", format!("Bearer {token}"))
@@ -430,7 +456,7 @@ mod tests {
     /// GET /backoffice/audit without a token returns 401 (auth middleware).
     #[tokio::test]
     async fn audit_log_route_requires_auth() {
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/audit")
             .body(Body::empty())
@@ -447,7 +473,7 @@ mod tests {
     async fn audit_log_denied_without_permission() {
         let token = backoffice_token(&["platform:org.list"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/audit")
             .header("Authorization", format!("Bearer {token}"))
@@ -468,7 +494,7 @@ mod tests {
     async fn audit_log_with_permission_reaches_db() {
         let token = backoffice_token(&["platform:audit.read"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/audit")
             .header("Authorization", format!("Bearer {token}"))
@@ -484,7 +510,7 @@ mod tests {
     async fn audit_log_accepts_filters_and_pagination() {
         let token = backoffice_token(&["platform:audit.read"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri(
                 "/backoffice/audit?action=org.suspend\
@@ -506,7 +532,7 @@ mod tests {
     async fn audit_log_malformed_uuid_filter_is_400() {
         let token = backoffice_token(&["platform:audit.read"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/audit?actor_id=not-a-uuid")
             .header("Authorization", format!("Bearer {token}"))
@@ -523,7 +549,7 @@ mod tests {
     async fn audit_log_oversized_page_size_is_clamped_not_rejected() {
         let token = backoffice_token(&["platform:audit.read"]);
 
-        let app = build_router(make_state());
+        let app = make_app();
         let request = Request::builder()
             .uri("/backoffice/audit?page=4294967295&page_size=4294967295")
             .header("Authorization", format!("Bearer {token}"))
@@ -536,5 +562,122 @@ mod tests {
             StatusCode::INTERNAL_SERVER_ERROR,
             "extreme pagination must be clamped and reach the DB, not panic or 400"
         );
+    }
+
+    // -------------------------------------------------------------------------
+    // Rate limiting
+    // -------------------------------------------------------------------------
+
+    fn login_request() -> Request<Body> {
+        let body = json!({ "email": "admin@platform.com", "password": "wrong-password" });
+        Request::builder()
+            .uri("/backoffice/auth/login")
+            .method("POST")
+            .header(CONTENT_TYPE, "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap()
+    }
+
+    /// Repeated login attempts from one peer IP must eventually be throttled.
+    /// This is the control that makes an online brute force against the
+    /// platform-owner credential impractical — if it silently stopped working,
+    /// nothing else in the system would notice.
+    #[tokio::test]
+    async fn login_is_rate_limited_after_a_burst() {
+        let app = make_app();
+
+        let mut statuses = Vec::new();
+        for _ in 0..12 {
+            let response = app.clone().oneshot(login_request()).await.unwrap();
+            statuses.push(response.status());
+        }
+
+        assert!(
+            statuses.contains(&StatusCode::TOO_MANY_REQUESTS),
+            "sustained login attempts must be throttled with 429, got {statuses:?}"
+        );
+    }
+
+    /// The first attempts must NOT be throttled — a limiter that rejects an
+    /// operator's first password entry is a broken limiter, not a strict one.
+    #[tokio::test]
+    async fn first_login_attempt_is_not_throttled() {
+        let app = make_app();
+
+        let response = app.oneshot(login_request()).await.unwrap();
+
+        assert_ne!(
+            response.status(),
+            StatusCode::TOO_MANY_REQUESTS,
+            "the first login attempt must never be rate limited"
+        );
+    }
+
+    /// The authenticated surface is throttled too, but generously enough that a
+    /// normal burst of operator activity passes untouched.
+    #[tokio::test]
+    async fn authenticated_route_tolerates_a_normal_burst() {
+        let token = backoffice_token(&["platform:audit.read"]);
+        let app = make_app();
+
+        for i in 0..20 {
+            let request = Request::builder()
+                .uri("/backoffice/audit")
+                .header("Authorization", format!("Bearer {token}"))
+                .body(Body::empty())
+                .unwrap();
+
+            let status = app.clone().oneshot(request).await.unwrap().status();
+            assert_ne!(
+                status,
+                StatusCode::TOO_MANY_REQUESTS,
+                "request {i} of a normal operator burst was throttled"
+            );
+        }
+    }
+
+    /// A forged `X-Forwarded-For` must not buy a fresh quota bucket. This is
+    /// the whole reason the limiter keys on the peer IP rather than on
+    /// `SmartIpKeyExtractor`, which reads that header first.
+    #[tokio::test]
+    async fn spoofed_forwarded_for_does_not_reset_the_login_quota() {
+        let app = make_app();
+
+        let mut statuses = Vec::new();
+        for i in 0..12 {
+            let body = json!({ "email": "admin@platform.com", "password": "wrong-password" });
+            let request = Request::builder()
+                .uri("/backoffice/auth/login")
+                .method("POST")
+                .header(CONTENT_TYPE, "application/json")
+                // A different forged origin on every attempt.
+                .header("X-Forwarded-For", format!("203.0.113.{i}"))
+                .header("X-Real-IP", format!("198.51.100.{i}"))
+                .body(Body::from(body.to_string()))
+                .unwrap();
+
+            statuses.push(app.clone().oneshot(request).await.unwrap().status());
+        }
+
+        assert!(
+            statuses.contains(&StatusCode::TOO_MANY_REQUESTS),
+            "rotating X-Forwarded-For must NOT bypass the login limiter, got {statuses:?}"
+        );
+    }
+
+    /// Health must stay reachable — it is public and outside the authenticated
+    /// router, so the API limiter must not cover it.
+    #[tokio::test]
+    async fn health_is_not_rate_limited() {
+        let app = make_app();
+
+        for _ in 0..80 {
+            let request = Request::builder()
+                .uri("/health")
+                .body(Body::empty())
+                .unwrap();
+            let status = app.clone().oneshot(request).await.unwrap().status();
+            assert_eq!(status, StatusCode::OK, "health must never be throttled");
+        }
     }
 }
