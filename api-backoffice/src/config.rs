@@ -5,6 +5,16 @@
 use std::env;
 use std::str::FromStr;
 
+use common::TrustedProxies;
+
+/// Comma-separated IPs / CIDR blocks of reverse proxies whose
+/// `X-Forwarded-For` may be believed when rate limiting.
+///
+/// Unset means "trust nothing", which keys every request on the address that
+/// actually connected — correct for a directly exposed service, and wrong the
+/// moment a proxy is put in front (every operator would share one bucket).
+const TRUSTED_PROXY_IPS: &str = "TRUSTED_PROXY_IPS";
+
 pub struct BackofficeConfig {
     pub database: DatabaseConfig,
     pub backoffice_secret: String,
@@ -15,6 +25,8 @@ pub struct BackofficeConfig {
     /// Shared secret authenticating calls to api-gateway's `/internal/*`.
     /// Must match api-gateway's `INTERNAL_SERVICE_SECRET`.
     pub internal_service_secret: String,
+    /// Reverse proxies whose forwarded headers are trusted for rate limiting.
+    pub trusted_proxies: TrustedProxies,
     pub port: u16,
 }
 
@@ -48,6 +60,7 @@ impl BackofficeConfig {
                 .unwrap_or_else(|_| "http://app:8000".to_string()),
             internal_service_secret: env::var("INTERNAL_SERVICE_SECRET")
                 .expect("INTERNAL_SERVICE_SECRET must be set"),
+            trusted_proxies: TrustedProxies::from_env(TRUSTED_PROXY_IPS),
             port: env_or("BACKOFFICE_PORT", 8001u16),
         }
     }
