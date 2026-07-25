@@ -5,11 +5,11 @@
 
 use std::sync::Arc;
 
-// BackofficeAuditSubscriber and PgBackofficeAuditLogRepository will be used
-// in P4-T08 when the event_dispatcher job is wired.
 use analytics::{KpiSnapshotRepository, PgKpiSnapshotRepository};
 #[allow(unused_imports)]
-use audit_infra::{BackofficeAuditSubscriber, PgBackofficeAuditLogRepository};
+use audit_infra::{
+    BackofficeAuditLogRepository, BackofficeAuditSubscriber, PgBackofficeAuditLogRepository,
+};
 use backoffice_identity::{
     AuthenticateBackofficeUserUseCase, BackofficeTokenService, BackofficeUserRepository,
     ImpersonationTokenIssuer, IssueImpersonationTokenWithAuditUseCase, JwtBackofficeTokenService,
@@ -66,6 +66,8 @@ pub struct BackofficeAppState {
     dunning_payment_gateway: Arc<dyn BillingPaymentGateway>,
     /// KPI snapshot repository — backs cross-org (system-wide) analytics reads.
     kpi_snapshot_repo: Arc<dyn KpiSnapshotRepository>,
+    /// Append-only audit log repository — backs `GET /backoffice/audit`.
+    audit_log_repo: Arc<dyn BackofficeAuditLogRepository>,
 }
 
 impl BackofficeAppState {
@@ -145,6 +147,9 @@ impl BackofficeAppState {
         let kpi_snapshot_repo: Arc<dyn KpiSnapshotRepository> =
             Arc::new(PgKpiSnapshotRepository::new((*pool_arc).clone()));
 
+        let audit_log_repo: Arc<dyn BackofficeAuditLogRepository> =
+            Arc::new(PgBackofficeAuditLogRepository::new((*pool_arc).clone()));
+
         Self {
             pool,
             user_repo,
@@ -161,6 +166,7 @@ impl BackofficeAppState {
             dunning_repo,
             dunning_payment_gateway,
             kpi_snapshot_repo,
+            audit_log_repo,
         }
     }
 
@@ -238,6 +244,11 @@ impl BackofficeAppState {
     pub fn kpi_snapshot_repo(&self) -> Arc<dyn KpiSnapshotRepository> {
         self.kpi_snapshot_repo.clone()
     }
+
+    /// Returns the append-only audit log repository (backs audit log reads).
+    pub fn audit_log_repo(&self) -> Arc<dyn BackofficeAuditLogRepository> {
+        self.audit_log_repo.clone()
+    }
 }
 
 #[cfg(test)]
@@ -283,6 +294,8 @@ mod tests {
         let _gw = state.dunning_payment_gateway();
         // analytics wiring (P6 — cross-org KPI reads)
         let _kpi = state.kpi_snapshot_repo();
+        // audit log wiring (backs GET /backoffice/audit)
+        let _audit = state.audit_log_repo();
     }
 
     #[tokio::test]

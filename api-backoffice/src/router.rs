@@ -8,8 +8,8 @@ use axum::{Router, middleware, routing::get};
 use crate::handlers::health::health_handler;
 use crate::middleware::auth::backoffice_auth_middleware;
 use crate::routes::{
-    analytics_router, auth_router, dunning_router, impersonate_router, org_router, plan_router,
-    subscription_router,
+    analytics_router, audit_router, auth_router, dunning_router, impersonate_router, org_router,
+    plan_router, subscription_router,
 };
 use crate::state::BackofficeAppState;
 
@@ -31,6 +31,7 @@ use crate::state::BackofficeAppState;
 /// - `POST /backoffice/dunning/{attempt_id}/trigger`        — platform:dunning.trigger
 /// - `GET /backoffice/analytics/overview`                   — platform:analytics.read
 /// - `GET /backoffice/analytics/kpis/{kpi_key}`             — platform:analytics.read
+/// - `GET /backoffice/audit`                                — platform:audit.read
 pub fn build_router(state: BackofficeAppState) -> Router {
     // Public routes — no auth middleware
     let public_routes = Router::new()
@@ -48,6 +49,7 @@ pub fn build_router(state: BackofficeAppState) -> Router {
         )
         .nest("/backoffice/dunning", dunning_router(state.clone()))
         .nest("/backoffice/analytics", analytics_router(state.clone()))
+        .nest("/backoffice/audit", audit_router(state.clone()))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             backoffice_auth_middleware,

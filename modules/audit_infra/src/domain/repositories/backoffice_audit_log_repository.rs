@@ -36,6 +36,27 @@ impl From<BackofficeAuditEvent> for BackofficeAuditLogEntry {
     }
 }
 
+/// A persisted audit log row, as returned by reads.
+///
+/// Distinct from [`BackofficeAuditLogEntry`] on purpose: the write model
+/// carries only what a caller can supply, while `id` and `occurred_at` are
+/// assigned by the database. Folding them into the write model would force
+/// every `append` caller to invent values it does not own.
+///
+/// An audit row without `occurred_at` is not an audit row — "who did what"
+/// is worthless without "when".
+#[derive(Debug, Clone)]
+pub struct BackofficeAuditLogRecord {
+    pub id: uuid::Uuid,
+    pub actor_type: String,
+    pub actor_id: uuid::Uuid,
+    pub action: String,
+    pub target_org_id: Option<uuid::Uuid>,
+    pub reason: String,
+    pub ip: String,
+    pub occurred_at: chrono::DateTime<chrono::Utc>,
+}
+
 /// Filters for paginated audit log reads.
 #[derive(Debug, Default, Clone)]
 pub struct AuditLogFilters {
@@ -54,13 +75,16 @@ pub trait BackofficeAuditLogRepository: Send + Sync {
     /// Append a single immutable entry to the audit log.
     async fn append(&self, entry: BackofficeAuditLogEntry) -> Result<(), AuditInfraError>;
 
-    /// Read paginated entries ordered by `occurred_at` DESC.
+    /// Read paginated rows ordered by `occurred_at` DESC.
+    ///
+    /// `page` is 1-based. Callers are expected to clamp `page_size` — the
+    /// implementation must not assume a bounded value.
     async fn find_paginated(
         &self,
         filters: AuditLogFilters,
         page: u32,
         page_size: u32,
-    ) -> Result<Vec<BackofficeAuditLogEntry>, AuditInfraError>;
+    ) -> Result<Vec<BackofficeAuditLogRecord>, AuditInfraError>;
 }
 
 // =============================================================================
@@ -110,8 +134,25 @@ mod tests {
             _filters: AuditLogFilters,
             _page: u32,
             _page_size: u32,
-        ) -> Result<Vec<BackofficeAuditLogEntry>, AuditInfraError> {
-            Ok(self.rows.lock().unwrap().clone())
+        ) -> Result<Vec<BackofficeAuditLogRecord>, AuditInfraError> {
+            // Stands in for the columns Postgres assigns on INSERT.
+            Ok(self
+                .rows
+                .lock()
+                .unwrap()
+                .iter()
+                .cloned()
+                .map(|entry| BackofficeAuditLogRecord {
+                    id: uuid::Uuid::new_v7(uuid::Timestamp::now(uuid::NoContext)),
+                    actor_type: entry.actor_type,
+                    actor_id: entry.actor_id,
+                    action: entry.action,
+                    target_org_id: entry.target_org_id,
+                    reason: entry.reason,
+                    ip: entry.ip,
+                    occurred_at: chrono::Utc::now(),
+                })
+                .collect())
         }
     }
 

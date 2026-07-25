@@ -422,4 +422,119 @@ mod tests {
         let response = app.oneshot(request).await.unwrap();
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     }
+
+    // -------------------------------------------------------------------------
+    // Audit log read route
+    // -------------------------------------------------------------------------
+
+    /// GET /backoffice/audit without a token returns 401 (auth middleware).
+    #[tokio::test]
+    async fn audit_log_route_requires_auth() {
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/audit")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    /// A valid token WITHOUT `platform:audit.read` is rejected with 403 before
+    /// any DB access. The audit trail records who suspended orgs and who
+    /// impersonated whom, so the gate matters more here than anywhere else.
+    #[tokio::test]
+    async fn audit_log_denied_without_permission() {
+        let token = backoffice_token(&["platform:org.list"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/audit")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(
+            response.status(),
+            StatusCode::FORBIDDEN,
+            "missing platform:audit.read must be rejected with 403"
+        );
+    }
+
+    /// With `platform:audit.read` the handler passes the gate and reaches the
+    /// DB layer — 500 against the lazy (unconnected) pool, not 403/401.
+    #[tokio::test]
+    async fn audit_log_with_permission_reaches_db() {
+        let token = backoffice_token(&["platform:audit.read"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/audit")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    /// Filters and pagination are accepted and still reach the DB layer.
+    #[tokio::test]
+    async fn audit_log_accepts_filters_and_pagination() {
+        let token = backoffice_token(&["platform:audit.read"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri(
+                "/backoffice/audit?action=org.suspend\
+                 &actor_id=00000000-0000-7000-8000-000000000001\
+                 &target_org_id=00000000-0000-7000-8000-000000000002\
+                 &page=2&page_size=10",
+            )
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    /// A malformed UUID filter is rejected with 400 by query deserialization,
+    /// before the permission gate or any DB access.
+    #[tokio::test]
+    async fn audit_log_malformed_uuid_filter_is_400() {
+        let token = backoffice_token(&["platform:audit.read"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/audit?actor_id=not-a-uuid")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    }
+
+    /// An out-of-range page_size must be clamped, not rejected and not passed
+    /// through — the handler still reaches the DB layer.
+    #[tokio::test]
+    async fn audit_log_oversized_page_size_is_clamped_not_rejected() {
+        let token = backoffice_token(&["platform:audit.read"]);
+
+        let app = build_router(make_state());
+        let request = Request::builder()
+            .uri("/backoffice/audit?page=4294967295&page_size=4294967295")
+            .header("Authorization", format!("Bearer {token}"))
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+        assert_eq!(
+            response.status(),
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "extreme pagination must be clamped and reach the DB, not panic or 400"
+        );
+    }
 }
