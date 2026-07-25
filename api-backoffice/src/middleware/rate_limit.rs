@@ -6,34 +6,22 @@
 // organization. An unthrottled login endpoint is an open brute-force target
 // with the highest-value credential in the system behind it.
 //
-// # Why PeerIpKeyExtractor and not SmartIpKeyExtractor
+// # Keying
 //
-// `SmartIpKeyExtractor` reads `X-Forwarded-For` / `X-Real-IP` / `Forwarded`
-// BEFORE falling back to the peer address. Those headers are set by the client,
-// so on a directly-exposed service an attacker gets a fresh quota bucket per
-// request just by rotating the header — the limiter stops limiting anything.
-// tower_governor's own docs carry this warning: use it "only if you can ensure
-// these headers are being set by a trusted provider".
-//
-// `compose.dev.yml` publishes the backoffice on :8001 with no proxy in front,
-// so the peer address IS the client and is not forgeable. This mirrors the
-// resolution order already used for the audit IP in `middleware/auth.rs`:
-// trust the transport, treat client-supplied headers as untrusted.
-//
-// If a reverse proxy is ever put in front of this binary, `PeerIpKeyExtractor`
-// starts seeing only the proxy address and throttles every operator as one
-// bucket. The fix at that point is to switch to `SmartIpKeyExtractor` AND
-// configure the proxy to overwrite (not append to) any client-supplied
-// `X-Forwarded-For`. Switching without the proxy-side change reintroduces the
-// bypass described above.
+// Both layers key on `common::ClientIpKeyExtractor`, which resolves the client
+// address through the configured `TRUSTED_PROXY_IPS`. Neither of
+// tower_governor's built-in extractors is correct for this deployment —
+// `PeerIpKeyExtractor` would collapse every operator behind Caddy into one
+// shared bucket, and `SmartIpKeyExtractor` reads the FIRST `X-Forwarded-For`
+// entry, which is exactly the one a client can forge. See the module docs on
+// `common::rate_limit` for the full argument.
 //
 // Both layers depend on `ConnectInfo<SocketAddr>` being present, which
 // `main` installs via `into_make_service_with_connect_info`.
 
+use common::{ClientIpKeyExtractor, TrustedProxies};
 use governor::middleware::NoOpMiddleware;
-use tower_governor::{
-    GovernorLayer, governor::GovernorConfigBuilder, key_extractor::PeerIpKeyExtractor,
-};
+use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 
 /// Seconds between quota replenishments on the login endpoint.
 ///
@@ -77,11 +65,12 @@ const _: () = assert!(3600 / LOGIN_REPLENISH_INTERVAL_SECS <= 300);
 /// Rate-limiting layer for `POST /backoffice/auth/login`.
 ///
 /// Burst of [`LOGIN_BURST_SIZE`], then one attempt every
-/// [`LOGIN_REPLENISH_INTERVAL_SECS`] seconds, keyed by peer IP.
-pub fn login_rate_limit_layer()
--> GovernorLayer<PeerIpKeyExtractor, NoOpMiddleware, axum::body::Body> {
+/// [`LOGIN_REPLENISH_INTERVAL_SECS`] seconds, keyed by resolved client IP.
+pub fn login_rate_limit_layer(
+    trusted_proxies: TrustedProxies,
+) -> GovernorLayer<ClientIpKeyExtractor, NoOpMiddleware, axum::body::Body> {
     let config = GovernorConfigBuilder::default()
-        .key_extractor(PeerIpKeyExtractor)
+        .key_extractor(ClientIpKeyExtractor::new(trusted_proxies))
         .per_second(LOGIN_REPLENISH_INTERVAL_SECS)
         .burst_size(LOGIN_BURST_SIZE)
         .finish()
@@ -93,11 +82,12 @@ pub fn login_rate_limit_layer()
 /// Rate-limiting layer for the authenticated backoffice surface.
 ///
 /// Burst of [`API_BURST_SIZE`], then one request every
-/// [`API_REPLENISH_INTERVAL_SECS`] second, keyed by peer IP.
-pub fn api_rate_limit_layer() -> GovernorLayer<PeerIpKeyExtractor, NoOpMiddleware, axum::body::Body>
-{
+/// [`API_REPLENISH_INTERVAL_SECS`] second, keyed by resolved client IP.
+pub fn api_rate_limit_layer(
+    trusted_proxies: TrustedProxies,
+) -> GovernorLayer<ClientIpKeyExtractor, NoOpMiddleware, axum::body::Body> {
     let config = GovernorConfigBuilder::default()
-        .key_extractor(PeerIpKeyExtractor)
+        .key_extractor(ClientIpKeyExtractor::new(trusted_proxies))
         .per_second(API_REPLENISH_INTERVAL_SECS)
         .burst_size(API_BURST_SIZE)
         .finish()
@@ -121,7 +111,16 @@ mod tests {
 
     #[test]
     fn both_layers_build() {
-        let _login = login_rate_limit_layer();
-        let _api = api_rate_limit_layer();
+        let _login = login_rate_limit_layer(TrustedProxies::default());
+        let _api = api_rate_limit_layer(TrustedProxies::default());
+    }
+
+    /// Construction must also succeed with proxies configured — that is the
+    /// production path.
+    #[test]
+    fn both_layers_build_with_trusted_proxies() {
+        let trusted = TrustedProxies::parse("172.16.0.0/12").unwrap();
+        let _login = login_rate_limit_layer(trusted.clone());
+        let _api = api_rate_limit_layer(trusted);
     }
 }

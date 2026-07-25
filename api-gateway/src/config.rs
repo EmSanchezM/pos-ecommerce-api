@@ -1,6 +1,16 @@
 use std::env;
 use std::str::FromStr;
 
+use common::TrustedProxies;
+
+/// Comma-separated IPs / CIDR blocks of reverse proxies whose
+/// `X-Forwarded-For` may be believed when rate limiting.
+///
+/// Unset means "trust nothing", which keys every request on the address that
+/// actually connected. Behind Caddy this MUST list the proxy, or every tenant
+/// shares a single auth-rate-limit bucket.
+const TRUSTED_PROXY_IPS: &str = "TRUSTED_PROXY_IPS";
+
 pub struct AppConfig {
     pub database: DatabaseConfig,
     pub jwt_secret: String,
@@ -9,6 +19,8 @@ pub struct AppConfig {
     /// must be configured with the same value.
     pub internal_service_secret: String,
     pub cors_allowed_origins: Option<String>,
+    /// Reverse proxies whose forwarded headers are trusted for rate limiting.
+    pub trusted_proxies: TrustedProxies,
     pub image_storage: ImageStorageConfig,
     pub jobs: JobsConfig,
 }
@@ -57,6 +69,7 @@ impl AppConfig {
             cors_allowed_origins: env::var("CORS_ALLOWED_ORIGINS")
                 .ok()
                 .filter(|s| !s.is_empty()),
+            trusted_proxies: TrustedProxies::from_env(TRUSTED_PROXY_IPS),
             image_storage: ImageStorageConfig {
                 public_url: env::var("IMAGE_STORAGE_PUBLIC_URL")
                     .unwrap_or_else(|_| "/uploads".to_string()),

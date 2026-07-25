@@ -43,7 +43,7 @@ async fn main() {
         config.internal_service_secret,
     );
 
-    let app = router::build_router(app_state.clone());
+    let app = router::build_router(app_state.clone(), config.trusted_proxies);
 
     // P4-T08: spawn event_dispatcher with BackofficeAuditSubscriber
     jobs::spawn_event_dispatcher(

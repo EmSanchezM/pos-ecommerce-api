@@ -5,6 +5,8 @@
 
 use axum::{Router, routing::post};
 
+use common::TrustedProxies;
+
 use crate::handlers::{login_handler, refresh_handler, register_handler};
 use crate::middleware::rate_limit::auth_rate_limit_layer;
 use crate::state::AppState;
@@ -18,10 +20,10 @@ use crate::state::AppState;
 /// - `POST /register` - Register a new ecommerce user (Requirement 5.1)
 /// - `POST /login` - Unified login with email or username (Requirement 5.3)
 /// - `POST /refresh` - Refresh access token (Requirement 5.4)
-pub fn auth_router() -> Router<AppState> {
+pub fn auth_router(trusted_proxies: TrustedProxies) -> Router<AppState> {
     Router::new()
         .route("/register", post(register_handler))
         .route("/login", post(login_handler))
         .route("/refresh", post(refresh_handler))
-        .layer(auth_rate_limit_layer())
+        .layer(auth_rate_limit_layer(trusted_proxies))
 }

@@ -17,6 +17,8 @@ mod tests {
     use sqlx::PgPool;
     use tower::ServiceExt;
 
+    use common::TrustedProxies;
+
     use crate::router::build_router;
     use crate::state::BackofficeAppState;
 
@@ -47,11 +49,31 @@ mod tests {
     /// fails. Inserting the real `ConnectInfo` is what mirrors production.
     ///
     /// Each call builds a fresh router, so each test gets its own quota state.
+    ///
+    /// No trusted proxies: the peer IS the client, as when the binary is
+    /// reached directly.
     fn make_app() -> Router {
-        build_router(make_state()).layer(Extension(ConnectInfo(SocketAddr::from((
-            [127, 0, 0, 1],
-            9999,
-        )))))
+        app_with(TrustedProxies::default(), PEER)
+    }
+
+    /// The address the test router reports as the connecting peer.
+    const PEER: [u8; 4] = [127, 0, 0, 1];
+
+    /// The address standing in for Caddy in proxy-aware tests.
+    const PROXY: [u8; 4] = [10, 0, 0, 1];
+
+    fn app_with(trusted_proxies: TrustedProxies, peer: [u8; 4]) -> Router {
+        build_router(make_state(), trusted_proxies)
+            .layer(Extension(ConnectInfo(SocketAddr::from((peer, 9999)))))
+    }
+
+    /// A router configured the way production is: reached through a trusted
+    /// proxy, which appends the observed client to `X-Forwarded-For`.
+    fn app_behind_proxy() -> Router {
+        app_with(
+            TrustedProxies::parse("10.0.0.1").expect("fixture must parse"),
+            PROXY,
+        )
     }
 
     /// P3-T07: GET /health returns 200.
@@ -662,6 +684,84 @@ mod tests {
         assert!(
             statuses.contains(&StatusCode::TOO_MANY_REQUESTS),
             "rotating X-Forwarded-For must NOT bypass the login limiter, got {statuses:?}"
+        );
+    }
+
+    // --- behind a trusted proxy (the production topology) ---------------------
+
+    /// Behind Caddy, two DIFFERENT clients must not share a bucket. Keying on
+    /// the peer address here would collapse every operator into one quota and
+    /// lock them out of the login as a group.
+    #[tokio::test]
+    async fn distinct_clients_behind_the_proxy_do_not_share_a_quota() {
+        let app = app_behind_proxy();
+
+        // Client A burns well past the login burst.
+        for _ in 0..10 {
+            let mut request = login_request();
+            request
+                .headers_mut()
+                .insert("X-Forwarded-For", "203.0.113.10".parse().unwrap());
+            let _ = app.clone().oneshot(request).await.unwrap();
+        }
+
+        // Client B arrives fresh and must still be served.
+        let mut request = login_request();
+        request
+            .headers_mut()
+            .insert("X-Forwarded-For", "203.0.113.99".parse().unwrap());
+        let status = app.oneshot(request).await.unwrap().status();
+
+        assert_ne!(
+            status,
+            StatusCode::TOO_MANY_REQUESTS,
+            "a second operator behind the same proxy must have its own quota"
+        );
+    }
+
+    /// The same client behind the proxy IS throttled — the limiter still works,
+    /// it just resolves the right identity.
+    #[tokio::test]
+    async fn one_client_behind_the_proxy_is_still_throttled() {
+        let app = app_behind_proxy();
+
+        let mut statuses = Vec::new();
+        for _ in 0..12 {
+            let mut request = login_request();
+            request
+                .headers_mut()
+                .insert("X-Forwarded-For", "203.0.113.10".parse().unwrap());
+            statuses.push(app.clone().oneshot(request).await.unwrap().status());
+        }
+
+        assert!(
+            statuses.contains(&StatusCode::TOO_MANY_REQUESTS),
+            "a single client behind the proxy must still be throttled, got {statuses:?}"
+        );
+    }
+
+    /// THE attack, in the production topology: Caddy APPENDS to any header the
+    /// client already sent, so a forged value sits to the LEFT of the address
+    /// Caddy observed. Rotating that prefix must not buy a fresh bucket.
+    #[tokio::test]
+    async fn forged_prefix_behind_the_proxy_does_not_reset_the_quota() {
+        let app = app_behind_proxy();
+
+        let mut statuses = Vec::new();
+        for i in 0..12 {
+            let mut request = login_request();
+            // What Caddy forwards when the client sends its own XFF: the forged
+            // value first, the real observed client appended after it.
+            request.headers_mut().insert(
+                "X-Forwarded-For",
+                format!("198.51.100.{i}, 203.0.113.10").parse().unwrap(),
+            );
+            statuses.push(app.clone().oneshot(request).await.unwrap().status());
+        }
+
+        assert!(
+            statuses.contains(&StatusCode::TOO_MANY_REQUESTS),
+            "rotating the client-supplied prefix must NOT bypass the limiter, got {statuses:?}"
         );
     }
 
